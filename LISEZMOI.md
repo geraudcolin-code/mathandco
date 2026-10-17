@@ -1,6 +1,6 @@
-# Math&Co
+# mathandco
 
-Site des corrections animées de mathématiques de M. Colin (GitHub Pages).
+Site des corrections animées de mathématiques (GitHub Pages).
 
 - `index.html` : accueil public.
 - `eleves.html` : espace élèves (catalogue chiffré, mot de passe donné en classe).

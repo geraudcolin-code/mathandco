@@ -1,4 +1,4 @@
-/* Math&Co
+/* mathandco
    Mise en page : grandes sections centrées façon Apple, colonne de 980 px ; la page de cahier (quadrillage +
    marge rouge) est le seul objet décoratif, reprise des corrections animées. */
 :root {
@@ -76,7 +76,7 @@ p { margin: 0; }
 .nav-int { display: flex; align-items: center; gap: 28px; height: 52px; }
 .logo { display: inline-flex; align-items: baseline; gap: 1px; font-weight: 700; font-size: 1.2rem; letter-spacing: -.02em; color: var(--encre); }
 .logo:hover { text-decoration: none; }
-.logo .esperluette { font-family: var(--f-maths); font-style: italic; font-weight: 500; color: var(--rouge); font-size: 1.15em; padding: 0 1px; }
+.logo .esperluette { font-family: var(--f-maths); font-style: italic; font-weight: 500; color: var(--rouge); font-size: 1.05em; padding: 0 1px; }
 .nav-liens { display: flex; gap: 24px; margin-left: auto; font-size: var(--t-petit); }
 .nav-liens a { color: var(--encre); opacity: .82; }
 .nav-liens a:hover { opacity: 1; text-decoration: none; }

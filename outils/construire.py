@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Site Math&Co : ajout des corrections HTML et reconstruction du catalogue de l'espace élèves.
+"""Site mathandco : ajout des corrections HTML et reconstruction du catalogue de l'espace élèves.
 
 Usage
   python3 outils/construire.py ajouter <page.html> [<page.html> ...]   ajoute (ou remplace) des corrections

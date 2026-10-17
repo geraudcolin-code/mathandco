@@ -1,4 +1,4 @@
-/* Math&Co : barre de navigation, apparitions au défilement, page de cahier animée de l'accueil. */
+/* mathandco : barre de navigation, apparitions au défilement, page de cahier animée de l'accueil. */
 (function () {
   'use strict';
   document.documentElement.classList.add('js');

@@ -1,4 +1,4 @@
-/* Math&Co : espace élèves. Le catalogue est chiffré (AES-256-GCM, clé tirée du mot de passe) : il ne se lit qu'avec
+/* mathandco : espace élèves. Le catalogue est chiffré (AES-256-GCM, clé tirée du mot de passe) : il ne se lit qu'avec
    le mot de passe des corrections, qui est ensuite gardé sur l'appareil pour ouvrir les corrections directement. */
 (function () {
   'use strict';

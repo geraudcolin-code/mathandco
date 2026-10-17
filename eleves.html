@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Espace élèves, Math&amp;Co</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<link rel="icon" href="assets/icone.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<header class="nav gouttiere" id="nav">
+  <div class="colonne nav-int">
+    <a class="logo" href="./" aria-label="Math&amp;Co, accueil">Math<span class="esperluette">&amp;</span>Co</a>
+    <nav class="nav-liens" aria-label="Navigation">
+      <a href="./">Accueil</a>
+    </nav>
+    <button type="button" class="deconnexion" id="sortir" hidden>Se déconnecter</button>
+  </div>
+</header>
+
+<main>
+  <section class="porte gouttiere" id="porte">
+    <form id="formulaire" autocomplete="off">
+      <h1>Espace élèves</h1>
+      <p class="aide">Entrez le mot de passe donné en classe.</p>
+      <div class="champ">
+        <label for="mdp" class="sr" style="position:absolute;left:-9999px">Mot de passe</label>
+        <input id="mdp" type="password" placeholder="Mot de passe" required autocomplete="current-password">
+      </div>
+      <button class="bouton" id="entrer" type="submit">Entrer</button>
+      <label class="souvenir" for="souvenir"><input type="checkbox" id="souvenir" checked> Rester connecté sur cet appareil</label>
+      <p class="message" id="message" role="alert"></p>
+    </form>
+  </section>
+
+  <div id="biblio" hidden>
+    <section class="gouttiere">
+      <div class="colonne biblio-tete">
+        <div>
+          <h1>Corrections</h1>
+          <p id="resume"></p>
+        </div>
+      </div>
+    </section>
+    <div class="outils gouttiere">
+      <div class="colonne">
+        <div class="segments" role="group" aria-label="Choisir une classe" id="segments"></div>
+        <input class="recherche" id="recherche" type="search" placeholder="Rechercher : vecteurs, exercice 12…" aria-label="Rechercher une correction">
+      </div>
+    </div>
+    <section class="gouttiere">
+      <div class="colonne" id="liste"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="pied gouttiere">
+  <div class="colonne">
+    <span>Math&amp;Co, les corrections de M. Colin.</span>
+    <span>Chaque correction s'ouvre dans cette fenêtre ; revenez ici avec le bouton Retour du navigateur.</span>
+  </div>
+</footer>
+<script src="assets/catalogue.js"></script>
+<script src="assets/eleves.js"></script>
+</body>
+</html>

@@ -244,6 +244,22 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .fiche .num small { font-size: .95rem; font-weight: 500; color: var(--gris); letter-spacing: 0; margin-right: 6px; }
 .fiche .titre { font-weight: 600; line-height: 1.3; }
 .fiche .detail { color: var(--gris); font-size: .86rem; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.fiche-lien { display: flex; flex-direction: column; gap: 6px; flex: 1; color: inherit; }
+.fiche-lien:hover { text-decoration: none; }
+.fiche-lien::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }   /* toute la fiche ouvre l'animation */
+.fiche-lien:focus-visible { outline: none; }
+.fiche:has(.fiche-lien:focus-visible) { outline: 3px solid var(--bleu); outline-offset: 3px; }
+.fiche-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.fiche .action { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px;
+  font: 600 .82rem/1 var(--f-texte); white-space: nowrap; }
+.fiche .action.anim { background: var(--bleu-fond); color: var(--bleu); }
+.fiche .action.anim::before { content: ""; width: 0; height: 0; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent currentColor; }
+.fiche .action.pdf { position: relative; z-index: 1; border: 1.5px solid var(--filet); background: var(--papier); color: var(--encre); cursor: pointer;
+  transition: border-color .2s, color .2s; }
+.fiche .action.pdf:hover { border-color: var(--rouge); color: var(--rouge); }
+.fiche .action.pdf:disabled { cursor: progress; opacity: .7; }
+.fiche .action.pdf svg { width: 15px; height: 15px; }
+.fiche.speciale .action.anim { background: var(--papier); }
 .fiche.speciale { background: var(--bleu-fond); }
 .fiche.speciale .num { font-size: 1.35rem; letter-spacing: -.02em; color: var(--bleu); }
 .vide { padding: 60px 0; text-align: center; color: var(--gris); }

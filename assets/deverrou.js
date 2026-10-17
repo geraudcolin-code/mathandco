@@ -49,6 +49,53 @@
   if (window.visualViewport) visualViewport.addEventListener('resize', function () { setTimeout(recaler, 50); });
   window.addEventListener('orientationchange', function () { setTimeout(recaler, 300); });
 
+  // ---------- corrigé PDF ----------
+  // Si la correction a son corrigé PDF sur le site (même adresse, « .pdf.bin » : chiffré, le dépôt étant public), un bouton
+  // « Corrigé PDF » apparaît dans le bandeau de la correction ; le PDF est déchiffré ici avec le mot de passe.
+  var adressePdf = location.pathname.replace(/\.html?$/, '') + '.pdf.bin';
+  async function pdfClair(m) {
+    var r = await fetch(adressePdf, { cache: 'no-cache' });
+    if (!r.ok) throw new Error('absent');
+    var b = new Uint8Array(await r.arrayBuffer());
+    if (new TextDecoder().decode(b.slice(0, 6)) !== 'MCPDF1') throw new Error('format');
+    var n = new DataView(b.buffer, b.byteOffset).getUint32(6);
+    var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(m), 'PBKDF2', false, ['deriveKey']);
+    var cle = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b.slice(10, 26), iterations: n, hash: 'SHA-256' }, base,
+      { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(26, 38) }, cle, b.slice(38));
+  }
+  function boutonPdf(m) {
+    var bandeau = document.getElementById('bandeau');
+    if (!bandeau || !m || document.getElementById('mc-pdf') || !window.crypto || !crypto.subtle) return;
+    fetch(adressePdf, { method: 'HEAD', cache: 'no-cache' }).then(function (r) {
+      if (!r.ok || document.getElementById('mc-pdf')) return;
+      var s = document.createElement('style');
+      s.textContent = '#mc-pdf{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border:1.5px solid #C9D3E0;' +
+        'border-radius:10px;background:#fff;color:#17233A;font-family:inherit;font-weight:600;font-size:15px;line-height:1;cursor:pointer;transition:border-color .2s,color .2s}' +
+        '#mc-pdf:hover{border-color:#D62828;color:#D62828}#mc-pdf[disabled]{opacity:.7;cursor:progress}#mc-pdf svg{width:17px;height:17px}';
+      document.head.appendChild(s);
+      var b = document.createElement('button');
+      b.id = 'mc-pdf'; b.type = 'button'; b.title = 'Télécharger le corrigé de cet exercice (PDF)';
+      b.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0-3-3m3 3 3-3M3 13h10" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Corrigé PDF</span>';
+      var lib = b.querySelector('span');
+      b.addEventListener('click', async function (ev) {
+        ev.stopPropagation(); b.blur();
+        if (b.disabled) return;
+        b.disabled = true; lib.textContent = 'Préparation…';
+        try {
+          var url = URL.createObjectURL(new Blob([await pdfClair(m)], { type: 'application/pdf' }));
+          var a = document.createElement('a'); a.href = url; a.download = (document.title || 'corrige').trim() + '.pdf';
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+          lib.textContent = 'Corrigé PDF';
+        } catch (e) { lib.textContent = 'Indisponible'; setTimeout(function () { lib.textContent = 'Corrigé PDF'; }, 2500); }
+        b.disabled = false;
+      });
+      bandeau.appendChild(b);
+    }).catch(function () {});
+  }
+
   if (!carte || !champ) return;
 
   // lien de retour sur l'écran de mot de passe
@@ -66,6 +113,9 @@
     if (document.getElementById('verrou')) return;
     obs.disconnect();
     try { if (!longtemps && champ.value) sessionStorage.setItem(CLE, champ.value); } catch (e) {}
+    var m = champ.value || memo;
+    if (document.getElementById('bandeau')) boutonPdf(m);
+    else setTimeout(function () { boutonPdf(m); }, 400);
   });
   obs.observe(document.body, { childList: true });
 

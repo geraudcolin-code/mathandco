@@ -29,27 +29,68 @@
     return JSON.parse(new TextDecoder().decode(clair));
   }
 
+  // ---------- corrigé PDF : chiffré dans le dépôt (public), déchiffré ici au téléchargement ----------
+  // format du .pdf.bin : « MCPDF1 », itérations PBKDF2 (4 octets), sel (16), IV (12), PDF chiffré (AES-256-GCM)
+  var MDP = null;
+  async function pdfClair(adresse, m) {
+    var r = await fetch(adresse, { cache: 'no-cache' });
+    if (!r.ok) throw new Error('absent');
+    var b = new Uint8Array(await r.arrayBuffer());
+    if (new TextDecoder().decode(b.slice(0, 6)) !== 'MCPDF1') throw new Error('format');
+    var n = new DataView(b.buffer, b.byteOffset).getUint32(6);
+    var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(m), 'PBKDF2', false, ['deriveKey']);
+    var cle = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b.slice(10, 26), iterations: n, hash: 'SHA-256' }, base,
+      { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(26, 38) }, cle, b.slice(38));
+  }
+  async function telecharger(it, bouton) {
+    var lib = bouton.querySelector('.lib'), avant = lib.textContent;
+    if (bouton.disabled) return;
+    bouton.disabled = true; lib.textContent = 'Préparation…';
+    try {
+      var url = URL.createObjectURL(new Blob([await pdfClair(it.pdf, MDP || lire())], { type: 'application/pdf' }));
+      var a = document.createElement('a'); a.href = url; a.download = it.pdfnom || 'corrige.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      lib.textContent = avant;
+    } catch (e) {
+      lib.textContent = 'Indisponible'; setTimeout(function () { lib.textContent = avant; }, 2500);
+    }
+    bouton.disabled = false;
+  }
+
   // ---------- affichage du catalogue ----------
   var DONNEES = null, filtre = 'toutes', texteRecherche = '';
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
   function fiche(it, chap, classe) {
-    var a = el('a', 'fiche'); a.href = it.href;
+    // la fiche entière ouvre l'animation ; « Corrigé PDF » (s'il existe) télécharge le corrigé
+    var f = el('div', 'fiche'), a = el('a', 'fiche-lien'); a.href = it.href; f.appendChild(a);
     var num = el('div', 'num');
     if (it.type === 'exercice' || it.type === 'evaluation') {
       num.appendChild(el('small', null, it.type === 'evaluation' ? 'Évaluation, ex.' : 'Exercice'));
       num.appendChild(document.createTextNode(it.numero));
     } else {
-      a.classList.add('speciale');
+      f.classList.add('speciale');
       num.textContent = it.type === 'poly' ? 'Poly à trous' : it.type === 'flash' ? 'Questions flash' : (it.titre || it.nom);
     }
     a.appendChild(num);
     var titre = it.type === 'poly' ? 'Le cours du chapitre, complété clic par clic' : it.titre;
     if (titre) a.appendChild(el('div', 'titre', titre));
     if (it.consigne) a.appendChild(el('div', 'detail', it.consigne));
-    a.dataset.cherche = norm([classe.nom, 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
-    return a;
+    var actions = el('div', 'fiche-actions');
+    actions.appendChild(el('span', 'action anim', 'Animation'));
+    if (it.pdf) {
+      var b = el('button', 'action pdf'); b.type = 'button';
+      b.setAttribute('aria-label', 'Télécharger le corrigé PDF' + (it.numero ? ' de l\'exercice ' + it.numero : ''));
+      b.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0-3-3m3 3 3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lib">Corrigé PDF</span>';
+      b.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); telecharger(it, b); });
+      actions.appendChild(b);
+    }
+    f.appendChild(actions);
+    f.dataset.cherche = norm([classe.nom, 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
+    return f;
   }
 
   function construire() {
@@ -121,6 +162,7 @@
     btn.disabled = true; msg.className = 'message'; msg.textContent = 'Vérification…';
     try {
       var d = await dechiffrer(champ.value);
+      MDP = champ.value;
       garder(champ.value, $('souvenir').checked);
       msg.textContent = '';
       ouvrir(d);
@@ -131,7 +173,7 @@
   });
 
   $('sortir').addEventListener('click', function () {
-    oublier(); DONNEES = null; champ.value = ''; btn.disabled = false;
+    oublier(); DONNEES = null; MDP = null; champ.value = ''; btn.disabled = false;
     $('biblio').hidden = true; $('porte').hidden = false; $('sortir').hidden = true; champ.focus();
   });
 
@@ -139,6 +181,6 @@
   var memo = lire();
   if (memo && window.crypto && crypto.subtle) {
     msg.textContent = 'Ouverture…';
-    dechiffrer(memo).then(ouvrir).catch(function () { oublier(); msg.textContent = ''; });
+    dechiffrer(memo).then(function (d) { MDP = memo; ouvrir(d); }).catch(function () { oublier(); msg.textContent = ''; });
   } else { champ.focus(); }
 })();

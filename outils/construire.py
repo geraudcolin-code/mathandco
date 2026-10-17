@@ -2,7 +2,7 @@
 """Site Colinéaire : ajout des corrections HTML et reconstruction du catalogue de l'espace élèves.
 
 Usage
-  python3 outils/construire.py ajouter <page.html> [<page.html> ...]   ajoute (ou remplace) des corrections
+  python3 outils/construire.py ajouter <page.html|corrige.pdf> [...]   ajoute (ou remplace) des corrections et leurs PDF
   python3 outils/construire.py catalogue                                reconstruit seulement le catalogue
 
 Le mot de passe des corrections n'est JAMAIS écrit dans le dépôt (il est public) : il est lu dans la variable
@@ -12,6 +12,12 @@ Ce que fait le script
 - « ajouter » : lit le <title> de la page ([1ère]CH03_Correction_Exercice5…), en déduit l'adresse
   corrections/1ere-ch03-exercice-5.html, ajoute à la fin de la page le petit script assets/deverrou.js
   (ouverture automatique quand l'élève a déjà saisi le mot de passe dans l'espace élèves), puis reconstruit.
+  CORRIGÉ PDF (18 octobre) : un fichier .pdf nommé comme la correction ([1ère]CH03_Correction_Exercice5.pdf, donné
+  sur la ligne de commande, ou posé à côté de la page .html) est CHIFFRÉ avec le mot de passe (le dépôt est public :
+  un PDF en clair serait lisible par tous) dans corrections/1ere-ch03-exercice-5.pdf.bin ; l'espace élèves et la
+  correction elle-même proposent alors « Corrigé PDF », déchiffré dans le navigateur au téléchargement.
+  Format du .pdf.bin : « MCPDF1 » (6 octets), nombre d'itérations PBKDF2 (4 octets, gros-boutiste), sel (16),
+  IV (12), puis le PDF chiffré (AES-256-GCM).
 - « catalogue » : déchiffre chaque correction avec le mot de passe pour lire son titre (« Exercice 7 Sens de
   variation »), range tout par classe puis chapitre, chiffre ce catalogue (AES-256-GCM, même procédé que les
   corrections) dans assets/catalogue.js et met à jour les cartes « classes » de la page d'accueil.
@@ -143,9 +149,28 @@ def chapitre_depuis_sous(sous):
     return t[:1].upper() + t[1:]
 
 
-def ajouter(chemins):
+def chiffrer_pdf(chemin, nom, mdp):
+    """corrigé PDF chiffré -> corrections/<adresse>.pdf.bin (voir le format en tête du fichier)"""
+    info = analyser_nom(nom)
+    sel, iv = os.urandom(16), os.urandom(12)
+    cle = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=sel, iterations=ITER).derive(mdp.encode())
+    donnees = open(chemin, 'rb').read()
+    if not donnees.startswith(b'%PDF'):
+        raise SystemExit(f'« {chemin} » n\'est pas un PDF.')
+    sortie = info['fichier'][:-5] + '.pdf.bin'
+    with open(os.path.join(DOSSIER, sortie), 'wb') as f:
+        f.write(b'MCPDF1' + ITER.to_bytes(4, 'big') + sel + iv + AESGCM(cle).encrypt(iv, donnees, None))
+    print('PDF chiffré :', os.path.basename(chemin), '->', 'corrections/' + sortie)
+
+
+def ajouter(chemins, mdp):
     os.makedirs(DOSSIER, exist_ok=True)
+    pdfs = [c for c in chemins if c.lower().endswith('.pdf')]
+    for ch in pdfs:
+        chiffrer_pdf(ch, os.path.splitext(os.path.basename(ch))[0], mdp)
     for ch in chemins:
+        if ch in pdfs:
+            continue
         page = open(ch, encoding='utf-8').read()
         titre = lire_titre(page)
         info = analyser_nom(titre)
@@ -154,6 +179,9 @@ def ajouter(chemins):
             page = page[:i] + BALISE + page[i:] if i >= 0 else page + BALISE
         open(os.path.join(DOSSIER, info['fichier']), 'w', encoding='utf-8').write(page)
         print('ajouté :', titre, '->', 'corrections/' + info['fichier'])
+        voisin = os.path.splitext(ch)[0] + '.pdf'               # corrigé PDF posé à côté de la page, de même nom
+        if os.path.exists(voisin) and voisin not in pdfs and os.path.splitext(os.path.basename(voisin))[0] == titre:
+            chiffrer_pdf(voisin, titre, mdp)
 
 
 def chiffrer(obj, mdp):
@@ -190,13 +218,22 @@ def catalogue(mdp):
             lot.sort(key=lambda e: (rang[e['type']], e['numero'], e['fichier']))
             titre_ch = CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
             chaps.append({'numero': num, 'titre': titre_ch, 'items': [
-                {'type': e['type'], 'numero': e['numero'], 'titre': e['titre'], 'consigne': e['consigne'],
-                 'href': 'corrections/' + e['fichier'], 'nom': e['nom']} for e in lot]})
+                dict({'type': e['type'], 'numero': e['numero'], 'titre': e['titre'], 'consigne': e['consigne'],
+                      'href': 'corrections/' + e['fichier'], 'nom': e['nom']},
+                     **({'pdf': 'corrections/' + e['fichier'][:-5] + '.pdf.bin', 'pdfnom': e['nom'] + '.pdf'}
+                        if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
+                for e in lot]})
         classes.append({'id': cid, 'nom': nom_classe, 'chapitres': chaps})
 
     js = '/* Catalogue chiffré de l\'espace élèves (généré par outils/construire.py, ne pas modifier). */\n'
     js += 'window.CATALOGUE = ' + json.dumps(chiffrer({'classes': classes}, mdp)) + ';\n'
     open(os.path.join(RACINE, 'assets', 'catalogue.js'), 'w', encoding='utf-8').write(js)
+    # l'espace élèves charge « catalogue.js?v=… » : la version change avec le catalogue (pas d'ancien catalogue en cache)
+    import hashlib
+    ev = os.path.join(RACINE, 'eleves.html')
+    pe = open(ev, encoding='utf-8').read()
+    pe = re.sub(r'assets/catalogue\.js(\?v=[\w]*)?"', 'assets/catalogue.js?v=' + hashlib.sha1(js.encode()).hexdigest()[:10] + '"', pe)
+    open(ev, 'w', encoding='utf-8').write(pe)
 
     # cartes « classes » de la page d'accueil (titres des chapitres et nombre de corrections, en clair)
     cartes = []
@@ -216,7 +253,8 @@ def catalogue(mdp):
     total = sum(len(ch['items']) for c in classes for ch in c['chapitres'])
     page = re.sub(r'(<!-- debut:total -->).*?(<!-- fin:total -->)', lambda m: m.group(1) + str(total) + m.group(2), page, flags=re.S)
     open(acc, 'w', encoding='utf-8').write(page)
-    print(f'catalogue : {total} pages, {len(classes)} classes')
+    npdf = sum(1 for c in classes for ch in c['chapitres'] for it in ch['items'] if 'pdf' in it)
+    print(f'catalogue : {total} pages ({npdf} avec leur corrigé PDF), {len(classes)} classes')
 
 
 if __name__ == '__main__':
@@ -225,5 +263,5 @@ if __name__ == '__main__':
         sys.exit(1)
     mdp = mot_de_passe()
     if sys.argv[1] == 'ajouter':
-        ajouter(sys.argv[2:])
+        ajouter(sys.argv[2:], mdp)
     catalogue(mdp)

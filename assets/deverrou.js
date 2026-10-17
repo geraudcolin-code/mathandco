@@ -1,4 +1,4 @@
-/* mathandco : ouverture automatique d'une correction protégée quand l'élève a déjà saisi le mot de passe dans
+/* Colinéaire : ouverture automatique d'une correction protégée quand l'élève a déjà saisi le mot de passe dans
    l'espace élèves (ou dans une autre correction). Ajouté à la fin de chaque correction par outils/construire.py. */
 (function () {
   'use strict';

@@ -1,4 +1,4 @@
-/* mathandco : barre de navigation, apparitions au défilement, page de cahier animée de l'accueil. */
+/* Colinéaire : barre de navigation, apparitions au défilement, page de cahier animée de l'accueil. */
 (function () {
   'use strict';
   document.documentElement.classList.add('js');

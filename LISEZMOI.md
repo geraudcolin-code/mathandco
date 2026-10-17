@@ -1,4 +1,4 @@
-# mathandco
+# Colinéaire
 
 Site des corrections animées de mathématiques (GitHub Pages).
 

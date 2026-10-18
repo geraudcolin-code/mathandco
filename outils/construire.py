@@ -58,6 +58,7 @@ SLUG_CLASSE = {'seconde': '2nde', 'premiere': '1ere', 'premiere-ms': '1ere-ms', 
 
 # Titres des chapitres (à compléter au fil de l'année ; sinon le titre est lu dans la page)
 CHAPITRES = {
+    ('seconde', 1): 'Nombres et calcul',
     ('seconde', 2): 'Vecteurs',
     ('seconde', 3): 'Calcul littéral, équations et inéquations',
     ('premiere', 2): 'Suites numériques',

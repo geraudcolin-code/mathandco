@@ -98,6 +98,36 @@
 
   if (!carte || !champ) return;
 
+  // ---------- accès : correction ouverte aux élèves seulement après sa correction en classe ----------
+  // Tant que acces.json n'a pas répondu, ou si la correction est fermée, le mot de passe ne déverrouille rien : l'envoi du
+  // formulaire est arrêté AVANT le gestionnaire de la page (écoute en phase de capture sur le document).
+  var acces = 'attente', ADMIN = false;
+  try { ADMIN = !!JSON.parse(localStorage.getItem('colineaire.admin') || 'null'); } catch (e) {}
+  document.addEventListener('submit', function (ev) {
+    if (acces !== 'ouvert') { ev.preventDefault(); ev.stopImmediatePropagation(); }
+  }, true);
+  var ident = decodeURIComponent(location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+  var verifier = fetch('../acces.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error('acces'); return r.json(); })
+    .then(function (j) { return (j.ouvertes || []).indexOf(ident) >= 0; })
+    .catch(function () { return false; })
+    .then(function (ok) {
+      acces = (ok || ADMIN) ? 'ouvert' : 'ferme';
+      if (acces === 'ferme') fermee();
+      return acces === 'ouvert';
+    });
+  function fermee() {
+    var titre = carte.querySelector('h1');
+    Array.prototype.slice.call(carte.children).forEach(function (n) { if (n !== titre) n.remove(); });
+    var p = document.createElement('p');
+    p.style.cssText = 'font-size:16px;line-height:1.5;color:#3A4558;margin:14px 0 6px';
+    p.textContent = 'Cette correction n\'est pas encore disponible. Elle s\'ouvrira après sa correction en classe.';
+    var a = document.createElement('a');
+    a.href = '../eleves.html'; a.textContent = 'Retour à l\'espace élèves';
+    a.style.cssText = 'display:block;margin-top:16px;padding:11px;border-radius:8px;background:#17233A;color:#fff;text-align:center;font-weight:600;text-decoration:none';
+    carte.appendChild(p); carte.appendChild(a);
+  }
+
   // lien de retour sur l'écran de mot de passe
   var retour = document.createElement('a');
   retour.href = '../eleves.html';
@@ -119,9 +149,10 @@
   });
   obs.observe(document.body, { childList: true });
 
-  if (memo) {
-    champ.value = memo;
+  if (memo) champ.value = memo;
+  verifier.then(function (ok) {
+    if (!ok || !memo) return;
     if (carte.requestSubmit) carte.requestSubmit();
     else carte.dispatchEvent(new Event('submit', { cancelable: true }));
-  }
+  });
 })();

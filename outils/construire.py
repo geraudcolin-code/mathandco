@@ -4,6 +4,9 @@
 Usage
   python3 outils/construire.py ajouter <page.html|corrige.pdf> [...]   ajoute (ou remplace) des corrections et leurs PDF
   python3 outils/construire.py catalogue                                reconstruit seulement le catalogue
+  python3 outils/construire.py ouvrir <motif> [...]                     ouvre des corrections aux élèves (acces.json)
+  python3 outils/construire.py fermer <motif> [...]                     les referme
+     motif : nom de fichier sans .html, éventuellement avec * (ex. 1ere-ch03-exercice-5, 2nde-ch03-*)
 
 Le mot de passe des corrections n'est JAMAIS écrit dans le dépôt (il est public) : il est lu dans la variable
 d'environnement MATHANDCO_MDP, sinon demandé au clavier.
@@ -18,6 +21,10 @@ Ce que fait le script
   correction elle-même proposent alors « Corrigé PDF », déchiffré dans le navigateur au téléchargement.
   Format du .pdf.bin : « MCPDF1 » (6 octets), nombre d'itérations PBKDF2 (4 octets, gros-boutiste), sel (16),
   IV (12), puis le PDF chiffré (AES-256-GCM).
+- ACCÈS (18 octobre) : acces.json, à la racine, liste les corrections OUVERTES aux élèves ({"ouvertes": [noms de
+  fichiers sans .html]}). Une correction absente de la liste est grisée dans l'espace élèves et sa page refuse de
+  s'ouvrir ; une correction AJOUTÉE arrive donc FERMÉE. M. Colin ouvre / ferme depuis admin.html (Espace professeur :
+  enregistrement par l'API GitHub avec sa clé personnelle) ; Claude peut aussi le faire avec « ouvrir » / « fermer ».
 - « catalogue » : déchiffre chaque correction avec le mot de passe pour lire son titre (« Exercice 7 Sens de
   variation »), range tout par classe puis chapitre, chiffre ce catalogue (AES-256-GCM, même procédé que les
   corrections) dans assets/catalogue.js et met à jour les cartes « classes » de la page d'accueil.
@@ -231,9 +238,14 @@ def catalogue(mdp):
     # l'espace élèves charge « catalogue.js?v=… » : la version change avec le catalogue (pas d'ancien catalogue en cache)
     import hashlib
     ev = os.path.join(RACINE, 'eleves.html')
-    pe = open(ev, encoding='utf-8').read()
-    pe = re.sub(r'assets/catalogue\.js(\?v=[\w]*)?"', 'assets/catalogue.js?v=' + hashlib.sha1(js.encode()).hexdigest()[:10] + '"', pe)
-    open(ev, 'w', encoding='utf-8').write(pe)
+    for ev in (os.path.join(RACINE, 'eleves.html'), os.path.join(RACINE, 'admin.html')):
+        if not os.path.exists(ev):
+            continue
+        pe = open(ev, encoding='utf-8').read()
+        pe = re.sub(r'assets/catalogue\.js(\?v=[\w]*)?"', 'assets/catalogue.js?v=' + hashlib.sha1(js.encode()).hexdigest()[:10] + '"', pe)
+        open(ev, 'w', encoding='utf-8').write(pe)
+    if not os.path.exists(FICHIER_ACCES):
+        ecrire_acces([])
 
     # cartes « classes » de la page d'accueil (titres des chapitres et nombre de corrections, en clair)
     cartes = []
@@ -257,10 +269,43 @@ def catalogue(mdp):
     print(f'catalogue : {total} pages ({npdf} avec leur corrigé PDF), {len(classes)} classes')
 
 
+FICHIER_ACCES = os.path.join(RACINE, 'acces.json')
+
+
+def lire_acces():
+    if not os.path.exists(FICHIER_ACCES):
+        return []
+    return json.load(open(FICHIER_ACCES, encoding='utf-8')).get('ouvertes', [])
+
+
+def ecrire_acces(ouvertes):
+    import datetime
+    d = {'maj': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'), 'ouvertes': sorted(set(ouvertes))}
+    open(FICHIER_ACCES, 'w', encoding='utf-8').write(json.dumps(d, ensure_ascii=False, indent=1) + '\n')
+
+
+def basculer(motifs, ouvrir_):
+    import fnmatch
+    noms = sorted(f[:-5] for f in os.listdir(DOSSIER) if f.endswith('.html'))
+    ens = set(lire_acces())
+    for m in motifs:
+        m = m[:-5] if m.endswith('.html') else m
+        vus = [n for n in noms if fnmatch.fnmatch(n, m)]
+        if not vus:
+            raise SystemExit(f'Aucune correction ne correspond à « {m} ».')
+        for n in vus:
+            (ens.add if ouvrir_ else ens.discard)(n)
+            print(('ouverte : ' if ouvrir_ else 'fermée : ') + n)
+    ecrire_acces(ens)
+
+
 if __name__ == '__main__':
-    if len(sys.argv) < 2 or sys.argv[1] not in ('ajouter', 'catalogue'):
+    if len(sys.argv) < 2 or sys.argv[1] not in ('ajouter', 'catalogue', 'ouvrir', 'fermer'):
         print(__doc__)
         sys.exit(1)
+    if sys.argv[1] in ('ouvrir', 'fermer'):
+        basculer(sys.argv[2:], sys.argv[1] == 'ouvrir')
+        sys.exit(0)
     mdp = mot_de_passe()
     if sys.argv[1] == 'ajouter':
         ajouter(sys.argv[2:], mdp)

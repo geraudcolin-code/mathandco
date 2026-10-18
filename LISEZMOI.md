@@ -11,3 +11,7 @@ Site des corrections animées de mathématiques (GitHub Pages).
   (`MATHANDCO_MDP=… python3 outils/construire.py ajouter page.html corrige.pdf`). Le mot de passe n'est jamais écrit dans le dépôt.
   Un PDF nommé comme la correction (`[2nd]CH02_Correction_Exercice1.pdf`) est chiffré dans `corrections/` ; l'espace élèves
   et la correction proposent alors un bouton « Corrigé PDF » (déchiffré dans le navigateur).
+- `acces.json` : liste des corrections OUVERTES aux élèves ; les autres sont grisées dans l'espace élèves et leur page refuse de
+  s'ouvrir. Une correction ajoutée arrive fermée. `admin.html` (Espace professeur) ouvre / ferme les corrections et publie
+  `acces.json` par l'API GitHub avec la clé personnelle du professeur ; en ligne de commande :
+  `python3 outils/construire.py ouvrir 2nde-ch03-exercice-5` (ou `fermer`, motifs avec `*` acceptés).

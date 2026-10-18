@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Espace professeur, Colinéaire</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="assets/icone.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=20261018b">
+</head>
+<body>
+<header class="nav gouttiere" id="nav">
+  <div class="colonne nav-int">
+    <a class="logo" href="./" aria-label="Colinéaire, accueil">Colin<span class="esperluette">éaire</span></a>
+    <nav class="nav-liens" aria-label="Navigation">
+      <a href="eleves.html">Espace élèves</a>
+    </nav>
+    <button type="button" class="deconnexion" id="sortir" hidden>Se déconnecter</button>
+  </div>
+</header>
+
+<main>
+  <section class="porte gouttiere" id="porte">
+    <form id="formulaire" autocomplete="off">
+      <h1>Espace professeur</h1>
+      <p class="aide">Ouvrez une correction aux élèves une fois qu'elle a été faite en classe.</p>
+      <div class="champ">
+        <label for="mdp" style="position:absolute;left:-9999px">Mot de passe des corrections</label>
+        <input id="mdp" type="password" placeholder="Mot de passe des corrections" required autocomplete="current-password">
+      </div>
+      <div class="champ">
+        <label for="jeton" style="position:absolute;left:-9999px">Clé GitHub</label>
+        <input id="jeton" type="password" placeholder="Clé GitHub (github_pat_…)" required autocomplete="off" spellcheck="false">
+      </div>
+      <button class="bouton" id="entrer" type="submit">Se connecter</button>
+      <label class="souvenir" for="souvenir"><input type="checkbox" id="souvenir" checked> Rester connecté sur cet appareil</label>
+      <p class="message" id="message" role="alert"></p>
+      <details class="prof-aide">
+        <summary>Créer la clé GitHub (une seule fois)</summary>
+        <ol>
+          <li>Sur github.com, connecté : photo en haut à droite → <b>Settings</b> → tout en bas à gauche <b>Developer settings</b>.</li>
+          <li><b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b>.</li>
+          <li>Nom : <code>Colinéaire</code> ; Expiration : la plus longue proposée.</li>
+          <li><b>Repository access</b> : <b>Only select repositories</b> → <code>mathandco</code>.</li>
+          <li><b>Permissions</b> → <b>Contents</b> : <b>Read and write</b>.</li>
+          <li><b>Generate token</b>, puis copiez la clé (elle commence par <code>github_pat_</code>) et collez-la ici.</li>
+        </ol>
+        <p style="margin:0 0 12px">La clé reste sur cet appareil. Ne la donnez à personne : c'est elle qui permet de modifier le site.</p>
+      </details>
+    </form>
+  </section>
+
+  <div id="tableau" hidden>
+    <section class="gouttiere">
+      <div class="colonne biblio-tete">
+        <div>
+          <h1>Accès aux corrections</h1>
+          <p id="resume"></p>
+        </div>
+      </div>
+    </section>
+    <div class="outils gouttiere">
+      <div class="colonne">
+        <div class="segments" role="group" aria-label="Choisir une classe" id="segments"></div>
+        <input class="recherche" id="recherche" type="search" placeholder="Rechercher : vecteurs, exercice 12…" aria-label="Rechercher une correction">
+      </div>
+    </div>
+    <section class="gouttiere" style="padding-bottom:40px">
+      <div class="colonne" id="liste"></div>
+    </section>
+    <div class="barre-publier gouttiere">
+      <div class="colonne">
+        <span class="etat" id="etat" role="status">Aucune modification.</span>
+        <button type="button" class="bouton secondaire petit" id="annuler" disabled>Annuler</button>
+        <button type="button" class="bouton" id="publier" disabled>Publier</button>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="assets/catalogue.js?v=360ec0ca2f"></script>
+<script src="assets/admin.js?v=20261018"></script>
+</body>
+</html>

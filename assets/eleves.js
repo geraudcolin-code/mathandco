@@ -59,6 +59,20 @@
     bouton.disabled = false;
   }
 
+  // ---------- accès : une correction n'est ouverte aux élèves qu'après sa correction en classe ----------
+  // acces.json (publié par la page « Espace professeur ») liste les corrections ouvertes ; les autres sont grisées.
+  // Le professeur (jeton enregistré sur l'appareil par admin.html) voit tout, avec la mention « Fermée aux élèves ».
+  var ACCES = null, ADMIN = false;
+  try { ADMIN = !!JSON.parse(localStorage.getItem('colineaire.admin') || 'null'); } catch (e) {}
+  function chargerAcces() {
+    return fetch('acces.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('acces'); return r.json(); })
+      .then(function (j) { var o = {}; (j.ouvertes || []).forEach(function (s) { o[s] = true; }); return o; })
+      .catch(function () { return null; });
+  }
+  function identifiant(it) { return decodeURIComponent(it.href.split('/').pop()).replace(/\.html$/, ''); }
+  function ouverte(it) { return !!(ACCES && ACCES[identifiant(it)]); }
+
   // ---------- affichage du catalogue ----------
   var DONNEES = null, filtre = 'toutes', texteRecherche = '';
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -67,6 +81,7 @@
   function fiche(it, chap, classe) {
     // la fiche entière ouvre l'animation ; « Corrigé PDF » (s'il existe) télécharge le corrigé
     var f = el('div', 'fiche'), a = el('a', 'fiche-lien'); a.href = it.href; f.appendChild(a);
+    var ferme = !ouverte(it);
     var num = el('div', 'num');
     if (it.type === 'exercice' || it.type === 'evaluation') {
       num.appendChild(el('small', null, it.type === 'evaluation' ? 'Évaluation, ex.' : 'Exercice'));
@@ -80,6 +95,20 @@
     if (titre) a.appendChild(el('div', 'titre', titre));
     if (it.consigne) a.appendChild(el('div', 'detail', it.consigne));
     var actions = el('div', 'fiche-actions');
+    if (ferme && !ADMIN) {
+      // grisée : ni animation ni corrigé ; un clic ne fait que rappeler pourquoi
+      f.classList.add('ferme');
+      a.removeAttribute('href'); a.setAttribute('role', 'link'); a.setAttribute('aria-disabled', 'true'); a.tabIndex = 0;
+      a.setAttribute('aria-label', (it.type === 'exercice' ? 'Exercice ' + it.numero : (it.titre || it.nom)) + ' : disponible après la correction en classe');
+      var refus = function (ev) { ev.preventDefault(); f.classList.remove('secoue'); void f.offsetWidth; f.classList.add('secoue'); };
+      a.addEventListener('click', refus);
+      a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
+      actions.appendChild(el('span', 'action verrou', 'Après la correction en classe'));
+      f.appendChild(actions);
+      f.dataset.cherche = norm([classe.nom, 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
+      return f;
+    }
+    if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
     actions.appendChild(el('span', 'action anim', 'Animation'));
     if (it.pdf) {
       var b = el('button', 'action pdf'); b.type = 'button';
@@ -120,8 +149,14 @@
         b.addEventListener('click', function () { filtre = o.id; try { history.replaceState(null, '', o.id === 'toutes' ? location.pathname : '#' + o.id); } catch (e) {} appliquer(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
         seg.appendChild(b);
       });
-    var total = DONNEES.classes.reduce(function (n, c) { return n + c.chapitres.reduce(function (m, ch) { return m + ch.items.length; }, 0); }, 0);
-    $('resume').textContent = total + ' corrections animées. Choisissez votre classe, puis l\'exercice.';
+    var tous = [];
+    DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { tous = tous.concat(ch.items); }); });
+    var dispo = tous.filter(ouverte).length;
+    $('resume').textContent = ACCES === null
+      ? 'Impossible de vérifier quelles corrections sont ouvertes : rechargez la page dans un instant.'
+      : ADMIN
+        ? 'Vue du professeur : ' + dispo + ' corrections ouvertes aux élèves sur ' + tous.length + '.'
+        : dispo + ' corrections disponibles. Les autres s\'ouvrent après leur correction en classe.';
     var h = (location.hash || '').slice(1);
     if (DONNEES.classes.some(function (c) { return c.id === h; })) filtre = h;
     appliquer();
@@ -152,8 +187,11 @@
 
   function ouvrir(d) {
     DONNEES = d;
-    $('porte').hidden = true; $('biblio').hidden = false; $('sortir').hidden = false;
-    construire();
+    return chargerAcces().then(function (a) {
+      ACCES = a;
+      $('porte').hidden = true; $('biblio').hidden = false; $('sortir').hidden = false;
+      construire();
+    });
   }
 
   form.addEventListener('submit', async function (ev) {

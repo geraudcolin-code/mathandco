@@ -62,8 +62,11 @@
   // ---------- accès : une correction n'est ouverte aux élèves qu'après sa correction en classe ----------
   // acces.json (publié par la page « Espace professeur ») liste les corrections ouvertes ; les autres sont grisées.
   // Le professeur (jeton enregistré sur l'appareil par admin.html) voit tout, avec la mention « Fermée aux élèves ».
-  var ACCES = null, ADMIN = false;
-  try { ADMIN = !!JSON.parse(localStorage.getItem('colineaire.admin') || 'null'); } catch (e) {}
+  var ACCES = null, ADMIN = false, PROF = false;
+  try {
+    PROF = !!JSON.parse(localStorage.getItem('colineaire.admin') || sessionStorage.getItem('colineaire.admin') || 'null');
+    ADMIN = PROF && sessionStorage.getItem('colineaire.vue') !== 'eleve';
+  } catch (e) {}
   function chargerAcces() {
     return fetch('acces.json?t=' + Date.now(), { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('acces'); return r.json(); })
@@ -155,8 +158,18 @@
     $('resume').textContent = ACCES === null
       ? 'Impossible de vérifier quelles corrections sont ouvertes : rechargez la page dans un instant.'
       : ADMIN
-        ? 'Vue du professeur : ' + dispo + ' corrections ouvertes aux élèves sur ' + tous.length + '.'
+        ? 'Vue du professeur : ' + dispo + ' corrections ouvertes aux élèves sur ' + tous.length + '. Les corrections fermées portent la mention « Fermée aux élèves ».'
         : dispo + ' corrections disponibles. Les autres s\'ouvrent après leur correction en classe.';
+    if (PROF && !document.getElementById('vue-prof')) {
+      var bv = el('button', 'bouton petit secondaire'); bv.id = 'vue-prof'; bv.type = 'button';
+      bv.textContent = ADMIN ? 'Voir comme un élève' : 'Revenir à la vue du professeur';
+      bv.addEventListener('click', function () {
+        try { if (ADMIN) sessionStorage.setItem('colineaire.vue', 'eleve'); else sessionStorage.removeItem('colineaire.vue'); } catch (e) {}
+        location.reload();
+      });
+      $('resume').parentNode.appendChild(bv);
+      if (!ADMIN) $('resume').textContent = 'Vue élève (vous êtes professeur) : ' + $('resume').textContent;
+    }
     var h = (location.hash || '').slice(1);
     if (DONNEES.classes.some(function (c) { return c.id === h; })) filtre = h;
     appliquer();

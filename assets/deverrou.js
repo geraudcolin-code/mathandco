@@ -102,7 +102,10 @@
   // Tant que acces.json n'a pas répondu, ou si la correction est fermée, le mot de passe ne déverrouille rien : l'envoi du
   // formulaire est arrêté AVANT le gestionnaire de la page (écoute en phase de capture sur le document).
   var acces = 'attente', ADMIN = false;
-  try { ADMIN = !!JSON.parse(localStorage.getItem('colineaire.admin') || 'null'); } catch (e) {}
+  try {
+    ADMIN = !!JSON.parse(localStorage.getItem('colineaire.admin') || sessionStorage.getItem('colineaire.admin') || 'null')
+      && sessionStorage.getItem('colineaire.vue') !== 'eleve';
+  } catch (e) {}
   document.addEventListener('submit', function (ev) {
     if (acces !== 'ouvert') { ev.preventDefault(); ev.stopImmediatePropagation(); }
   }, true);

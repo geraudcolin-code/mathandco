@@ -63,6 +63,7 @@ CHAPITRES = {
     ('seconde', 3): 'Calcul littéral, équations et inéquations',
     ('premiere', 2): 'Suites numériques',
     ('premiere', 3): 'Probabilités conditionnelles et indépendance',
+    ('premiere', 4): 'Dérivation locale',
 }
 
 

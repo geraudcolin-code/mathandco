@@ -13,28 +13,39 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
 <link rel="stylesheet" href="assets/site.css?v=20261018b">
 <style>
-/* essai : Gauss à gauche de l'accueil */
-.hero-gauss { text-align: left; padding-block: clamp(40px, 7vw, 84px) 0; }
-.hg-grille { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
+/* essai : Gauss à gauche de l'accueil, posé sur le fond du site */
+.hero-gauss { text-align: left; padding-block: clamp(36px, 6vw, 72px) clamp(24px, 4vw, 48px); overflow: clip; }
+.hg-grille { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(24px, 5vw, 80px); align-items: center; }
 .hero-gauss .actions { justify-content: flex-start; }
-.hero-gauss .accroche { max-width: 26ch; }
-.gauss { margin: 0; display: grid; gap: 14px; }
-.gauss-carte { position: relative; border-radius: 22px; overflow: hidden; padding: 22px 14px 10px 36px; box-shadow: var(--ombre);
-  background-color: #ffffff; background-image: linear-gradient(#dbe9f5 1px, transparent 1px), linear-gradient(90deg, #dbe9f5 1px, transparent 1px);
-  background-size: 18px 18px; background-position: -1px -1px; transform: rotate(-1.5deg); }
-.gauss-carte::before { content: ""; position: absolute; top: 0; bottom: 0; left: 26px; width: 2px; background: #d4322c; opacity: .7; }
-.gauss-portrait { display: block; width: 100%; height: auto; }
-.gauss-cloche { display: block; width: 100%; height: auto; margin-top: -6px; }
-.gauss figcaption { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; padding-left: 6px; }
-.gauss .nom { font-weight: 600; }
-.gauss .dates { color: var(--gris); font-variant-numeric: tabular-nums; }
-.gauss .anecdote { flex-basis: 100%; font-family: var(--f-maths); font-style: italic; color: var(--gris); }
+.hero-gauss .accroche { max-width: 30ch; text-wrap: balance; }
+.gauss { margin: 0; display: grid; justify-items: center; gap: 18px; will-change: transform; }
+.gauss-ombre { width: 100%; max-width: 440px; filter: drop-shadow(0 22px 26px rgba(30, 40, 70, .16)) drop-shadow(0 2px 3px rgba(30, 40, 70, .10)); }
+.gauss-portrait { display: block; width: 100%; height: auto;
+  -webkit-mask-image: linear-gradient(to bottom, #000 87%, transparent 100%); mask-image: linear-gradient(to bottom, #000 87%, transparent 100%); }
+.gauss figcaption { margin-top: -18px; }
+.gauss figcaption { font-size: 14px; letter-spacing: .01em; color: var(--gris); }
+.gauss .nom { color: var(--encre); font-weight: 600; }
+.gauss .dates { font-variant-numeric: tabular-nums; margin-left: 8px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .gauss-ombre {
+  filter: drop-shadow(0 0 1px rgba(255,255,255,.55)) drop-shadow(0 18px 40px rgba(255,255,255,.08)); } }
+:root[data-theme="dark"] .gauss-ombre { filter: drop-shadow(0 0 1px rgba(255,255,255,.55)) drop-shadow(0 18px 40px rgba(255,255,255,.08)); }
+
+/* entrée à la manière d'une page produit : le portrait monte et se pose, puis le texte suit */
+@keyframes hg-pose { from { opacity: 0; transform: translateY(40px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes hg-monte { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+.hg-entree .gauss-ombre { animation: hg-pose 1.3s cubic-bezier(.16, 1, .3, 1) both; }
+.hg-entree .gauss figcaption { animation: hg-monte .9s .55s cubic-bezier(.16, 1, .3, 1) both; }
+.hg-entree .hg-texte > * { animation: hg-monte 1s cubic-bezier(.16, 1, .3, 1) both; }
+.hg-entree .hg-texte > :nth-child(1) { animation-delay: .25s; }
+.hg-entree .hg-texte > :nth-child(2) { animation-delay: .4s; }
+.hg-entree .hg-texte > :nth-child(3) { animation-delay: .55s; }
+@media (prefers-reduced-motion: reduce) { .hg-entree * { animation: none !important; } }
+
 @media (max-width: 820px) {
-  .hg-grille { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-  .gauss { width: min(240px, 70%); }
+  .hg-grille { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 20px; }
+  .gauss-ombre { max-width: min(250px, 66vw); }
   .hero-gauss .actions { justify-content: center; }
   .hero-gauss .accroche { margin-inline: auto; }
-  .gauss figcaption { justify-content: center; text-align: center; }
 }
 </style>
 </head>
@@ -51,19 +62,11 @@
 </header>
 
 <main>
-  <section class="hero hero-gauss gouttiere">
+  <section class="hero hero-gauss hg-entree gouttiere">
     <div class="colonne hg-grille">
-      <figure class="gauss">
-        <div class="gauss-carte">
-<img class="gauss-portrait" src="assets/gauss.webp" width="720" height="848" alt="Portrait dessiné de Carl Friedrich Gauss, calotte noire et col blanc">
-          <svg class="gauss-cloche" aria-hidden="true" viewBox="0 0 300 70" fill="none">
-            <line x1="10" y1="60" x2="290" y2="60" stroke="#1d1d1f" stroke-width="1.2"/>
-            <path d="M10 59 C 90 58, 112 8, 150 8 C 188 8, 210 58, 290 59" stroke="#d4322c" stroke-width="2"/>
-            <line x1="150" y1="8" x2="150" y2="60" stroke="#1d1d1f" stroke-width="1" stroke-dasharray="3 4"/>
-          </svg>
-        </div>
-        <figcaption><span class="nom">Carl Friedrich Gauss</span> <span class="dates">1777 – 1855</span>
-          <span class="anecdote">À 9 ans : <span style="white-space:nowrap">1 + 2 + … + 100</span> <span style="white-space:nowrap">= 50 × 101 = 5 050</span></span></figcaption>
+      <figure class="gauss" id="gauss">
+        <div class="gauss-ombre"><img class="gauss-portrait" src="assets/gauss.webp" width="720" height="850" alt="Portrait dessiné de Carl Friedrich Gauss, calotte noire et col blanc" fetchpriority="high"></div>
+        <figcaption><span class="nom">Carl Friedrich Gauss</span><span class="dates">1777 – 1855</span></figcaption>
       </figure>
       <div class="hg-texte">
         <h1>Colin<span class="esperluette">éaire</span></h1>
@@ -201,5 +204,19 @@
   </div>
 </footer>
 <script src="assets/site.js"></script>
+<script>
+(function () {
+  var g = document.getElementById('gauss');
+  if (!g || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var att = false;
+  function maj() {
+    att = false;
+    var y = Math.min(window.scrollY, 700);
+    g.style.transform = 'translateY(' + (y * 0.12).toFixed(1) + 'px) scale(' + (1 - y * 0.00006).toFixed(4) + ')';
+    g.style.opacity = (1 - Math.max(0, y - 220) / 900).toFixed(3);
+  }
+  addEventListener('scroll', function () { if (!att) { att = true; requestAnimationFrame(maj); } }, { passive: true });
+})();
+</script>
 </body>
 </html>

@@ -226,9 +226,37 @@ function head(g, x, y, ang, col){ const a = .45, L = 15;
   mk('path', {d:`M${x},${y} L${x - L*Math.cos(ang - a)},${y - L*Math.sin(ang - a)} L${x - L*Math.cos(ang + a)},${y - L*Math.sin(ang + a)} Z`, fill:col}, g); }
 
 /* ------------------------------------------------ surimpressions de la page (calculées à l'entrée) */
+/* SERRE_EGAL */ function serrerEgal(sec){
+  const C = sec.querySelector('.contenu'); if (!C) return;
+  const lignes = [...C.children];
+  const cle = e => { if (!e.classList || !e.classList.contains('ln')) return null;
+    const f = e.firstElementChild; if (!f) return null;
+    if (f.classList.contains('lhs7')) return 'l|' + f.style.width;
+    if (f.style && f.style.minWidth && f.style.display === 'inline-flex') return 'r|' + f.style.minWidth;
+    if (f.style && f.style.width && f.style.display === 'inline-block' && !f.className && !f.childElementCount) return 'r|' + f.style.width;
+    return null; };
+  let grp = [], k0 = null;
+  const fin = () => { if (grp.length){ const lhs = grp[0].classList.contains('lhs7');
+      let mx = 0;
+      const vide = s => s.style.display === 'inline-block' && !s.childElementCount;
+      const avant = grp.map(s => [s.style.width, s.style.minWidth]);
+      const decl = parseFloat(lhs ? grp[0].style.width : (grp[0].style.minWidth || grp[0].style.width)) || 0;
+      for (const s of grp){ if (lhs) s.style.width = 'auto'; else if (vide(s)) continue; else s.style.minWidth = '0px';
+        mx = Math.max(mx, s.offsetWidth); }
+      if (mx + (lhs ? 4 : 0) >= decl){ grp.forEach((s, j) => { s.style.width = avant[j][0]; s.style.minWidth = avant[j][1]; }); }
+      else for (const s of grp){ if (lhs) s.style.width = (mx + 4) + 'px'; else if (vide(s)) s.style.width = mx + 'px'; else s.style.minWidth = mx + 'px'; } }
+    grp = []; k0 = null; };
+  for (const e of lignes){ const k = cle(e);
+    if (k === null){ if (e.classList && e.classList.contains('marge')) continue;
+      if (parseFloat((e.style && e.style.marginLeft) || 0) > 0) continue;   /* ligne en retrait (justification) : le groupe continue */
+      fin(); continue; }
+    if (k !== k0) fin();
+    k0 = k; grp.push(e.firstElementChild); }
+  fin(); }
 function construire(i){
   const sc = SCR[i], sec = document.getElementById('fn' + i);
   if (sec.dataset.ok) return;
+  serrerEgal(sec);
   const U = sec.querySelector('svg.under'), O = sec.querySelector('svg.over');
   const B = id => rel(document.getElementById(id), sec);
   for (const o of sc.ov){

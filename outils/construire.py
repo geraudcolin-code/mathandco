@@ -47,13 +47,13 @@ ITER = 600_000
 BALISE = '<script src="../assets/deverrou.js?v=2" data-mathandco></script>'
 
 # Classes, dans l'ordre d'affichage : préfixe du nom de fichier -> (identifiant, nom affiché)
-# Noms affichés (21 oct., M. Colin) : « Première spécialité », « Première spécifique », « Terminale maths spécialité » ;
+# Noms affichés (21 oct., M. Colin) : « Première spécialité », « Première spécifique », « Terminale spécialité » ;
 # les boutons de classe de l'espace élèves et de l'Espace professeur reprennent ces noms en entier.
 CLASSES = {
     '2nd': ('seconde', 'Seconde'),
     '1ère': ('premiere', 'Première spécialité'),
     '1èreNonSpe': ('premiere-ms', 'Première spécifique'),
-    'TERM': ('terminale', 'Terminale maths spécialité'),
+    'TERM': ('terminale', 'Terminale spécialité'),
 }
 ORDRE = ['seconde', 'premiere', 'premiere-ms', 'terminale']
 SLUG_CLASSE = {'seconde': '2nde', 'premiere': '1ere', 'premiere-ms': '1ere-ms', 'terminale': 'term'}

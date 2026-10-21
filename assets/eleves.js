@@ -146,7 +146,7 @@
     liste.appendChild(el('p', 'vide', 'Aucune correction ne correspond à cette recherche.'));
     // segments
     var seg = $('segments'); seg.innerHTML = '';
-    [{ id: 'toutes', nom: 'Toutes' }].concat(DONNEES.classes.map(function (c) { return { id: c.id, nom: c.nom.replace(' spécialité', '') }; }))
+    [{ id: 'toutes', nom: 'Toutes' }].concat(DONNEES.classes.map(function (c) { return { id: c.id, nom: c.nom }; }))
       .forEach(function (o) {
         var b = el('button', null, o.nom); b.type = 'button'; b.dataset.id = o.id;
         b.addEventListener('click', function () { filtre = o.id; try { history.replaceState(null, '', o.id === 'toutes' ? location.pathname : '#' + o.id); } catch (e) {} appliquer(); window.scrollTo({ top: 0, behavior: 'smooth' }); });

@@ -65,6 +65,7 @@ CHAPITRES = {
     ('premiere', 2): 'Suites numériques',
     ('premiere', 3): 'Probabilités conditionnelles et indépendance',
     ('premiere', 4): 'Dérivation locale',
+    ('premiere-ms', 1): 'Suites numériques',
     ('terminale', 1): 'Suites et récurrence',
     ('terminale', 2): 'Limites de suites',
     ('terminale', 3): 'Limites de fonctions',

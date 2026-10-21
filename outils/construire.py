@@ -67,6 +67,7 @@ CHAPITRES = {
     ('premiere', 4): 'Dérivation locale',
     ('terminale', 1): 'Suites et récurrence',
     ('terminale', 2): 'Limites de suites',
+    ('terminale', 3): 'Limites de fonctions',
 }
 
 

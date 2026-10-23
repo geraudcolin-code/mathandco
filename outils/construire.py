@@ -68,6 +68,7 @@ CHAPITRES = {
     ('premiere', 3): 'Probabilités conditionnelles et indépendance',
     ('premiere', 4): 'Dérivation locale',
     ('premiere', 5): 'Dérivation globale',
+    ('premiere', 6): 'Suites arithmétiques et géométriques',
     ('premiere-ms', 1): 'Suites numériques',
     ('terminale', 1): 'Suites et récurrence',
     ('terminale', 2): 'Limites de suites',

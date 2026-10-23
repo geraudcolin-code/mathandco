@@ -263,6 +263,46 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .fiche.speciale { background: var(--bleu-fond); }
 .fiche.speciale .num { font-size: 1.35rem; letter-spacing: -.02em; color: var(--bleu); }
 .vide { padding: 60px 0; text-align: center; color: var(--gris); }
+/* rangement par chapitre : un bloc par chapitre, ouvert d'un clic (23 oct.) */
+.ch-tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 16px; margin-top: 22px; }
+.ch-tuile { position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 168px; padding: 22px 22px 20px; border: 0; border-radius: 22px;
+  background: var(--fond-2); color: var(--encre); text-align: left; font: inherit; cursor: pointer; overflow: hidden; min-width: 0;
+  transition: transform .45s var(--courbe), box-shadow .45s var(--courbe), background-color .3s; }
+.ch-tuile:hover { transform: translateY(-4px); box-shadow: var(--ombre); background: var(--papier); }
+.ch-tuile:active { transform: scale(.985); }
+.ch-tuile-n { font-size: var(--t-petit); color: var(--gris); font-variant-numeric: tabular-nums; }
+.ch-tuile-titre { font-size: 1.3rem; font-weight: 700; letter-spacing: -.025em; line-height: 1.18; }
+.ch-tuile-pied { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 14px; font-size: var(--t-petit); }
+.ch-tuile-compte { color: var(--bleu); font-weight: 500; }
+.ch-tuile-fleche { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; flex: none;
+  background: var(--bleu-fond); color: var(--bleu); font-size: 1.25rem; line-height: 1; transition: transform .45s var(--courbe); }
+.ch-tuile:hover .ch-tuile-fleche { transform: translateX(3px); }
+.ch-tuile-barre { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: transparent; }
+.ch-tuile-barre span { display: block; height: 100%; background: var(--bleu); opacity: .55; border-radius: 0 3px 3px 0; }
+.ch-tuile.vide-tuile .ch-tuile-titre, .ch-tuile.vide-tuile .ch-tuile-compte { color: var(--gris); }
+.ch-tuile.vide-tuile .ch-tuile-fleche { background: var(--filet); color: var(--gris); }
+.ch-retour { display: inline-flex; align-items: center; gap: 6px; margin: 26px 0 4px; padding: 8px 14px 8px 10px; border: 0; border-radius: 999px;
+  background: var(--fond-2); color: var(--bleu); font: 500 var(--t-petit) var(--f-texte); cursor: pointer; transition: background-color .25s; }
+.ch-retour span { font-size: 1.3rem; line-height: .7; }
+.ch-retour:hover { background: var(--bleu-fond); }
+.mode-chapitre .chapitre { margin-top: 0; }
+.mode-chapitre .chapitre-tete h3 { font-size: clamp(1.6rem, 3.6vw, 2.2rem); letter-spacing: -.03em; }
+.mode-chapitre .classe-bloc { padding-top: 8px; }
+.mode-blocs .ch-tuile, .mode-chapitre .fiche { animation: monte .55s var(--courbe) both; }
+.mode-blocs .ch-tuile:nth-child(2), .mode-chapitre .fiche:nth-child(2) { animation-delay: .03s; }
+.mode-blocs .ch-tuile:nth-child(3), .mode-chapitre .fiche:nth-child(3) { animation-delay: .06s; }
+.mode-blocs .ch-tuile:nth-child(4), .mode-chapitre .fiche:nth-child(4) { animation-delay: .09s; }
+.mode-blocs .ch-tuile:nth-child(n+5), .mode-chapitre .fiche:nth-child(n+5) { animation-delay: .12s; }
+@keyframes monte { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (max-width: 720px) {
+  .ch-tuiles { gap: 10px; margin-top: 16px; }
+  .ch-tuile { min-height: 0; padding: 16px 18px 15px; border-radius: 18px; gap: 4px; }
+  .ch-tuile-titre { font-size: 1.12rem; }
+  .ch-tuile-pied { padding-top: 8px; }
+  .classe-bloc { padding-block: 30px 4px; }
+}
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .32s; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+
 .deconnexion { font: inherit; font-size: var(--t-petit); color: var(--bleu); background: none; border: 0; cursor: pointer; padding: 6px 0; }
 
 @media (max-width: 720px) {

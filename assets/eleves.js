@@ -125,13 +125,82 @@
     return f;
   }
 
+  // ---------- rangement : un bloc par chapitre ; un clic sur le bloc affiche ses corrections ----------
+  // adresse : #seconde (une classe), #seconde/3 (le chapitre 3 de Seconde ouvert) — le bouton Retour du navigateur
+  // ramène aux blocs, et revenir d'une correction rouvre le même chapitre.
+  var ouvert = null;          // clé « classe/numéro » du chapitre ouvert, ou null
+  var pousse = false;         // le chapitre ouvert a ajouté une entrée à l'historique (le bouton « ‹ » fait alors Retour)
+  function cle(c, ch) { return c.id + '/' + ch.numero; }
+  function lireAdresse() {
+    var h = decodeURIComponent((location.hash || '').slice(1)), p = h.split('/');
+    var c = DONNEES && DONNEES.classes.filter(function (x) { return x.id === p[0]; })[0];
+    if (!c) { filtre = 'toutes'; ouvert = null; return; }
+    var ch = p[1] && c.chapitres.filter(function (x) { return String(x.numero) === String(+p[1]) || String(x.numero) === p[1]; })[0];
+    filtre = c.id;
+    ouvert = ch ? cle(c, ch) : null;
+  }
+  function ecrireAdresse(h, nouvelle) {
+    try {
+      var url = h ? '#' + h : location.pathname + location.search;
+      if (nouvelle) history.pushState(null, '', url); else history.replaceState(null, '', url);
+    } catch (e) {}
+  }
+  function transition(fn) {
+    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (document.startViewTransition && !calme) document.startViewTransition(fn); else fn();
+  }
+  function ouvrirChapitre(k, depuisClic) {
+    transition(function () {
+      ouvert = k; ecrireAdresse(k, depuisClic); pousse = !!depuisClic; appliquer();
+      var l = $('liste'); var y = l.getBoundingClientRect().top + window.scrollY - 70;
+      if (window.scrollY > y) window.scrollTo(0, y);
+    });
+  }
+  function fermerChapitre() {
+    transition(function () {
+      var c = ouvert ? ouvert.split('/')[0] : null;
+      ouvert = null; pousse = false; ecrireAdresse(filtre !== 'toutes' ? filtre : (c || ''), false); appliquer();
+    });
+  }
+
+  function tuile(c, ch) {
+    var total = ch.items.length, dispo = ch.items.filter(ouverte).length;
+    var b = el('button', 'ch-tuile'); b.type = 'button'; b.dataset.cle = cle(c, ch);
+    if (!ADMIN && dispo === 0) b.classList.add('vide-tuile');
+    b.appendChild(el('span', 'ch-tuile-n', 'Chapitre ' + ch.numero));
+    b.appendChild(el('span', 'ch-tuile-titre', ch.titre || ('Chapitre ' + ch.numero)));
+    var pied = el('span', 'ch-tuile-pied');
+    var lib = ADMIN ? dispo + ' ouverte' + (dispo > 1 ? 's' : '') + ' sur ' + total
+      : dispo === 0 ? 'Bientôt disponible'
+        : dispo === total ? total + ' correction' + (total > 1 ? 's' : '')
+          : dispo + ' disponible' + (dispo > 1 ? 's' : '') + ' sur ' + total;
+    pied.appendChild(el('span', 'ch-tuile-compte', lib));
+    pied.appendChild(el('span', 'ch-tuile-fleche', '›'));
+    b.appendChild(pied);
+    var barre = el('span', 'ch-tuile-barre'), plein = el('span');
+    plein.style.width = (total ? Math.round(100 * dispo / total) : 0) + '%';
+    barre.appendChild(plein); b.appendChild(barre);
+    b.setAttribute('aria-label', 'Chapitre ' + ch.numero + ' : ' + (ch.titre || '') + ' — ' + lib);
+    b.addEventListener('click', function () { ouvrirChapitre(cle(c, ch), true); });
+    return b;
+  }
+
   function construire() {
     var liste = $('liste'); liste.innerHTML = '';
     DONNEES.classes.forEach(function (c) {
       var bloc = el('section', 'classe-bloc'); bloc.id = 'classe-' + c.id; bloc.dataset.classe = c.id;
       bloc.appendChild(el('h2', null, c.nom));
+      var tuiles = el('div', 'ch-tuiles');
+      c.chapitres.forEach(function (ch) { tuiles.appendChild(tuile(c, ch)); });
+      bloc.appendChild(tuiles);
       c.chapitres.forEach(function (ch) {
-        var s = el('div', 'chapitre');
+        var s = el('div', 'chapitre'); s.dataset.cle = cle(c, ch);
+        var retour = el('button', 'ch-retour'); retour.type = 'button';
+        retour.innerHTML = '<span aria-hidden="true">‹</span> ' + c.nom;
+        retour.addEventListener('click', function () {
+          if (pousse) { pousse = false; history.back(); } else fermerChapitre();
+        });
+        s.appendChild(retour);
         var t = el('div', 'chapitre-tete');
         t.appendChild(el('span', 'n', 'Chapitre ' + ch.numero));
         t.appendChild(el('h3', null, ch.titre));
@@ -149,7 +218,12 @@
     [{ id: 'toutes', nom: 'Toutes' }].concat(DONNEES.classes.map(function (c) { return { id: c.id, nom: c.nom }; }))
       .forEach(function (o) {
         var b = el('button', null, o.nom); b.type = 'button'; b.dataset.id = o.id;
-        b.addEventListener('click', function () { filtre = o.id; try { history.replaceState(null, '', o.id === 'toutes' ? location.pathname : '#' + o.id); } catch (e) {} appliquer(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        b.addEventListener('click', function () {
+          transition(function () {
+            filtre = o.id; ouvert = null; ecrireAdresse(o.id === 'toutes' ? '' : o.id, false); appliquer();
+          });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
         seg.appendChild(b);
       });
     var tous = [];
@@ -159,7 +233,7 @@
       ? 'Impossible de vérifier quelles corrections sont ouvertes : rechargez la page dans un instant.'
       : ADMIN
         ? 'Vue du professeur : ' + dispo + ' corrections ouvertes aux élèves sur ' + tous.length + '. Les corrections fermées portent la mention « Fermée aux élèves ».'
-        : dispo + ' corrections disponibles. Les autres s\'ouvrent après leur correction en classe.';
+        : dispo + ' corrections disponibles. Choisissez un chapitre ; les autres corrections s\'ouvrent après leur correction en classe.';
     if (PROF && !document.getElementById('vue-prof')) {
       var bv = el('button', 'bouton petit secondaire'); bv.id = 'vue-prof'; bv.type = 'button';
       bv.textContent = ADMIN ? 'Voir comme un élève' : 'Revenir à la vue du professeur';
@@ -170,33 +244,41 @@
       $('resume').parentNode.appendChild(bv);
       if (!ADMIN) $('resume').textContent = 'Vue élève (vous êtes professeur) : ' + $('resume').textContent;
     }
-    var h = (location.hash || '').slice(1);
-    if (DONNEES.classes.some(function (c) { return c.id === h; })) filtre = h;
+    lireAdresse();
     appliquer();
   }
 
   function appliquer() {
     Array.prototype.forEach.call($('segments').children, function (b) { b.setAttribute('aria-pressed', b.dataset.id === filtre ? 'true' : 'false'); });
-    var q = norm(texteRecherche).trim().split(/\s+/).filter(Boolean), visibles = 0;
+    var q = norm(texteRecherche).trim().split(/\s+/).filter(Boolean), visibles = 0, cherche = q.length > 0;
+    var liste = $('liste');
+    liste.classList.toggle('mode-blocs', !cherche && !ouvert);
+    liste.classList.toggle('mode-chapitre', !cherche && !!ouvert);
+    liste.classList.toggle('mode-recherche', cherche);
     Array.prototype.forEach.call(document.querySelectorAll('.classe-bloc'), function (bloc) {
       var okClasse = filtre === 'toutes' || bloc.dataset.classe === filtre, nb = 0;
+      if (!cherche && ouvert) okClasse = ouvert.split('/')[0] === bloc.dataset.classe;
+      bloc.querySelector('.ch-tuiles').hidden = cherche || !!ouvert;
       Array.prototype.forEach.call(bloc.querySelectorAll('.chapitre'), function (ch) {
         var n = 0;
+        var montre = cherche || ch.dataset.cle === ouvert;
         Array.prototype.forEach.call(ch.querySelectorAll('.fiche'), function (f) {
-          var ok = okClasse && q.every(function (m) { return f.dataset.cherche.indexOf(m) >= 0; });
+          var ok = okClasse && montre && q.every(function (m) { return f.dataset.cherche.indexOf(m) >= 0; });
           f.hidden = !ok; if (ok) n++;
         });
         ch.hidden = n === 0; nb += n;
+        ch.querySelector('.ch-retour').hidden = cherche;
       });
+      if (!cherche && !ouvert) nb = okClasse ? bloc.querySelectorAll('.ch-tuile').length : 0;
       bloc.hidden = nb === 0; visibles += nb;
+      bloc.querySelector('h2').hidden = !cherche && !!ouvert;
     });
-    document.querySelector('.vide').hidden = visibles > 0;
+    document.querySelector('.vide').hidden = visibles > 0 || (!cherche && !ouvert);
   }
   $('recherche').addEventListener('input', function (e) { texteRecherche = e.target.value; appliquer(); });
-  window.addEventListener('hashchange', function () {
-    var h = (location.hash || '').slice(1);
-    if (DONNEES && DONNEES.classes.some(function (c) { return c.id === h; })) { filtre = h; appliquer(); }
-  });
+  function suivreAdresse() { if (!DONNEES) return; pousse = false; transition(function () { lireAdresse(); appliquer(); }); }
+  window.addEventListener('hashchange', suivreAdresse);
+  window.addEventListener('popstate', suivreAdresse);
 
   function ouvrir(d) {
     DONNEES = d;

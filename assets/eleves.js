@@ -170,9 +170,9 @@
     b.appendChild(el('span', 'ch-tuile-n', 'Chapitre ' + ch.numero));
     b.appendChild(el('span', 'ch-tuile-titre', ch.titre || ('Chapitre ' + ch.numero)));
     var pied = el('span', 'ch-tuile-pied');
-    var lib = ADMIN ? dispo + ' ouverte' + (dispo > 1 ? 's' : '') + ' sur ' + total
+    var lib = ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + total
       : dispo === 0 ? 'Bientôt disponible'
-        : dispo === total ? total + ' correction' + (total > 1 ? 's' : '')
+        : dispo === total ? total + ' fichier' + (total > 1 ? 's' : '')
           : dispo + ' disponible' + (dispo > 1 ? 's' : '') + ' sur ' + total;
     pied.appendChild(el('span', 'ch-tuile-compte', lib));
     pied.appendChild(el('span', 'ch-tuile-fleche', '›'));

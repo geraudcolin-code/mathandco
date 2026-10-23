@@ -233,7 +233,7 @@
       ? 'Impossible de vérifier quelles corrections sont ouvertes : rechargez la page dans un instant.'
       : ADMIN
         ? 'Vue du professeur : ' + dispo + ' corrections ouvertes aux élèves sur ' + tous.length + '. Les corrections fermées portent la mention « Fermée aux élèves ».'
-        : dispo + ' corrections disponibles. Choisissez un chapitre ; les autres corrections s\'ouvrent après leur correction en classe.';
+        : dispo + ' éléments disponibles. Choisissez un chapitre ; les autres s\'ouvrent après leur correction en classe.';
     if (PROF && !document.getElementById('vue-prof')) {
       var bv = el('button', 'bouton petit secondaire'); bv.id = 'vue-prof'; bv.type = 'button';
       bv.textContent = ADMIN ? 'Voir comme un élève' : 'Revenir à la vue du professeur';

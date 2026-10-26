@@ -23,9 +23,21 @@ main{flex:1;min-height:0;padding:12px 14px 0}
   background:#DFE9F4}
 #toile{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
 #toile.prise{cursor:grabbing}
-#hud{position:absolute;left:14px;top:14px;width:min(430px,46vw);background:rgba(255,255,255,.94);
-  border:1px solid var(--trait);border-radius:11px;padding:11px 14px;backdrop-filter:blur(3px)}
-#hud h2{margin:0 0 7px;font-size:16px}
+#hud{position:absolute;left:14px;top:14px;width:min(468px,47vw);max-height:calc(100% - 92px);overflow:auto;
+  background:rgba(255,255,255,.95);border:1px solid var(--trait);border-radius:11px;padding:11px 14px;
+  backdrop-filter:blur(3px)}
+#hud h2{margin:0;font-size:17px}
+#recit .rt{display:flex;flex-direction:column;gap:1px;margin-bottom:5px}
+#recit #rNum{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--gris);font-weight:700}
+#recit p{margin:0 0 9px;font-size:14.5px;line-height:1.5;color:#2A3650}
+#recit .rn{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+#recit .rn button{font:inherit;font-size:14px;padding:5px 11px;border:1.5px solid var(--trait);
+  border-radius:8px;background:var(--papier);color:var(--encre);cursor:pointer}
+#recit .rn button:hover:not(:disabled){border-color:#9DB2CB}
+#recit .rn button:disabled{opacity:.4;cursor:default}
+#recit .rn #rSuiv{background:var(--encre);color:#fff;border-color:var(--encre);font-weight:700}
+#recit .rn #rSuiv:disabled{background:var(--papier);color:var(--encre);border-color:var(--trait)}
+#hCorps{border-top:1px solid var(--trait);padding-top:8px}
 #hud .l{font-size:15px;line-height:1.45;margin-top:3px}
 #hud .l.rg{color:var(--rouge)}
 #hud .l.vt{color:var(--vert);margin-top:7px}
@@ -62,7 +74,7 @@ main{flex:1;min-height:0;padding:12px 14px 0}
 footer{flex:0 0 auto;padding:2px 18px 7px;font-size:11px;color:var(--gris);text-align:right}
 @media (max-width:980px){
   header h1{font-size:18px} header .st{display:none}
-  #actes{margin-left:0} #hud{width:min(330px,62vw);font-size:13px}
+  #actes{margin-left:0} #hud{width:min(360px,64vw);font-size:13px}
   .barre input[type=range]{width:130px}
 }
 </style><style>
@@ -89,7 +101,7 @@ footer{flex:0 0 auto;padding:2px 18px 7px;font-size:11px;color:var(--gris);text-
 <button id="ouvrir" type="submit">Ouvrir la correction</button><div id="msg" role="alert"></div>
 <div class="signature">Par M.COLIN</div></form></div>
 <script>
-const P = {s:'Ae2OHRd2CgNPIqsmaaNnmw==', i:'KRGO8nam0PymCJUX', n:600000, c:'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'};
+const P = {s:'dkQ3Wp0mLZd4cR/YmAPeMw==', i:'0EK4qVr9JTd1pYBV', n:600000, c:'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'};
 function demarrer(DATA){
 (function(){/**
  * @license
@@ -364,16 +376,17 @@ R.compteur = (function compteur(){
 })();
 
 /* -------------------------------------------------- le tableau de verre : le graphique d(t) */
+R.tableau = new T.Group(); R.monde.add(R.tableau);
 (function tableau(){
   const LX = R.MKT * R.T1, LY = R.MKD * 120;
   const vitre = new T.Mesh(new T.BoxGeometry(LX + 9, LY + 8, .35),
     new T.MeshStandardMaterial({color: 0xF4F8FC, transparent: true, opacity: .8, roughness: .2}));
   vitre.position.set(R.MX0 + LX / 2 + .4, (LY + 8) / 2 - 2.8, R.ZM - .4);
-  R.monde.add(vitre);
+  R.tableau.add(vitre);
   for (const s of [-1, 1]){                                        // les deux montants
     const p = new T.Mesh(new T.CylinderGeometry(.34, .4, LY + 9, 12), mat(0x8C8375));
     p.position.set(R.MX0 + LX / 2 + .4 + s * (LX / 2 + 4.6), (LY + 9) / 2 - 2.8, R.ZM - .5);
-    p.castShadow = true; R.monde.add(p);
+    p.castShadow = true; R.tableau.add(p);
   }
   const pts = [], seg = [];
   for (let k = 0; k <= 10; k++){                                   // quadrillage : 1 s et 20 m
@@ -384,22 +397,22 @@ R.compteur = (function compteur(){
     seg.push(R.MX0, R.MKD * m, R.ZM + .02, R.MX0 + R.MKT * R.T1, R.MKD * m, R.ZM + .02);
   const gq = new T.BufferGeometry();
   gq.setAttribute('position', new T.Float32BufferAttribute(seg, 3));
-  R.monde.add(new T.LineSegments(gq, new T.LineBasicMaterial({color: 0x9FB6CE, transparent: true, opacity: .85})));
-  R.monde.add(barre(new T.Vector3(R.MX0, 0, R.ZM), new T.Vector3(R.MX0 + R.MKT * R.T1 + 2.4, 0, R.ZM), .11, CO.encre));
-  R.monde.add(barre(new T.Vector3(R.MX0, 0, R.ZM), new T.Vector3(R.MX0, R.MKD * 120 + 2.4, R.ZM), .11, CO.encre));
+  R.tableau.add(new T.LineSegments(gq, new T.LineBasicMaterial({color: 0x9FB6CE, transparent: true, opacity: .85})));
+  R.tableau.add(barre(new T.Vector3(R.MX0, 0, R.ZM), new T.Vector3(R.MX0 + R.MKT * R.T1 + 2.4, 0, R.ZM), .11, CO.encre));
+  R.tableau.add(barre(new T.Vector3(R.MX0, 0, R.ZM), new T.Vector3(R.MX0, R.MKD * 120 + 2.4, R.ZM), .11, CO.encre));
   for (let k = 0; k <= 10; k += 2){
     const e = etiquette(k + ' s', {px: 42, h: 1.6, col: '#52607A', fond: null});
-    e.sprite.position.set(R.MX0 + R.MKT * k, -1.7, R.ZM); R.monde.add(e.sprite);
+    e.sprite.position.set(R.MX0 + R.MKT * k, -1.7, R.ZM); R.tableau.add(e.sprite);
   }
   for (let m = 20; m <= 100; m += 20){
     const e = etiquette(m + ' m', {px: 42, h: 1.6, col: '#52607A', fond: null});
-    e.sprite.position.set(R.MX0 - 3.4, R.MKD * m, R.ZM); R.monde.add(e.sprite);
+    e.sprite.position.set(R.MX0 - 3.4, R.MKD * m, R.ZM); R.tableau.add(e.sprite);
   }
   const ti = etiquette('la distance parcourue, seconde par seconde', {px: 48, h: 2.2, col: '#1F5FAF'});
-  ti.sprite.position.set(R.MX0 + R.MKT * 5, R.MKD * 120 + 4.4, R.ZM); R.monde.add(ti.sprite);
+  ti.sprite.position.set(R.MX0 + R.MKT * 5, R.MKD * 120 + 4.4, R.ZM); R.tableau.add(ti.sprite);
   const pc = [];
   for (let k = 0; k <= 160; k++) pc.push(R.pt(R.T1 * k / 160));
-  R.monde.add(tube(pc, .22, CO.bleu));
+  R.tableau.add(tube(pc, .22, CO.bleu));
 })();
 
 /* -------------------------------------------------- ce qui bouge : M, H, la corde, la tangente */
@@ -411,15 +424,20 @@ R.eH = etiquette('H', {px: 52, h: 2.0, col: '#D62828'}); R.mobile.add(R.eH.sprit
 R.eDt = etiquette('h', {px: 46, h: 1.8, col: '#E2702A'}); R.mobile.add(R.eDt.sprite);
 R.eDd = etiquette('Δd', {px: 46, h: 1.8, col: '#E2702A'}); R.mobile.add(R.eDd.sprite);
 R.eDist = etiquette('d = 0 m', {px: 48, h: 2.0, col: '#1F5FAF'}); R.mobile.add(R.eDist.sprite);
+R.eCorde = etiquette('la corde (MH) : la vitesse moyenne', {px: 42, h: 1.35, col: '#D62828'});
+R.eTan = etiquette('la tangente en M : la vitesse instantanée', {px: 42, h: 1.35, col: '#2E7D32'});
+R.mobile.add(R.eCorde.sprite, R.eTan.sprite);
 R.jetable = new T.Group(); R.mobile.add(R.jetable);
 
 function vider(g){ for (const o of [...g.children]){ g.remove(o);
   o.traverse && o.traverse(x => { x.geometry && x.geometry.dispose(); }); } }
 
-R.etat = {t: 2.2, h: 3, lecture: false, tangente: true, triangle: true, corde: true};
+R.etat = {t: 2.2, h: 3, lecture: false, tangente: true, triangle: true, corde: true,
+          tableau: true, mobile: true};
 
 R.dessiner = function(){
   const e = R.etat;
+  R.tableau.visible = e.tableau; R.mobile.visible = e.mobile;
   const t1 = e.t, t2 = Math.min(R.T1, Math.max(0, t1 + e.h));
   const d1 = R.d(t1), d2 = R.d(t2);
   const M = R.pt(t1, d1, .55), H = R.pt(t2, d2, .55);   /* devant la courbe, pour rester lisibles */
@@ -434,7 +452,7 @@ R.dessiner = function(){
   R.jetable.add(tirets(new T.Vector3(R.MX0, M.y, M.z), M, .08, 0x8294AB, .9));
   R.jetable.add(tirets(new T.Vector3(M.x, 0, M.z), M, .08, 0x8294AB, .9));
   R.eDist.ecrire('d(' + nb(t1, 2) + ') = ' + nb(d1, 1) + ' m');
-  R.eDist.sprite.position.set(R.MX0 - 9.6, M.y + 1.5, R.ZM);
+  R.eDist.sprite.position.copy(M).add(new T.Vector3(e.h > 0 ? -7.2 : 7.2, 3.6, .4));
 
   const pente = (d2 - d1) / (t2 - t1);                 /* vitesse moyenne, en m/s */
   if (e.corde && Math.abs(t2 - t1) > 1e-9){
@@ -442,6 +460,9 @@ R.dessiner = function(){
     R.jetable.add(barre(M.clone().addScaledVector(u, -9), H.clone().addScaledVector(u, 9), .1,
                         CO.rouge, {transparent: true, opacity: .5}));
     R.jetable.add(barre(M, H, .2, CO.rouge));
+    R.eCorde.sprite.visible = true;
+    R.eCorde.sprite.position.copy(M).add(H).multiplyScalar(.5)
+      .add(new T.Vector3(-7.5, 3.0, .4));
     if (e.triangle && Math.abs(H.x - M.x) > .9){       /* triangle de pente, EN TIRETS (charte) */
       const K = new T.Vector3(H.x, M.y, M.z);
       R.jetable.add(tirets(M, K, .09, CO.orange, .85));
@@ -452,13 +473,15 @@ R.dessiner = function(){
       R.eDd.sprite.position.copy(K).add(H).multiplyScalar(.5).add(new T.Vector3(3.0, 0, 0));
       R.eDt.sprite.visible = R.eDd.sprite.visible = true;
     } else R.eDt.sprite.visible = R.eDd.sprite.visible = false;
-  } else R.eDt.sprite.visible = R.eDd.sprite.visible = false;
+  } else { R.eDt.sprite.visible = R.eDd.sprite.visible = false; R.eCorde.sprite.visible = false; }
 
   if (e.tangente){                                      /* la tangente : pente = d′(t1) = la vitesse */
     const m = R.v(t1) * R.MKD / R.MKT;                  /* pente dans les unités du tableau */
     const u = new T.Vector3(1, m, 0).normalize();
     R.jetable.add(barre(M.clone().addScaledVector(u, -13), M.clone().addScaledVector(u, 13), .2, CO.vert));
-  }
+    R.eTan.sprite.visible = true;
+    R.eTan.sprite.position.copy(M).addScaledVector(u, 11).add(new T.Vector3(0, 1.8, .4));
+  } else R.eTan.sprite.visible = false;
 
   /* la voiture, la distance parcourue sur la route, le compteur */
   const zc = R.zRoute(d1);
@@ -481,14 +504,15 @@ const K = {};
 K.X0 = -17; K.X1 = 17; K.Z0 = -9; K.Z1 = 9; K.ZP = 9.15;   // ZP : le plan de travail, devant la tranche
 K.profils = {
   colline: {nom: 'colline',
-    f: x => 7 * Math.exp(-(x + 4) * (x + 4) / 22) + 4.6 * Math.exp(-(x - 6) * (x - 6) / 30) + 2.2,
-    d: x => 7 * (-2 * (x + 4) / 22) * Math.exp(-(x + 4) * (x + 4) / 22)
-          + 4.6 * (-2 * (x - 6) / 30) * Math.exp(-(x - 6) * (x - 6) / 30)},
+    f: x => 7 * Math.exp(-(x - 4) * (x - 4) / 22) + 4.6 * Math.exp(-(x + 6) * (x + 6) / 30) + 2.2,
+    d: x => 7 * (-2 * (x - 4) / 22) * Math.exp(-(x - 4) * (x - 4) / 22)
+          + 4.6 * (-2 * (x + 6) / 30) * Math.exp(-(x + 6) * (x + 6) / 30)},
   toit: {nom: 'toit',
     f: x => 10.4 - .62 * Math.abs(x),
     d: x => x === 0 ? NaN : (x > 0 ? -.62 : .62)}
 };
-K.etat = {profil: 'colline', a: -8, h: 6, planche: true, rampe: true, panneau: true, zoom: false};
+K.etat = {profil: 'colline', a: 0, h: 6, planche: true, rampe: true, panneau: true, zoom: false,
+          marcheur: true};
 K.F = () => K.profils[K.etat.profil];
 K.pt = (x, p, dz) => new T.Vector3(x, (p || K.F()).f(x), K.ZP + (dz || 0));
 
@@ -597,6 +621,10 @@ K.eA = etiquette('A', {px: 48, h: 1.5, col: '#17233A'}); K.mobile.add(K.eA.sprit
 K.eB = etiquette('B', {px: 48, h: 1.5, col: '#D62828'}); K.mobile.add(K.eB.sprite);
 K.eDx = etiquette('h', {px: 42, h: 1.3, col: '#E2702A'}); K.mobile.add(K.eDx.sprite);
 K.eDy = etiquette('Δy', {px: 42, h: 1.3, col: '#E2702A'}); K.mobile.add(K.eDy.sprite);
+K.eRampe = etiquette('la rampe = la sécante (AB)', {px: 40, h: 1.0, col: '#D62828'});
+K.ePlanche = etiquette('la planche = la tangente en A', {px: 40, h: 1.0, col: '#2E7D32'});
+K.eCourbe = etiquette('la tranche du relief = la courbe de f', {px: 42, h: 1.05, col: '#1F5FAF'});
+K.mobile.add(K.eRampe.sprite, K.ePlanche.sprite, K.eCourbe.sprite);
 K.jetable = new T.Group(); K.mobile.add(K.jetable);
 
 K.changerProfil = function(nom){
@@ -624,7 +652,7 @@ K.dessiner = function(){
   K.eB.sprite.position.copy(B).add(new T.Vector3(1.3, 1.5, .4));
 
   K.marcheur.position.set(a, P.f(a), K.ZP - 3.4);
-  K.marcheur.visible = !e.zoom; K.arbres.visible = !e.zoom;   /* au zoom, on ne garde que la courbe */
+  K.marcheur.visible = !e.zoom && e.marcheur; K.arbres.visible = !e.zoom;   /* au zoom, on ne garde que la courbe */
   const dec = !isFinite(P.d(a)) ? -9 : (P.d(a) > 0 ? 4.6 : -4.6);
   const xp = Math.max(K.X0 + 1, Math.min(K.X1 - 1, a + dec));
   K.panneau.position.set(xp, P.f(xp), K.ZP - 1.2);
@@ -652,7 +680,9 @@ K.dessiner = function(){
     K.jetable.add(pl);
     K.jetable.add(barre(A.clone().addScaledVector(u, -L / 2), A.clone().addScaledVector(u, L / 2),
                         .1, CO.vert));
-  }
+    K.ePlanche.sprite.visible = !e.zoom;
+    K.ePlanche.sprite.position.copy(A).addScaledVector(u, L / 2).add(new T.Vector3(1.2, 1.4, 1.2));
+  } else K.ePlanche.sprite.visible = false;
   if (e.rampe && !e.zoom && Math.abs(b - a) > 1e-9){   /* la rampe : la sécante (AB) */
     const u = new T.Vector3().subVectors(B, A).normalize(), L = A.distanceTo(B);
     const rp = new T.Mesh(new T.BoxGeometry(L, .18, 1.5), mat(0xB03030, {roughness: .55}));
@@ -661,6 +691,8 @@ K.dessiner = function(){
     rp.castShadow = true;
     K.jetable.add(rp);
     K.jetable.add(barre(A.clone().addScaledVector(u, -2), B.clone().addScaledVector(u, 2), .12, CO.rouge));
+    K.eRampe.sprite.visible = true;
+    K.eRampe.sprite.position.copy(A).add(B).multiplyScalar(.5).add(new T.Vector3(.5, -2.4, 1.4));
     if (Math.abs(b - a) > .8){                   /* triangle de pente, EN TIRETS */
       const C = new T.Vector3(B.x, A.y, A.z);
       K.jetable.add(tirets(A, C, .08, CO.orange, .7));
@@ -671,7 +703,10 @@ K.dessiner = function(){
       K.eDy.sprite.position.copy(C).add(B).multiplyScalar(.5).add(new T.Vector3(2.2, 0, 0));
       K.eDx.sprite.visible = K.eDy.sprite.visible = !e.zoom;
     } else K.eDx.sprite.visible = K.eDy.sprite.visible = false;
-  } else K.eDx.sprite.visible = K.eDy.sprite.visible = false;
+  } else { K.eDx.sprite.visible = K.eDy.sprite.visible = false; K.eRampe.sprite.visible = false; }
+
+  K.eCourbe.sprite.visible = !e.zoom;
+  K.eCourbe.sprite.position.set(Math.min(12, K.X1 - 5), P.f(Math.min(12, K.X1 - 5)) + 2.6, K.ZP + .6);
 
   return {a, b, m, taux: (P.f(b) - P.f(a)) / (b - a)};
 };
@@ -683,7 +718,7 @@ K.dessiner = function(){
 let acte = 'route';
 const CADRE = {
   route:   {cible: new T.Vector3(-4, 10, 1), rayon: 101, theta: .52, phi: .97},
-  colline: {cible: new T.Vector3(0, 5.5, 2), rayon: 43, theta: .30, phi: 1.04}
+  colline: {cible: new T.Vector3(3.5, 5.5, 2), rayon: 45, theta: .30, phi: 1.04}
 };
 function recadrer(doux){ const c = CADRE[acte]; cadrer(c.cible, c.rayon, c.theta, c.phi, doux || 0); }
 
@@ -704,7 +739,6 @@ function lecture(){
   if (acte === 'route'){
     const r = R.dessiner(), e = R.etat;
     const vm = r.pente, vi = r.v;
-    $('hTitre').textContent = 'La distance et la vitesse';
     $('hCorps').innerHTML =
       '<div class="l"><span>à l’instant t = </span><b>' + nb(r.t1, 2) + ' s</b>'
       + '<span>, la voiture a parcouru </span><b>' + nb(r.d1, 1) + ' m</b></div>'
@@ -720,7 +754,6 @@ function lecture(){
     $('rst').value = R.etat.t; $('rsh').value = Math.abs(R.etat.h);
   } else {
     const r = K.dessiner(), e = K.etat;
-    $('hTitre').textContent = e.profil === 'toit' ? 'Le toit : pas de pente au sommet' : 'La pente sous les pieds';
     $('hCorps').innerHTML =
       '<div class="l"><span>le marcheur est en </span><b>a = ' + nb(r.a, 1) + '</b></div>'
       + (e.rampe ? '<div class="l rg"><span>pente de la <b>rampe</b> (la sécante) :</span></div>'
@@ -753,7 +786,8 @@ function allerA(nom){
     ? 'Glissez la souris pour tourner autour, la molette rapproche. Lancez la voiture, puis resserrez h : la corde rouge se couche sur la tangente verte, et l’aiguille noire rejoint la rouge.'
     : 'La tranche du relief est la courbe de f. Déplacez le marcheur, puis resserrez h : la rampe rouge se couche sur la planche verte, dont la pente est le nombre dérivé.';
   K.etat.zoom = false; $('kbZoom').classList.remove('on');
-  recadrer(0); lecture();
+  recadrer(0);
+  if (typeof jouerPas === 'function') jouerPas(0); else lecture();
 }
 for (const b of document.querySelectorAll('#actes button')) b.onclick = () => allerA(b.dataset.a);
 
@@ -791,7 +825,7 @@ $('kbToit').onclick = () => {
   K.changerProfil(t ? 'toit' : 'colline');
   $('kbToit').textContent = t ? 'Revenir à la colline' : 'Et si c’était un toit ?';
   $('kbToit').classList.toggle('on', t);
-  K.etat.a = t ? 0 : -8; K.etat.h = Math.sign(K.etat.h || 1) * (t ? 3 : 6); lecture();
+  K.etat.a = 0; K.etat.h = Math.sign(K.etat.h || 1) * (t ? 3 : 6); lecture();
 };
 $('kbZoom').onclick = () => {
   K.etat.zoom = !K.etat.zoom;
@@ -830,8 +864,131 @@ function redimensionner(){
 addEventListener('resize', redimensionner);
 
 (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => {
-  redimensionner(); allerA('route'); majLect(); requestAnimationFrame(boucle);
+  redimensionner(); majLect(); allerA('route'); requestAnimationFrame(boucle);
 });
+
+
+/* ====================================================================================================
+   LE RÉCIT GUIDÉ — ce qu'on voit, et ce que ça veut dire, une étape à la fois.
+   Chaque étape pose la scène (positions, ce qu'on affiche, cadrage) puis explique. À tout moment on peut
+   reprendre la main : la première commande touchée fait passer en « mode libre ».
+   ==================================================================================================== */
+const RECITS = {
+route: [
+ {t: 'Le trajet',
+  x: 'Une voiture part à l’arrêt, accélère, ralentit, puis s’arrête : 111 mètres en 10 secondes. Les bornes au bord de la route disent la distance parcourue. Mais à quelle vitesse roule-t-elle à un instant précis — disons à 2 secondes ? C’est toute la question du chapitre.',
+  f: () => { Object.assign(R.etat, {t: 0, h: 3, lecture: false, tableau: false, mobile: false}); }},
+ {t: 'Le graphique de la distance',
+  x: 'Pour chaque instant t, on reporte sur le tableau de verre la distance d(t) déjà parcourue. Tous ces points mis bout à bout forment la courbe bleue : c’est le graphique de la fonction d, qui à un temps associe une distance. En abscisse les secondes, en ordonnée les mètres.',
+  f: () => { Object.assign(R.etat, {t: 0, lecture: false, tableau: true, mobile: false}); }},
+ {t: 'Un point de la courbe',
+  x: 'Le point M est le point de la courbe d’abscisse t = 2 s. Son ordonnée est d(2), c’est-à-dire la distance parcourue au bout de 2 secondes : les pointillés gris le relient aux deux axes, et la barre bleue sur la route montre le même trajet, en vrai.',
+  f: () => { Object.assign(R.etat, {t: 2, lecture: false, tableau: true, mobile: true,
+                                    corde: false, tangente: false, triangle: false}); }},
+ {t: 'La vitesse moyenne, c’est la pente de la corde',
+  x: 'Prenons un second instant, 2 + h avec h = 4 s : c’est le point H. Entre les deux, la voiture parcourt Δd mètres en h secondes, donc sa vitesse moyenne vaut Δd ÷ h. Sur le dessin, ce quotient est exactement la pente de la droite rouge qui joint M à H — la corde, ou sécante, (MH). En mathématiques on l’appelle le taux de variation de d entre 2 et 2 + h.',
+  f: () => { Object.assign(R.etat, {t: 2, h: 4, lecture: false, tableau: true, mobile: true,
+                                    corde: true, tangente: false, triangle: true}); }},
+ {t: 'Mais une moyenne n’est pas une vitesse',
+  x: 'Changeons h : la corde bascule et la moyenne change. Avec 4 secondes on trouve une valeur, avec 1 seconde une autre. Aucune ne répond à la question posée : chacune décrit tout un morceau de trajet, et non l’instant 2 s lui-même. L’aiguille noire du compteur montre cette moyenne.',
+  f: () => { Object.assign(R.etat, {t: 2, h: 1, lecture: false, tableau: true, mobile: true,
+                                    corde: true, tangente: false, triangle: true}); }},
+ {t: 'On resserre les deux instants',
+  x: 'Rapprochons H de M en faisant diminuer h. Le morceau de trajet rétrécit, la moyenne porte sur un intervalle de plus en plus court, et la corde bascule de moins en moins. Regardez : elle finit par ne plus bouger du tout.',
+  f: () => { Object.assign(R.etat, {t: 2, h: 3, lecture: false, tableau: true, mobile: true,
+                                    corde: true, tangente: false, triangle: true});
+             setTimeout(() => glisser(() => R.etat.h, v => { R.etat.h = v; lecture(); }, .02, 3200), 420); }},
+ {t: 'La tangente, et le nombre dérivé',
+  x: 'À la limite, la corde vient se poser sur une droite bien précise : la tangente à la courbe au point M, en vert. Son coefficient directeur porte un nom — le nombre dérivé de d en 2, noté d ′(2). Ce n’est plus une moyenne : c’est la vitesse à l’instant 2 s, et rien d’autre.',
+  f: () => { Object.assign(R.etat, {t: 2, h: .02, lecture: false, tableau: true, mobile: true,
+                                    corde: true, tangente: true, triangle: false}); }},
+ {t: 'Le compteur dit le nombre dérivé',
+  x: 'L’aiguille rouge affiche d ′(t) en km/h : la vitesse instantanée. Relancez la voiture et suivez-la — à chaque instant, l’aiguille rouge donne la pente de la tangente à l’endroit où se trouve M. Elle monte jusqu’à 60 km/h au milieu du trajet, là où la courbe est la plus raide, puis retombe à zéro à l’arrivée, là où la courbe s’aplatit. « Vitesse instantanée » et « nombre dérivé de la distance » sont deux noms pour la même chose.',
+  f: () => { Object.assign(R.etat, {t: 0, h: 1, lecture: true, tableau: true, mobile: true,
+                                    corde: false, tangente: true, triangle: false}); majLect(); }}
+],
+colline: [
+ {t: 'Le relief est une courbe',
+  x: 'La colline est taillée net devant nous. La tranche que l’on voit n’est pas un décor : c’est le graphique de la fonction f. En abscisse la position le long du chemin — les repères au sol la donnent — et en ordonnée l’altitude f(x).',
+  f: () => { Object.assign(K.etat, {a: 0, h: 6, marcheur: false, planche: false, rampe: false,
+                                    panneau: false, zoom: false}); }},
+ {t: 'Le marcheur en A',
+  x: 'Le marcheur est à l’abscisse a = 0. Le point A de la courbe a pour ordonnée f(0) : son altitude. Toute la question est de décrire, à cet endroit précis, si ça monte, et à quel point.',
+  f: () => { Object.assign(K.etat, {a: 0, h: 6, marcheur: true, planche: false, rampe: false,
+                                    panneau: false, zoom: false}); }},
+ {t: 'La rampe entre deux points',
+  x: 'Prenons un second point B, à l’abscisse a + h. Pour aller de A à B, on pourrait poser une rampe bien droite : c’est la sécante (AB), en rouge. Sa pente vaut la différence d’altitude divisée par la distance horizontale, soit (f(a + h) − f(a)) ÷ h. C’est le taux de variation de f entre a et a + h — le même quotient que pour la voiture.',
+  f: () => { Object.assign(K.etat, {a: 0, h: 6, marcheur: true, planche: false, rampe: true,
+                                    panneau: false, zoom: false}); }},
+ {t: 'Cette pente dépend de B',
+  x: 'Déplaçons B : la rampe bascule, sa pente change. Comme la vitesse moyenne de la voiture, elle décrit tout le morceau de colline entre A et B — pas le sol sous les pieds du marcheur.',
+  f: () => { Object.assign(K.etat, {a: 0, h: 3, marcheur: true, planche: false, rampe: true,
+                                    panneau: false, zoom: false}); }},
+ {t: 'On rapproche B de A',
+  x: 'Faisons glisser B vers A. La rampe raccourcit, bascule de moins en moins, et vient se caler sur une position limite.',
+  f: () => { Object.assign(K.etat, {a: 0, h: 6, marcheur: true, planche: false, rampe: true,
+                                    panneau: false, zoom: false});
+             setTimeout(() => glisser(() => K.etat.h, v => { K.etat.h = v; lecture(); }, .05, 3200), 420); }},
+ {t: 'La planche sous les pieds : la tangente',
+  x: 'Cette position limite, c’est la planche verte, posée bien à plat sur le sol sous les pieds du marcheur : la tangente à la courbe au point A. Sa pente est le nombre dérivé f ′(a). Le panneau l’affiche aussi en pourcentage, comme les panneaux de pente au bord des routes : un nombre dérivé de 0,68 s’y lit « pente 68 % ».',
+  f: () => { Object.assign(K.etat, {a: 0, h: .05, marcheur: true, planche: true, rampe: true,
+                                    panneau: true, zoom: false}); }},
+ {t: 'Le signe du nombre dérivé',
+  x: 'Promenez le marcheur le long du chemin. Quand ça monte, la planche penche vers le haut et f ′(a) est positif ; quand ça descend, il est négatif ; au sommet la planche est horizontale et f ′(a) = 0. Le nombre dérivé ne dit pas seulement de combien ça monte : son signe dit dans quel sens — c’est ce qui servira à dresser les tableaux de variation.',
+  f: () => { Object.assign(K.etat, {a: 4, h: .05, marcheur: true, planche: true, rampe: false,
+                                    panneau: true, zoom: false}); }},
+ {t: 'Être dérivable, c’est être localement droit',
+  x: 'Descendons tout près de A. La colline et la planche se confondent : à cette échelle, la courbe EST sa tangente. C’est exactement ce que veut dire « f est dérivable en a » — au voisinage de a, on peut remplacer la courbe par une droite sans se tromper beaucoup.',
+  f: () => { Object.assign(K.etat, {a: 0, h: .05, marcheur: true, planche: true, rampe: false,
+                                    panneau: false, zoom: true});
+             cadrer(new T.Vector3(K.etat.a, K.F().f(K.etat.a), K.ZP - 1), 27, .06, 1.46, 1100);
+             $('kbZoom').classList.add('on'); }},
+ {t: 'Et au sommet d’un toit ?',
+  x: 'Remplaçons la colline par un toit, et posons le marcheur sur l’arête. On a beau zoomer : l’arête reste une arête. À gauche la pente vaut +0,62, à droite −0,62 — il n’y a pas UNE pente au sommet, donc pas de tangente, donc pas de nombre dérivé. C’est le cas de la fonction racine carrée en 0, et de la valeur absolue en 0.',
+  f: () => { if (K.etat.profil !== 'toit'){ K.changerProfil('toit');
+               $('kbToit').textContent = 'Revenir à la colline'; $('kbToit').classList.add('on'); }
+             Object.assign(K.etat, {a: 0, h: 3, marcheur: true, planche: true, rampe: false,
+                                    panneau: true, zoom: false});
+             $('kbZoom').classList.remove('on');
+             cadrer(new T.Vector3(0, 7, K.ZP - 1), 26, .12, 1.36, 1000); }}
+]};
+
+let pas = 0, libre = false;
+function majRecit(){
+  const R_ = RECITS[acte];
+  $('rLibre').hidden = !libre;
+  $('rNum').textContent = libre ? 'mode libre' : 'étape ' + (pas + 1) + ' / ' + R_.length;
+  $('rTitre').textContent = libre ? 'Vous pilotez' : R_[pas].t;
+  $('rTexte').textContent = libre
+    ? 'Les commandes du bas sont à vous. Pour reprendre le fil de l’explication là où il s’était arrêté, cliquez sur « Reprendre l’explication ».'
+    : R_[pas].x;
+  $('rPrec').disabled = !libre && pas === 0;
+  $('rSuiv').disabled = !libre && pas === R_.length - 1;
+  $('rSuiv').textContent = libre ? 'Suivant ▶' : (pas === R_.length - 1 ? 'Fin' : 'Suivant ▶');
+}
+function jouerPas(i){
+  const R_ = RECITS[acte];
+  libre = false;
+  pas = Math.max(0, Math.min(R_.length - 1, i));
+  if (glisse) glisse = null;
+  if (acte === 'route'){ R.etat.lecture = false; majLect(); }
+  if (acte === 'colline' && pas < 7){ K.etat.zoom = false; $('kbZoom').classList.remove('on');
+    if (pas < 8 && K.etat.profil === 'toit'){ K.changerProfil('colline');
+      $('kbToit').textContent = 'Et si c’était un toit ?'; $('kbToit').classList.remove('on'); } }
+  R_[pas].f();
+  if (acte === 'colline' && pas < 7 && !vol) recadrer(700);
+  majRecit(); lecture();
+  for (const [id, ch] of [['rbTan', 'tangente'], ['rbTri', 'triangle'], ['rbCor', 'corde']])
+    $(id).classList.toggle('on', R.etat[ch]);
+  for (const [id, ch] of [['kbPla', 'planche'], ['kbRam', 'rampe'], ['kbPan', 'panneau']])
+    $(id).classList.toggle('on', K.etat[ch]);
+}
+function passerLibre(){ if (!libre){ libre = true; majRecit(); } }
+$('rPrec').onclick = () => jouerPas(libre ? pas : pas - 1);
+$('rSuiv').onclick = () => jouerPas(libre ? pas : pas + 1);
+$('rLibre').onclick = () => jouerPas(pas);
+for (const el of document.querySelectorAll('.barre button, .barre input'))
+  el.addEventListener('pointerdown', passerLibre, true);
 
 }
 function octets(b64){ const t = atob(b64), u = new Uint8Array(t.length); for (let k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }

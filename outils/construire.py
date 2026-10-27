@@ -83,6 +83,13 @@ CHAPITRES = {
 }
 
 
+# Intitulés imposés par M. Colin pour des pages dont le titre n'est pas lisible dans la page elle-même (fichier -> titre)
+TITRES_IMPOSES = {
+    '1ere-ch04-animation-secante-tangente.html': 'Coefficient directeur de la corde AH',
+    '1ere-ch04-nombre-derive-et-vitesse.html': 'Animation : Nombre dérivé et vitesse',
+}
+
+
 def mot_de_passe():
     m = os.environ.get('MATHANDCO_MDP')
     return m if m else getpass.getpass('Mot de passe des élèves : ')
@@ -305,6 +312,7 @@ def catalogue(mdp, mdp_prof=None):
         nom = lire_titre(page)
         info = analyser_nom(nom)
         titre, consigne, sous = infos_page(page, mdp, nom, mdp_prof)
+        titre = TITRES_IMPOSES.get(f, titre)
         info.update(titre=titre, consigne=consigne, sous=sous, fichier=f)
         entrees.append(info)
         print(f'  {nom:52s} {titre}')
@@ -332,7 +340,7 @@ def catalogue(mdp, mdp_prof=None):
             def bloc(ident, titre, types, cle=lambda e: (e['numero'], e['fichier'])):
                 lst = sorted((e for e in lot if e['type'] in types), key=cle)
                 return {'id': ident, 'titre': titre, 'items': [fiche_cat(e) for e in lst]} if lst else None
-            blocs = [bloc('poly', 'Cours : poly à trous et animations', ('poly', 'autre'), lambda e: (rang[e['type']], e['numero'], e['fichier'])),
+            blocs = [bloc('poly', 'Cours et animations', ('poly', 'autre'), lambda e: (rang[e['type']], e['numero'], e['fichier'])),
                      bloc('exercices', 'Correction des exercices', ('exercice',)),
                      bloc('ds', 'Devoirs surveillés', ('evaluation',),
                           lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero']))]

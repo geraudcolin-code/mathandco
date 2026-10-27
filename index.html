@@ -10,14 +10,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
-<link rel="stylesheet" href="assets/site.css?v=20261027h">
+<link rel="stylesheet" href="assets/site.css?v=20261027i">
 </head>
 <body>
 <header class="nav gouttiere" id="nav">
   <div class="colonne nav-int">
     <a class="logo" href="./" aria-label="Colinéaire, accueil">Colin<span class="esperluette">éaire</span></a>
     <nav class="nav-liens" aria-label="Sections">
-      <a class="masque-tel" href="#methode">La méthode</a>
       <a class="masque-tel" href="#classes">Les classes</a>
     </nav>
     <a class="bouton petit" href="eleves.html">Espace élèves</a>
@@ -31,7 +30,7 @@
       <p class="accroche">Les corrections de mathématiques, étape par étape.</p>
       <div class="actions">
         <a class="bouton" href="eleves.html">Espace élèves</a>
-        <a class="lien-fleche" href="#methode">Voir comment ça marche</a>
+        <a class="lien-fleche" href="#classes">Voir les classes</a>
       </div>
     </div>
   </section>
@@ -78,59 +77,6 @@
         <span class="etape" id="etape" aria-live="polite">Étape 0 / 13</span>
         <span class="progression" aria-hidden="true"><span id="barre"></span></span>
         <button type="button" id="rejouer">Rejouer</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="section alt gouttiere" id="methode">
-    <div class="colonne">
-      <div class="section-tete revele">
-        <h2>Une correction qui se construit avec vous.</h2>
-        <p>Chaque correction suit le déroulé de la classe : rien ne s'affiche avant qu'on ait eu le temps de le chercher.</p>
-      </div>
-      <div class="tuiles">
-        <article class="tuile revele">
-          <h3>Une étape par clic.</h3>
-          <p>Chaque terme apparaît à son tour. On cherche d'abord, puis on vérifie.</p>
-          <div class="vue" aria-hidden="true">
-            <div class="mini-cahier">
-              <div class="l"><i>f</i>(15) = 2 × 15² − 3 × 15 + 1</div>
-              <div class="l">= 450 − 45 + 1</div>
-              <div class="l">= <span class="attente">…</span> <span class="clic">›</span></div>
-            </div>
-          </div>
-        </article>
-        <article class="tuile revele">
-          <h3>L'énoncé reste sous les yeux.</h3>
-          <p>La question traitée est encadrée en rouge et chaque donnée utilisée est soulignée au moment où elle sert.</p>
-          <div class="vue" aria-hidden="true">
-            <div class="enonce-mini">
-              <b>Exercice 4.</b> Chaque année, <span class="souligne">10 %</span> des abonnés partent et <span class="souligne">2 000</span> nouveaux s'inscrivent.<br>
-              <span class="encadre-r">2. Exprimer <span class="mx"><i>u</i><sub><i>n</i>+1</sub></span> en fonction de <span class="mx"><i>u<sub>n</sub></i></span>.</span>
-            </div>
-          </div>
-        </article>
-        <article class="tuile revele">
-          <h3>Le cours au bon moment.</h3>
-          <p>Quand une propriété sert, elle s'affiche. Elle disparaît dès qu'on n'en a plus besoin.</p>
-          <div class="vue" aria-hidden="true">
-            <div class="rappel">
-              <div class="rt">Rappel du cours</div>
-              <div class="mx">(<i>a</i> − <i>b</i>)² = <i>a</i>² − 2<i>ab</i> + <i>b</i>²</div>
-            </div>
-          </div>
-        </article>
-        <article class="tuile revele">
-          <h3>À votre rythme.</h3>
-          <p>Avancez avec les flèches du clavier, ou lancez la lecture automatique en trois vitesses.</p>
-          <div class="vue" aria-hidden="true">
-            <div class="lecteur">
-              <div class="rang"><span class="k">‹</span><span class="k">›</span><span class="k">Lecture auto</span></div>
-              <div class="rang"><span class="k">Lent</span><span class="k on">Normal</span><span class="k">Rapide</span><span style="margin-left:auto">Étape 17 / 36</span></div>
-              <div class="barre-p"><span></span></div>
-            </div>
-          </div>
-        </article>
       </div>
     </div>
   </section>

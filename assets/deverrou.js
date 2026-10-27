@@ -101,7 +101,7 @@
   // ---------- accès : correction ouverte aux élèves seulement après sa correction en classe ----------
   // Tant que acces.json n'a pas répondu, ou si la correction est fermée, le mot de passe ne déverrouille rien : l'envoi du
   // formulaire est arrêté AVANT le gestionnaire de la page (écoute en phase de capture sur le document).
-  var acces = 'attente', ADMIN = false;
+  var acces = 'attente', ADMIN = false, OUV_ELEVES = false;
   try {
     ADMIN = !!JSON.parse(localStorage.getItem('colineaire.admin') || sessionStorage.getItem('colineaire.admin') || 'null')
       && sessionStorage.getItem('colineaire.vue') !== 'eleve';
@@ -115,6 +115,7 @@
     .then(function (j) { return (j.ouvertes || []).indexOf(ident) >= 0; })
     .catch(function () { return false; })
     .then(function (ok) {
+      OUV_ELEVES = ok;
       acces = (ok || ADMIN) ? 'ouvert' : 'ferme';
       if (acces === 'ferme') fermee();
       return acces === 'ouvert';
@@ -145,7 +146,8 @@
   var obs = new MutationObserver(function () {
     if (document.getElementById('verrou')) return;
     obs.disconnect();
-    try { if (!longtemps && champ.value) sessionStorage.setItem(CLE, champ.value); } catch (e) {}
+    // (seulement pour une correction ouverte : une correction fermée s'ouvre avec le mot de passe du professeur)
+    try { if (OUV_ELEVES && !longtemps && champ.value) sessionStorage.setItem(CLE, champ.value); } catch (e) {}
     var m = champ.value || memo;
     if (document.getElementById('bandeau')) boutonPdf(m);
     else setTimeout(function () { boutonPdf(m); }, 400);
@@ -153,8 +155,12 @@
   obs.observe(document.body, { childList: true });
 
   if (memo) champ.value = memo;
+  // correction fermée vue par le professeur : elle est chiffrée avec le mot de passe du professeur
+  var memoProf = null;
+  try { memoProf = localStorage.getItem('colineaire.prof') || sessionStorage.getItem('colineaire.prof'); } catch (e) {}
   verifier.then(function (ok) {
-    if (!ok || !memo) return;
+    if (ok && !OUV_ELEVES) { if (!memoProf) return; champ.value = memoProf; }
+    else if (!ok || !memo) return;
     if (carte.requestSubmit) carte.requestSubmit();
     else carte.dispatchEvent(new Event('submit', { cancelable: true }));
   });

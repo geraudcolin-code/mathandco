@@ -48,7 +48,10 @@
     if (bouton.disabled) return;
     bouton.disabled = true; lib.textContent = 'Préparation…';
     try {
-      var url = URL.createObjectURL(new Blob([await pdfClair(it.pdf, MDP || lire())], { type: 'application/pdf' }));
+      // correction fermée vue par le professeur : son PDF est chiffré avec le mot de passe du professeur
+      var prof = null; try { prof = localStorage.getItem('colineaire.prof') || sessionStorage.getItem('colineaire.prof'); } catch (e) {}
+      var m = (PROF && !ouverte(it) && prof) ? prof : (MDP || lire());
+      var url = URL.createObjectURL(new Blob([await pdfClair(it.pdf, m)], { type: 'application/pdf' }));
       var a = document.createElement('a'); a.href = url; a.download = it.pdfnom || 'corrige.pdf';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 60000);

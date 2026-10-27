@@ -7,9 +7,16 @@ Usage
   python3 outils/construire.py ouvrir <motif> [...]                     ouvre des corrections aux élèves (acces.json)
   python3 outils/construire.py fermer <motif> [...]                     les referme
      motif : nom de fichier sans .html, éventuellement avec * (ex. 1ere-ch03-exercice-5, 2nde-ch03-*)
+  python3 outils/construire.py cle                                      réécrit assets/cle.js
 
-Le mot de passe des corrections n'est JAMAIS écrit dans le dépôt (il est public) : il est lu dans la variable
-d'environnement MATHANDCO_MDP, sinon demandé au clavier.
+DEUX MOTS DE PASSE (27 octobre), jamais écrits dans le dépôt (il est public) :
+- celui des ÉLÈVES (variable MATHANDCO_MDP, sinon demandé au clavier) chiffre les corrections OUVERTES et le catalogue ;
+- celui du PROFESSEUR (variable MATHANDCO_MDP_PROF, sinon demandé au clavier) chiffre les corrections FERMÉES et leurs
+  PDF : un élève qui connaît le mot de passe des élèves ne peut donc PAS lire une correction fermée, même en contournant
+  la page. Ouvrir une correction = la rechiffrer avec le mot de passe des élèves (fermer : l'inverse) ; l'Espace
+  professeur le fait dans le navigateur, « ouvrir » / « fermer » ci-dessous aussi.
+- assets/cle.js contient le mot de passe des élèves chiffré par celui du professeur : le professeur ne tape que le sien
+  dans l'Espace professeur.
 
 Ce que fait le script
 - « ajouter » : lit le <title> de la page ([1ère]CH03_Correction_Exercice5…), en déduit l'adresse
@@ -78,7 +85,74 @@ CHAPITRES = {
 
 def mot_de_passe():
     m = os.environ.get('MATHANDCO_MDP')
-    return m if m else getpass.getpass('Mot de passe des corrections : ')
+    return m if m else getpass.getpass('Mot de passe des élèves : ')
+
+
+def mot_de_passe_prof():
+    m = os.environ.get('MATHANDCO_MDP_PROF')
+    return m if m else getpass.getpass('Mot de passe du professeur : ')
+
+
+PAT_P = re.compile(r"const P = \{s:'([^']+)', i:'([^']+)', n:(\d+), c:'([^']+)'\}")
+
+
+def _cle(mdp, sel, n):
+    return PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=sel, iterations=n).derive(mdp.encode())
+
+
+def rechiffrer_page(chemin, mdps, vers):
+    """contenu chiffré de la page : déchiffré avec l'un des mots de passe `mdps`, rechiffré avec `vers` (rien n'est
+    réécrit s'il l'est déjà avec `vers`)"""
+    t = open(chemin, encoding='utf-8').read()
+    m = PAT_P.search(t)
+    if not m:
+        return False
+    s, i, n, c = m.groups()
+    n = int(n)
+    for k in [vers] + [x for x in mdps if x != vers]:
+        try:
+            clair = AESGCM(_cle(k, base64.b64decode(s), n)).decrypt(base64.b64decode(i), base64.b64decode(c), None)
+        except Exception:
+            continue
+        if k == vers:
+            return False
+        sel, iv = os.urandom(16), os.urandom(12)
+        b = lambda x: base64.b64encode(x).decode()
+        nv = f"const P = {{s:'{b(sel)}', i:'{b(iv)}', n:{n}, c:'{b(AESGCM(_cle(vers, sel, n)).encrypt(iv, clair, None))}'}}"
+        open(chemin, 'w', encoding='utf-8').write(t[:m.start()] + nv + t[m.end():])
+        return True
+    raise SystemExit(f'Aucun des mots de passe n\'ouvre « {os.path.basename(chemin)} ».')
+
+
+def rechiffrer_pdf(chemin, mdps, vers):
+    b = open(chemin, 'rb').read()
+    if b[:6] != b'MCPDF1':
+        raise SystemExit(f'Format inconnu : {chemin}')
+    n = int.from_bytes(b[6:10], 'big')
+    for k in [vers] + [x for x in mdps if x != vers]:
+        try:
+            clair = AESGCM(_cle(k, b[10:26], n)).decrypt(b[26:38], b[38:], None)
+        except Exception:
+            continue
+        if k == vers:
+            return False
+        sel, iv = os.urandom(16), os.urandom(12)
+        open(chemin, 'wb').write(b'MCPDF1' + n.to_bytes(4, 'big') + sel + iv + AESGCM(_cle(vers, sel, n)).encrypt(iv, clair, None))
+        return True
+    raise SystemExit(f'Aucun des mots de passe n\'ouvre « {os.path.basename(chemin)} ».')
+
+
+def ecrire_cle(mdp, mdp_prof):
+    """assets/cle.js : le mot de passe des élèves, chiffré avec celui du professeur (pour l'Espace professeur)"""
+    js = ('/* Clé de l\'Espace professeur (générée par outils/construire.py, ne pas modifier). */\n'
+          'window.CLE_PROF = ' + json.dumps(chiffrer({'mdp': mdp}, mdp_prof)) + ';\n')
+    open(os.path.join(RACINE, 'assets', 'cle.js'), 'w', encoding='utf-8').write(js)
+    import hashlib
+    ad = os.path.join(RACINE, 'admin.html')
+    if os.path.exists(ad):
+        pa = open(ad, encoding='utf-8').read()
+        pa = re.sub(r'assets/cle\.js(\?v=[\w]*)?"', 'assets/cle.js?v=' + hashlib.sha1(js.encode()).hexdigest()[:10] + '"', pa)
+        open(ad, 'w', encoding='utf-8').write(pa)
 
 
 def sans_accents(s):
@@ -131,14 +205,19 @@ def texte(fragment):
     return re.sub(r'\s+', ' ', H.unescape(re.sub(r'<[^>]+>', ' ', fragment))).strip()
 
 
-def infos_page(page, mdp, nom):
+def infos_page(page, mdp, nom, mdp_prof=None):
     """Titre et consigne lus dans la correction déchiffrée ; repli sur le sous-titre en clair."""
     sous = re.search(r'class="sous">([^<]*)<', page)
     sous = H.unescape(sous.group(1)).strip() if sous else ''
     titre, consigne = '', ''
-    try:
-        d = dechiffrer(page, mdp)
-    except Exception:
+    d = None
+    for k in [x for x in (mdp, mdp_prof) if x]:
+        try:
+            d = dechiffrer(page, k)
+            break
+        except Exception:
+            continue
+    else:
         raise SystemExit(f'Mot de passe refusé pour « {nom} ».')
     if d:
         b = d['body']
@@ -181,11 +260,16 @@ def chiffrer_pdf(chemin, nom, mdp):
     print('PDF chiffré :', os.path.basename(chemin), '->', 'corrections/' + sortie)
 
 
-def ajouter(chemins, mdp):
+def ajouter(chemins, mdp, mdp_prof):
+    """une correction fermée (pas dans acces.json : c'est le cas de toute NOUVELLE correction) est chiffrée avec le mot
+    de passe du professeur, page et PDF ; une correction ouverte, avec celui des élèves"""
     os.makedirs(DOSSIER, exist_ok=True)
+    ouv = set(lire_acces())
+    vers = lambda nom: mdp if analyser_nom(nom)['fichier'][:-5] in ouv else mdp_prof
     pdfs = [c for c in chemins if c.lower().endswith('.pdf')]
     for ch in pdfs:
-        chiffrer_pdf(ch, os.path.splitext(os.path.basename(ch))[0], mdp)
+        nom = os.path.splitext(os.path.basename(ch))[0]
+        chiffrer_pdf(ch, nom, vers(nom))
     for ch in chemins:
         if ch in pdfs:
             continue
@@ -195,11 +279,13 @@ def ajouter(chemins, mdp):
         if 'data-mathandco' not in page:
             i = page.rfind('</body>')
             page = page[:i] + BALISE + page[i:] if i >= 0 else page + BALISE
-        open(os.path.join(DOSSIER, info['fichier']), 'w', encoding='utf-8').write(page)
-        print('ajouté :', titre, '->', 'corrections/' + info['fichier'])
+        cible = os.path.join(DOSSIER, info['fichier'])
+        open(cible, 'w', encoding='utf-8').write(page)
+        rechiffrer_page(cible, [mdp, mdp_prof], vers(titre))
+        print('ajouté :', titre, '->', 'corrections/' + info['fichier'], '(ouverte)' if vers(titre) == mdp else '(fermée)')
         voisin = os.path.splitext(ch)[0] + '.pdf'               # corrigé PDF posé à côté de la page, de même nom
         if os.path.exists(voisin) and voisin not in pdfs and os.path.splitext(os.path.basename(voisin))[0] == titre:
-            chiffrer_pdf(voisin, titre, mdp)
+            chiffrer_pdf(voisin, titre, vers(titre))
 
 
 def chiffrer(obj, mdp):
@@ -210,7 +296,7 @@ def chiffrer(obj, mdp):
     return {'s': b(sel), 'i': b(iv), 'n': ITER, 'c': b(c)}
 
 
-def catalogue(mdp):
+def catalogue(mdp, mdp_prof=None):
     entrees = []
     for f in sorted(os.listdir(DOSSIER)):
         if not f.endswith('.html'):
@@ -218,7 +304,7 @@ def catalogue(mdp):
         page = open(os.path.join(DOSSIER, f), encoding='utf-8').read()
         nom = lire_titre(page)
         info = analyser_nom(nom)
-        titre, consigne, sous = infos_page(page, mdp, nom)
+        titre, consigne, sous = infos_page(page, mdp, nom, mdp_prof)
         info.update(titre=titre, consigne=consigne, sous=sous, fichier=f)
         entrees.append(info)
         print(f'  {nom:52s} {titre}')
@@ -246,6 +332,8 @@ def catalogue(mdp):
     js = '/* Catalogue chiffré de l\'espace élèves (généré par outils/construire.py, ne pas modifier). */\n'
     js += 'window.CATALOGUE = ' + json.dumps(chiffrer({'classes': classes}, mdp)) + ';\n'
     open(os.path.join(RACINE, 'assets', 'catalogue.js'), 'w', encoding='utf-8').write(js)
+    if mdp_prof:
+        ecrire_cle(mdp, mdp_prof)
     # l'espace élèves charge « catalogue.js?v=… » : la version change avec le catalogue (pas d'ancien catalogue en cache)
     import hashlib
     ev = os.path.join(RACINE, 'eleves.html')
@@ -295,7 +383,8 @@ def ecrire_acces(ouvertes):
     open(FICHIER_ACCES, 'w', encoding='utf-8').write(json.dumps(d, ensure_ascii=False, indent=1) + '\n')
 
 
-def basculer(motifs, ouvrir_):
+def basculer(motifs, ouvrir_, mdp, mdp_prof):
+    """ouvrir : page et PDF rechiffrés avec le mot de passe des élèves ; fermer : avec celui du professeur"""
     import fnmatch
     noms = sorted(f[:-5] for f in os.listdir(DOSSIER) if f.endswith('.html'))
     ens = set(lire_acces())
@@ -306,18 +395,27 @@ def basculer(motifs, ouvrir_):
             raise SystemExit(f'Aucune correction ne correspond à « {m} ».')
         for n in vus:
             (ens.add if ouvrir_ else ens.discard)(n)
+            vers = mdp if ouvrir_ else mdp_prof
+            rechiffrer_page(os.path.join(DOSSIER, n + '.html'), [mdp, mdp_prof], vers)
+            if os.path.exists(os.path.join(DOSSIER, n + '.pdf.bin')):
+                rechiffrer_pdf(os.path.join(DOSSIER, n + '.pdf.bin'), [mdp, mdp_prof], vers)
             print(('ouverte : ' if ouvrir_ else 'fermée : ') + n)
     ecrire_acces(ens)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2 or sys.argv[1] not in ('ajouter', 'catalogue', 'ouvrir', 'fermer'):
+    if len(sys.argv) < 2 or sys.argv[1] not in ('ajouter', 'catalogue', 'ouvrir', 'fermer', 'cle'):
         print(__doc__)
         sys.exit(1)
+    mdp, mdp_prof = mot_de_passe(), mot_de_passe_prof()
+    if mdp == mdp_prof:
+        raise SystemExit('Les deux mots de passe doivent être différents.')
     if sys.argv[1] in ('ouvrir', 'fermer'):
-        basculer(sys.argv[2:], sys.argv[1] == 'ouvrir')
+        basculer(sys.argv[2:], sys.argv[1] == 'ouvrir', mdp, mdp_prof)
         sys.exit(0)
-    mdp = mot_de_passe()
+    if sys.argv[1] == 'cle':
+        ecrire_cle(mdp, mdp_prof)
+        sys.exit(0)
     if sys.argv[1] == 'ajouter':
-        ajouter(sys.argv[2:], mdp)
-    catalogue(mdp)
+        ajouter(sys.argv[2:], mdp, mdp_prof)
+    catalogue(mdp, mdp_prof)

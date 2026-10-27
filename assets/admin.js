@@ -1,11 +1,15 @@
 /* Colinéaire : espace professeur. Ouvre ou ferme chaque correction aux élèves.
-   L'état est le fichier acces.json (liste des corrections ouvertes) ; « Publier » l'enregistre avec la clé d'accès
-   du professeur, qui reste sur l'appareil. */
+   L'état est le fichier acces.json (liste des corrections ouvertes). Une correction FERMÉE est chiffrée avec le mot de
+   passe du professeur, une correction OUVERTE avec celui des élèves (lu dans assets/cle.js, où il est chiffré par le
+   mot de passe du professeur). « Publier » rechiffre ici, dans le navigateur, la page et le PDF de chaque correction
+   ouverte ou fermée, puis enregistre le tout (et acces.json) en un seul envoi, avec la clé d'accès du professeur, qui
+   reste sur l'appareil. */
 (function () {
   'use strict';
   var DEPOT = 'geraudcolin-code/mathandco', BRANCHE = 'main', FICHIER = 'acces.json';
-  var API = 'https://api.github.com/repos/' + DEPOT + '/contents/' + FICHIER;
-  var CLE_ADMIN = 'colineaire.admin', CLE_ELEVE = 'mathandco.mdp';
+  var API = 'https://api.github.com/repos/' + DEPOT;
+  var CLE_ADMIN = 'colineaire.admin', CLE_ELEVE = 'mathandco.mdp', CLE_PROF = 'colineaire.prof';
+  var ITER = 600000;
   var $ = function (id) { return document.getElementById(id); };
   var form = $('formulaire'), msg = $('message'), btn = $('entrer');
   window.addEventListener('scroll', function () { $('nav').classList.toggle('defile', window.scrollY > 8); }, { passive: true });
@@ -13,46 +17,119 @@
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
   function octets(b64) { var t = atob(b64), u = new Uint8Array(t.length); for (var k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
-  async function dechiffrer(m) {
-    var P = window.CATALOGUE;
+  async function cleDe(m, sel, n, usage) {
     var base = await crypto.subtle.importKey('raw', new TextEncoder().encode(m), 'PBKDF2', false, ['deriveKey']);
-    var cle = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: octets(P.s), iterations: P.n, hash: 'SHA-256' }, base,
-      { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
-    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: octets(P.i) }, cle, octets(P.c))));
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: sel, iterations: n, hash: 'SHA-256' }, base,
+      { name: 'AES-GCM', length: 256 }, false, usage);
+  }
+  async function ouvrirP(P, m) {   // objet {s, i, n, c} (base64) -> octets en clair
+    var cle = await cleDe(m, octets(P.s), P.n, ['decrypt']);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv: octets(P.i) }, cle, octets(P.c));
+  }
+  async function dechiffrer(m) { return JSON.parse(new TextDecoder().decode(await ouvrirP(window.CATALOGUE, m))); }
+  function b64(buf) {
+    var u = new Uint8Array(buf), t = '', k = 0x8000;
+    for (var i = 0; i < u.length; i += k) t += String.fromCharCode.apply(null, u.subarray(i, i + k));
+    return btoa(t);
   }
   function b64utf8(s) { return btoa(unescape(encodeURIComponent(s))); }
-  function utf8b64(s) { return decodeURIComponent(escape(atob(s.replace(/\s/g, '')))); }
 
   // ---------- enregistrement ----------
-  var JETON = null, SHA = null;
-  function entetes() {
-    return { 'Authorization': 'Bearer ' + JETON, 'Accept': 'application/vnd.github+json' };
+  var JETON = null, MDP_ELEVES = null, MDP_PROF = null;
+  function entetes(accept) {
+    return { 'Authorization': 'Bearer ' + JETON, 'Accept': accept || 'application/vnd.github+json' };
   }
-  async function lireDepot() {
-    var r = await fetch(API + '?ref=' + BRANCHE + '&t=' + Date.now(), { headers: entetes(), cache: 'no-store' });
+  async function api(chemin, opts) {
+    opts = opts || {};
+    var r = await fetch(API + chemin, { method: opts.method || 'GET', cache: 'no-store',
+      headers: Object.assign(opts.body ? { 'Content-Type': 'application/json' } : {}, entetes(opts.accept)),
+      body: opts.body ? JSON.stringify(opts.body) : undefined });
+    if (opts.conflit && (r.status === 409 || r.status === 422)) return null;
     if (r.status === 401) throw new Error('La clé d’accès est refusée (mal copiée ou expirée).');
     if (r.status === 403 || r.status === 404) throw new Error('La clé d’accès n’a pas les droits nécessaires.');
     if (!r.ok) throw new Error('Le serveur ne répond pas (erreur ' + r.status + '). Réessayez dans un instant.');
-    var j = await r.json();
-    SHA = j.sha;
-    return JSON.parse(utf8b64(j.content));
+    return opts.accept ? r.arrayBuffer() : r.json();
   }
-  async function ecrireDepot(ouvertes, message) {
-    var corps = JSON.stringify({ maj: new Date().toISOString(), ouvertes: ouvertes.slice().sort() }, null, 1) + '\n';
-    var r = await fetch(API, {
-      method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, entetes()),
-      body: JSON.stringify({ message: message, content: b64utf8(corps), sha: SHA, branch: BRANCHE })
-    });
-    if (r.status === 409 || r.status === 422) return 'conflit';
-    if (r.status === 401) throw new Error('La clé d’accès est refusée (expirée ?). Reconnectez-vous avec une nouvelle clé.');
-    if (r.status === 403 || r.status === 404) throw new Error('La clé d’accès ne permet pas d’enregistrer.');
-    if (!r.ok) throw new Error('L’enregistrement a été refusé (erreur ' + r.status + ').');
-    SHA = (await r.json()).content.sha;
-    return 'ok';
+  function brut(chemin, ref) {
+    return api('/contents/' + chemin.split('/').map(encodeURIComponent).join('/') + '?ref=' + ref + '&t=' + Date.now(),
+      { accept: 'application/vnd.github.raw' });
+  }
+  async function lireAcces(ref) { return JSON.parse(new TextDecoder().decode(await brut(FICHIER, ref || BRANCHE))); }
+
+  // Rechiffrement : une clé par mot de passe et par publication (sel commun), un IV neuf par fichier.
+  async function cible(vers) {
+    var sel = crypto.getRandomValues(new Uint8Array(16));
+    return { mdp: vers, sel: sel, cle: await cleDe(vers, sel, ITER, ['encrypt']) };
+  }
+  async function essayer(fn, mdps) {   // -> [mot de passe qui ouvre, clair]
+    for (var k = 0; k < mdps.length; k++) { try { return [mdps[k], await fn(mdps[k])]; } catch (e) {} }
+    throw new Error('Un fichier ne s’ouvre avec aucun des deux mots de passe.');
+  }
+  var PAT = /const P = \{s:'([^']+)', i:'([^']+)', n:(\d+), c:'([^']+)'\}/;
+  async function rechiffrerPage(octetsPage, C) {   // -> nouveaux octets, ou null s'il l'est déjà avec C.mdp
+    var t = new TextDecoder().decode(octetsPage), m = PAT.exec(t);
+    if (!m) return null;
+    var P = { s: m[1], i: m[2], n: +m[3], c: m[4] };
+    var r = await essayer(function (k) { return ouvrirP(P, k); }, [C.mdp, MDP_ELEVES, MDP_PROF]);
+    if (r[0] === C.mdp) return null;
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var c = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, C.cle, r[1]);
+    var nv = "const P = {s:'" + b64(C.sel) + "', i:'" + b64(iv) + "', n:" + ITER + ", c:'" + b64(c) + "'}";
+    return new TextEncoder().encode(t.slice(0, m.index) + nv + t.slice(m.index + m[0].length));
+  }
+  async function rechiffrerPdf(buf, C) {
+    var b = new Uint8Array(buf);
+    if (new TextDecoder().decode(b.slice(0, 6)) !== 'MCPDF1') throw new Error('Corrigé PDF illisible.');
+    var n = new DataView(b.buffer, b.byteOffset).getUint32(6);
+    var r = await essayer(async function (k) {
+      return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(26, 38) }, await cleDe(k, b.slice(10, 26), n, ['decrypt']), b.slice(38));
+    }, [C.mdp, MDP_ELEVES, MDP_PROF]);
+    if (r[0] === C.mdp) return null;
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var c = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, C.cle, r[1]));
+    var out = new Uint8Array(38 + c.length);
+    out.set(new TextEncoder().encode('MCPDF1'), 0); new DataView(out.buffer).setUint32(6, ITER); out.set(C.sel, 10); out.set(iv, 26); out.set(c, 38);
+    return out;
+  }
+
+  // Une publication = un seul envoi (commit) : acces.json + les pages et PDF rechiffrés.
+  async function publier(ouvre, ferme, message, progres) {
+    var href = {}; items().forEach(function (it) { href[ident(it)] = it; });
+    for (var essai = 0; essai < 3; essai++) {
+      var c0 = (await api('/git/ref/heads/' + BRANCHE)).object.sha;
+      var arbre0 = (await api('/git/commits/' + c0)).tree.sha;
+      var j = await lireAcces(c0), ens = {};
+      (j.ouvertes || []).forEach(function (s) { ens[s] = true; });
+      ouvre.forEach(function (s) { ens[s] = true; }); ferme.forEach(function (s) { delete ens[s]; });
+      var CS = await cible(MDP_ELEVES), CP = await cible(MDP_PROF), entrees = [];
+      var lot = ouvre.map(function (s) { return [s, CS]; }).concat(ferme.map(function (s) { return [s, CP]; }));
+      for (var k = 0; k < lot.length; k++) {
+        var s = lot[k][0], C = lot[k][1], it = href[s];
+        progres('Rechiffrement ' + (k + 1) + ' / ' + lot.length + '…');
+        var page = 'corrections/' + s + '.html', nv = await rechiffrerPage(await brut(page, c0), C);
+        if (nv) entrees.push([page, nv]);
+        if (it && it.pdf) {
+          var np = await rechiffrerPdf(await brut(it.pdf, c0), C);
+          if (np) entrees.push([it.pdf, np]);
+        }
+      }
+      progres('Enregistrement…');
+      var corps = JSON.stringify({ maj: new Date().toISOString(), ouvertes: Object.keys(ens).sort() }, null, 1) + '\n';
+      entrees.push([FICHIER, new TextEncoder().encode(corps)]);
+      var arbre = [];
+      for (var e = 0; e < entrees.length; e++) {
+        var bl = await api('/git/blobs', { method: 'POST', body: { content: b64(entrees[e][1]), encoding: 'base64' } });
+        arbre.push({ path: entrees[e][0], mode: '100644', type: 'blob', sha: bl.sha });
+      }
+      var t = await api('/git/trees', { method: 'POST', body: { base_tree: arbre0, tree: arbre } });
+      var c = await api('/git/commits', { method: 'POST', body: { message: message, tree: t.sha, parents: [c0] } });
+      if (await api('/git/refs/heads/' + BRANCHE, { method: 'PATCH', body: { sha: c.sha, force: false }, conflit: true })) return ens;
+    }
+    throw new Error('Le site change en même temps ailleurs : réessayez.');
   }
 
   // ---------- état ----------
-  var DONNEES = null, PUBLIE = {}, VOULU = {}, filtre = 'toutes', texte = '';
+  var DONNEES = null, PUBLIE = {}, VOULU = {}, filtre = 'toutes', texte = '', EN_COURS = false;
   function ident(it) { return decodeURIComponent(it.href.split('/').pop()).replace(/\.html$/, ''); }
   function items() { var t = []; DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { t = t.concat(ch.items); }); }); return t; }
   function changements() { return items().map(ident).filter(function (s) { return !!VOULU[s] !== !!PUBLIE[s]; }); }
@@ -142,7 +219,7 @@
     var e = $('etat');
     e.className = 'etat' + (cls ? ' ' + cls : '');
     e.textContent = msgEtat || (ch.length ? ch.length + (ch.length > 1 ? ' modifications à publier.' : ' modification à publier.') : 'Aucune modification.');
-    $('publier').disabled = !ch.length; $('annuler').disabled = !ch.length;
+    $('publier').disabled = EN_COURS || !ch.length; $('annuler').disabled = EN_COURS || !ch.length;
   }
   $('annuler').addEventListener('click', function () {
     VOULU = Object.assign({}, PUBLIE);
@@ -151,40 +228,39 @@
   });
   $('publier').addEventListener('click', async function () {
     var ch = changements(); if (!ch.length) return;
-    var pb = $('publier'); pb.disabled = true; $('annuler').disabled = true;
+    var pb = $('publier'); EN_COURS = true;
     bilan('Publication…');
     var ouvre = ch.filter(function (s) { return VOULU[s]; }), ferme = ch.filter(function (s) { return !VOULU[s]; });
     var message = 'Accès : ' + [ouvre.length ? 'ouvre ' + ouvre.join(', ') : '', ferme.length ? 'ferme ' + ferme.join(', ') : ''].filter(Boolean).join(' ; ');
     try {
-      for (var essai = 0; essai < 3; essai++) {
-        // repartir de l'état du dépôt (une autre modification a pu passer) et n'y appliquer que nos changements
-        var j = await lireDepot(), ens = {};
-        (j.ouvertes || []).forEach(function (s) { ens[s] = true; });
-        ouvre.forEach(function (s) { ens[s] = true; }); ferme.forEach(function (s) { delete ens[s]; });
-        if (await ecrireDepot(Object.keys(ens), message) === 'ok') {
-          PUBLIE = ens; VOULU = Object.assign({}, ens);
-          document.querySelectorAll('.interrupteur').forEach(function (b) { b.maj(); });
-          bilan('Publié. Les élèves le verront d\'ici une à deux minutes.', 'ok');
-          return;
-        }
-      }
-      throw new Error('Le fichier change en même temps ailleurs : réessayez.');
+      var ens = await publier(ouvre, ferme, message, function (t) { bilan(t); });
+      PUBLIE = ens; VOULU = Object.assign({}, ens);
+      document.querySelectorAll('.interrupteur').forEach(function (b) { b.maj(); });
+      EN_COURS = false;
+      bilan('Publié. Les élèves le verront d\'ici une à deux minutes.', 'ok');
     } catch (e) {
-      bilan(e.message, 'erreur'); pb.disabled = false; $('annuler').disabled = false;
+      EN_COURS = false;
+      bilan(e.message, 'erreur');
     }
   });
 
   // ---------- connexion ----------
-  async function entrer(mdp, jeton, garder) {
-    DONNEES = await dechiffrer(mdp).catch(function () { throw new Error('Mot de passe des corrections incorrect.'); });
+  async function entrer(mdpProf, jeton, garder) {
+    if (!window.CLE_PROF) throw new Error('Clé de l’Espace professeur absente du site.');
+    MDP_ELEVES = await ouvrirP(window.CLE_PROF, mdpProf)
+      .then(function (b) { return JSON.parse(new TextDecoder().decode(b)).mdp; })
+      .catch(function () { throw new Error('Mot de passe professeur incorrect.'); });
+    MDP_PROF = mdpProf;
+    DONNEES = await dechiffrer(MDP_ELEVES);
     JETON = jeton;
-    var j = await lireDepot();
+    var j = await lireAcces();
     PUBLIE = {}; (j.ouvertes || []).forEach(function (s) { PUBLIE[s] = true; });
     VOULU = Object.assign({}, PUBLIE);
     try {
       var st = garder ? localStorage : sessionStorage;
       st.setItem(CLE_ADMIN, JSON.stringify({ jeton: jeton }));
-      st.setItem(CLE_ELEVE, mdp);   // le professeur ouvre les aperçus sans retaper le mot de passe
+      st.setItem(CLE_PROF, mdpProf);      // aperçus des corrections fermées (chiffrées avec ce mot de passe)
+      st.setItem(CLE_ELEVE, MDP_ELEVES);  // aperçus des corrections ouvertes
     } catch (e) {}
     $('porte').hidden = true; $('tableau').hidden = false; $('sortir').hidden = false;
     construire();
@@ -197,7 +273,7 @@
     catch (e) { btn.disabled = false; msg.className = 'message erreur'; msg.textContent = e.message; }
   });
   $('sortir').addEventListener('click', function () {
-    try { [localStorage, sessionStorage].forEach(function (st) { st.removeItem(CLE_ADMIN); }); } catch (e) {}
+    try { [localStorage, sessionStorage].forEach(function (st) { st.removeItem(CLE_ADMIN); st.removeItem(CLE_PROF); }); } catch (e) {}
     location.reload();
   });
   window.addEventListener('beforeunload', function (ev) {
@@ -208,7 +284,7 @@
   var memo = null, mdp = null;
   try {
     memo = JSON.parse(localStorage.getItem(CLE_ADMIN) || sessionStorage.getItem(CLE_ADMIN) || 'null');
-    mdp = localStorage.getItem(CLE_ELEVE) || sessionStorage.getItem(CLE_ELEVE);
+    mdp = localStorage.getItem(CLE_PROF) || sessionStorage.getItem(CLE_PROF);
   } catch (e) {}
   if (memo && memo.jeton && mdp) {
     msg.textContent = 'Connexion…';

@@ -13,6 +13,10 @@
   --pastille: #cfe8fb;      /* surlignage bleu ciel des corrections */
   --vert: #1f8f4e;          /* termes regroupés */
   --violet: #7a3fc4;
+  --orange: #b0612f;        /* dossier « Devoirs surveillés » : orange mat */
+  --orange-vif: #99521f;
+  --orange-fond: #f6e7da;
+  --orange-texte: #8f4a18;
   --carreau: #dbe9f5;       /* quadrillage */
   --papier: #ffffff;
   --verre: rgba(251, 251, 253, .78);
@@ -33,6 +37,7 @@
   :root:not([data-theme="light"]) {
     --fond: #000000; --fond-2: #141518; --encre: #f5f5f7; --gris: #a1a4ad; --filet: #2c2e34;
     --bleu: #4a9bff; --bleu-fond: #10233d; --rouge: #ff5c55; --pastille: #17405f; --vert: #4cc985; --violet: #b38cf0;
+    --orange: #a85a2a; --orange-vif: #bf6c38; --orange-fond: #2a1e14; --orange-texte: #e8955a;
     --carreau: #1f2a36; --papier: #0e1116; --verre: rgba(0, 0, 0, .72);
     --ombre: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
     color-scheme: dark;
@@ -41,6 +46,7 @@
 :root[data-theme="dark"] {
   --fond: #000000; --fond-2: #141518; --encre: #f5f5f7; --gris: #a1a4ad; --filet: #2c2e34;
   --bleu: #4a9bff; --bleu-fond: #10233d; --rouge: #ff5c55; --pastille: #17405f; --vert: #4cc985; --violet: #b38cf0;
+  --orange: #a85a2a; --orange-vif: #bf6c38; --orange-fond: #2a1e14; --orange-texte: #e8955a;
   --carreau: #1f2a36; --papier: #0e1116; --verre: rgba(0, 0, 0, .72);
   --ombre: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
   color-scheme: dark;
@@ -366,3 +372,27 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .barre-publier .etat.ok { color: var(--vert); }
 .bouton.secondaire { background: var(--fond-2); color: var(--encre); }
 .bouton:disabled { opacity: .5; cursor: default; filter: none; }
+
+/* ---------- dossier « Devoirs surveillés » : onglet orange mat, à part des chapitres (27 oct.) ---------- */
+.ch-tuile.dossier { background: var(--orange); color: #fff; }
+.ch-tuile.dossier:hover { background: var(--orange-vif); }
+.ch-tuile.dossier .ch-tuile-n { color: rgba(255, 255, 255, .8); text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; font-weight: 600; }
+.ch-tuile.dossier .ch-tuile-titre, .ch-tuile.dossier .ch-tuile-compte { color: #fff; }
+.ch-tuile.dossier .ch-tuile-fleche { background: rgba(255, 255, 255, .22); color: #fff; }
+.ch-tuile.dossier .ch-tuile-barre span { background: #fff; opacity: .6; }
+.ch-tuile.dossier::before { content: ""; position: absolute; top: 0; right: 22px; width: 38px; height: 8px; border-radius: 0 0 6px 6px; background: rgba(255, 255, 255, .35); }
+.chapitre.dossier .chapitre-tete { border-bottom-color: var(--orange); }
+.chapitre.dossier .chapitre-tete .n { color: var(--orange-texte); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
+.chapitre.dossier .fiche { background: var(--orange-fond); }
+.chapitre.dossier .fiche:hover { background: var(--papier); }
+.chapitre.dossier .fiche .num small { color: var(--orange-texte); }
+.chapitre.dossier .fiche .action.anim { background: var(--papier); color: var(--orange-texte); }
+.chapitre.dossier .fiche > .fiche-lien > .titre { display: none; }
+.chapitre.dossier .ch-retour { color: var(--orange-texte); }
+.chapitre.dossier .ch-retour:hover { background: var(--orange-fond); }
+.sous-groupe { grid-column: 1 / -1; margin: 10px 0 -2px; font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; color: var(--orange-texte); display: flex; align-items: center; gap: 12px; }
+.sous-groupe:first-child { margin-top: 0; }
+.sous-groupe::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--orange) 35%, transparent); }
+.chapitre.dossier .ligne-acces:nth-child(odd) { background: var(--orange-fond); }
+.fiche:has(.badge-ferme) { padding-top: 42px; }   /* la mention « Fermée aux élèves » ne recouvre plus le numéro */
+.fiche .action.verrou { white-space: normal; line-height: 1.25; padding-block: 6px; }

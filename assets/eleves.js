@@ -90,7 +90,7 @@
     var ferme = !ouverte(it);
     var num = el('div', 'num');
     if (it.type === 'exercice' || it.type === 'evaluation') {
-      num.appendChild(el('small', null, it.type === 'evaluation' ? 'Évaluation, ex.' : 'Exercice'));
+      num.appendChild(el('small', null, it.type === 'evaluation' && !chap.dossier ? 'Évaluation, ex.' : 'Exercice'));
       num.appendChild(document.createTextNode(it.numero));
     } else {
       f.classList.add('speciale');
@@ -111,7 +111,7 @@
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
       actions.appendChild(el('span', 'action verrou', 'Après la correction en classe'));
       f.appendChild(actions);
-      f.dataset.cherche = norm([classe.nom, 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
+      f.dataset.cherche = norm([classe.nom, chap.dossier ? 'dossier ds devoir surveille' : 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
     }
     if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
@@ -124,7 +124,7 @@
       actions.appendChild(b);
     }
     f.appendChild(actions);
-    f.dataset.cherche = norm([classe.nom, 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
+    f.dataset.cherche = norm([classe.nom, chap.dossier ? 'dossier ds devoir surveille' : 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
     return f;
   }
 
@@ -134,6 +134,7 @@
   var ouvert = null;          // clé « classe/numéro » du chapitre ouvert, ou null
   var pousse = false;         // le chapitre ouvert a ajouté une entrée à l'historique (le bouton « ‹ » fait alors Retour)
   function cle(c, ch) { return c.id + '/' + ch.numero; }
+  function nomCh(ch) { return ch.dossier ? 'Dossier' : 'Chapitre ' + ch.numero; }
   function lireAdresse() {
     var h = decodeURIComponent((location.hash || '').slice(1)), p = h.split('/');
     var c = DONNEES && DONNEES.classes.filter(function (x) { return x.id === p[0]; })[0];
@@ -168,10 +169,10 @@
 
   function tuile(c, ch) {
     var total = ch.items.length, dispo = ch.items.filter(ouverte).length;
-    var b = el('button', 'ch-tuile'); b.type = 'button'; b.dataset.cle = cle(c, ch);
+    var b = el('button', 'ch-tuile' + (ch.dossier ? ' dossier' : '')); b.type = 'button'; b.dataset.cle = cle(c, ch);
     if (!ADMIN && dispo === 0) b.classList.add('vide-tuile');
-    b.appendChild(el('span', 'ch-tuile-n', 'Chapitre ' + ch.numero));
-    b.appendChild(el('span', 'ch-tuile-titre', ch.titre || ('Chapitre ' + ch.numero)));
+    b.appendChild(el('span', 'ch-tuile-n', nomCh(ch)));
+    b.appendChild(el('span', 'ch-tuile-titre', ch.titre || nomCh(ch)));
     var pied = el('span', 'ch-tuile-pied');
     var lib = ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + total
       : dispo === 0 ? 'Bientôt disponible'
@@ -183,7 +184,7 @@
     var barre = el('span', 'ch-tuile-barre'), plein = el('span');
     plein.style.width = (total ? Math.round(100 * dispo / total) : 0) + '%';
     barre.appendChild(plein); b.appendChild(barre);
-    b.setAttribute('aria-label', 'Chapitre ' + ch.numero + ' : ' + (ch.titre || '') + ' — ' + lib);
+    b.setAttribute('aria-label', nomCh(ch) + ' : ' + (ch.titre || '') + ' — ' + lib);
     b.addEventListener('click', function () { ouvrirChapitre(cle(c, ch), true); });
     return b;
   }
@@ -197,7 +198,7 @@
       c.chapitres.forEach(function (ch) { tuiles.appendChild(tuile(c, ch)); });
       bloc.appendChild(tuiles);
       c.chapitres.forEach(function (ch) {
-        var s = el('div', 'chapitre'); s.dataset.cle = cle(c, ch);
+        var s = el('div', 'chapitre' + (ch.dossier ? ' dossier' : '')); s.dataset.cle = cle(c, ch);
         var retour = el('button', 'ch-retour'); retour.type = 'button';
         retour.innerHTML = '<span aria-hidden="true">‹</span> ' + c.nom;
         retour.addEventListener('click', function () {
@@ -205,11 +206,15 @@
         });
         s.appendChild(retour);
         var t = el('div', 'chapitre-tete');
-        t.appendChild(el('span', 'n', 'Chapitre ' + ch.numero));
+        t.appendChild(el('span', 'n', nomCh(ch)));
         t.appendChild(el('h3', null, ch.titre));
         s.appendChild(t);
         var g = el('div', 'grille');
-        ch.items.forEach(function (it) { g.appendChild(fiche(it, ch, c)); });
+        var dernier = null;
+        ch.items.forEach(function (it) {
+          if (ch.dossier && it.titre !== dernier) { dernier = it.titre; g.appendChild(el('h4', 'sous-groupe', it.titre)); }
+          g.appendChild(fiche(it, ch, c));
+        });
         s.appendChild(g);
         bloc.appendChild(s);
       });
@@ -269,6 +274,12 @@
           var ok = okClasse && montre && q.every(function (m) { return f.dataset.cherche.indexOf(m) >= 0; });
           f.hidden = !ok; if (ok) n++;
         });
+        var courant = null, vu = false;
+        Array.prototype.forEach.call(ch.querySelectorAll('.grille > *'), function (x) {
+          if (x.classList.contains('sous-groupe')) { if (courant) courant.hidden = !vu; courant = x; vu = false; }
+          else if (!x.hidden) vu = true;
+        });
+        if (courant) courant.hidden = !vu;
         ch.hidden = n === 0; nb += n;
         ch.querySelector('.ch-retour').hidden = cherche;
       });
@@ -284,6 +295,11 @@
   window.addEventListener('popstate', suivreAdresse);
 
   function ouvrir(d) {
+    // le dossier « Devoirs surveillés » se range après les chapitres, comme un bloc de plus
+    d.classes.forEach(function (c) {
+      (c.dossiers || []).forEach(function (o) { o.numero = o.id; o.dossier = true; c.chapitres.push(o); });
+      c.dossiers = [];
+    });
     DONNEES = d;
     return chargerAcces().then(function (a) {
       ACCES = a;

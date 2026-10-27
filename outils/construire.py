@@ -316,6 +316,9 @@ def catalogue(mdp, mdp_prof=None):
             continue
         nom_classe = next(v[1] for v in CLASSES.values() if v[0] == cid)
         chaps = []
+        # les devoirs surveillés (type « evaluation ») sont réunis dans un dossier à part, hors des chapitres
+        ds = [e for e in items if e['type'] == 'evaluation']
+        items = [e for e in items if e['type'] != 'evaluation']
         for num in sorted({e['chapitre'] for e in items}):
             lot = [e for e in items if e['chapitre'] == num]
             rang = {'poly': 0, 'exercice': 1, 'evaluation': 2, 'flash': 3, 'autre': 4}
@@ -327,7 +330,16 @@ def catalogue(mdp, mdp_prof=None):
                      **({'pdf': 'corrections/' + e['fichier'][:-5] + '.pdf.bin', 'pdfnom': e['nom'] + '.pdf'}
                         if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
                 for e in lot]})
-        classes.append({'id': cid, 'nom': nom_classe, 'chapitres': chaps})
+        dossiers = []
+        if ds:
+            ds.sort(key=lambda e: (e['chapitre'], e['fichier'].rsplit('-exercice-', 1)[0], e['numero']))
+            dossiers.append({'id': 'ds', 'titre': 'Devoirs surveillés', 'items': [
+                dict({'type': e['type'], 'numero': e['numero'], 'titre': e['titre'], 'consigne': e['consigne'],
+                      'href': 'corrections/' + e['fichier'], 'nom': e['nom']},
+                     **({'pdf': 'corrections/' + e['fichier'][:-5] + '.pdf.bin', 'pdfnom': e['nom'] + '.pdf'}
+                        if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
+                for e in ds]})
+        classes.append({'id': cid, 'nom': nom_classe, 'chapitres': chaps, 'dossiers': dossiers})
 
     js = '/* Catalogue chiffré de l\'espace élèves (généré par outils/construire.py, ne pas modifier). */\n'
     js += 'window.CATALOGUE = ' + json.dumps(chiffrer({'classes': classes}, mdp)) + ';\n'
@@ -349,8 +361,9 @@ def catalogue(mdp, mdp_prof=None):
     # cartes « classes » de la page d'accueil (titres des chapitres et nombre de corrections, en clair)
     cartes = []
     for c in classes:
-        n = sum(len(ch['items']) for ch in c['chapitres'])
+        n = sum(len(ch['items']) for ch in c['chapitres'] + c['dossiers'])
         lignes = ''.join(f'<li><span class="ch-num">Chapitre {ch["numero"]}</span> {H.escape(ch["titre"])}</li>' for ch in c['chapitres'])
+        lignes += ''.join(f'<li><span class="ch-num">Dossier</span> {H.escape(d["titre"])}</li>' for d in c['dossiers'])
         cartes.append(
             f'<a class="classe" href="eleves.html#{c["id"]}">\n'
             f'  <h3>{H.escape(c["nom"])}</h3>\n'
@@ -361,10 +374,10 @@ def catalogue(mdp, mdp_prof=None):
     page = open(acc, encoding='utf-8').read()
     page = re.sub(r'(<!-- debut:classes -->).*?(<!-- fin:classes -->)',
                   lambda m: m.group(1) + '\n' + '\n'.join(cartes) + '\n' + m.group(2), page, flags=re.S)
-    total = sum(len(ch['items']) for c in classes for ch in c['chapitres'])
+    total = sum(len(ch['items']) for c in classes for ch in c['chapitres'] + c['dossiers'])
     page = re.sub(r'(<!-- debut:total -->).*?(<!-- fin:total -->)', lambda m: m.group(1) + str(total) + m.group(2), page, flags=re.S)
     open(acc, 'w', encoding='utf-8').write(page)
-    npdf = sum(1 for c in classes for ch in c['chapitres'] for it in ch['items'] if 'pdf' in it)
+    npdf = sum(1 for c in classes for ch in c['chapitres'] + c['dossiers'] for it in ch['items'] if 'pdf' in it)
     print(f'catalogue : {total} pages ({npdf} avec leur corrigé PDF), {len(classes)} classes')
 
 

@@ -160,8 +160,9 @@
       bloc.appendChild(el('h2', null, c.nom));
       c.chapitres.forEach(function (ch) {
         var s = el('div', 'chapitre'), t = el('div', 'chapitre-tete');
-        t.appendChild(el('span', 'n', 'Chapitre ' + ch.numero));
+        t.appendChild(el('span', 'n', ch.dossier ? 'Dossier' : 'Chapitre ' + ch.numero));
         t.appendChild(el('h3', null, ch.titre));
+        if (ch.dossier) s.classList.add('dossier');
         var acts = el('div', 'chap-actions'), lignes = el('div', 'lignes');
         [['Tout ouvrir', true], ['Tout fermer', false]].forEach(function (o) {
           var b = el('button', null, o[0]); b.type = 'button';
@@ -179,7 +180,7 @@
           l.appendChild(nom);
           var ap = el('a', 'apercu', 'Aperçu'); ap.href = it.href; ap.target = '_blank'; ap.rel = 'noopener'; l.appendChild(ap);
           var sw = interrupteur(id); l.appendChild(sw);
-          l.dataset.cherche = norm([c.nom, 'chapitre ' + ch.numero, ch.titre, libelle(it), it.titre, it.consigne].join(' '));
+          l.dataset.cherche = norm([c.nom, ch.dossier ? 'dossier ds devoir surveille' : 'chapitre ' + ch.numero, ch.titre, libelle(it), it.titre, it.consigne].join(' '));
           lignes.appendChild(l); sw.maj();
         });
         s.appendChild(lignes); bloc.appendChild(s);
@@ -252,6 +253,10 @@
       .catch(function () { throw new Error('Mot de passe professeur incorrect.'); });
     MDP_PROF = mdpProf;
     DONNEES = await dechiffrer(MDP_ELEVES);
+    DONNEES.classes.forEach(function (c) {      // le dossier « Devoirs surveillés » se range après les chapitres
+      (c.dossiers || []).forEach(function (o) { o.numero = o.id; o.dossier = true; c.chapitres.push(o); });
+      c.dossiers = [];
+    });
     JETON = jeton;
     var j = await lireAcces();
     PUBLIE = {}; (j.ouvertes || []).forEach(function (s) { PUBLIE[s] = true; });

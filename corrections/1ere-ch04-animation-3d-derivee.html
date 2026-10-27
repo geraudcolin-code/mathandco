@@ -44,6 +44,7 @@ main{flex:1;min-height:0;padding:10px 14px 0}
   vertical-align:middle;margin-right:4px}
 .appel .fr b{border-bottom:2px solid currentColor;padding:0 5px}
 .appel .fr i{padding:0 5px;font-style:normal}
+#titre3d[hidden]{display:none}
 #titre3d{position:absolute;left:50%;top:16px;transform:translateX(-50%);max-width:88%;
   background:rgba(255,255,255,.93);border-radius:14px;padding:11px 24px;font-size:27px;font-weight:700;
   text-align:center;box-shadow:0 4px 18px rgba(23,35,58,.15);line-height:1.25}
@@ -110,7 +111,7 @@ footer{flex:0 0 auto;padding:2px 18px 7px;font-size:11px;color:var(--gris);text-
 <button id="ouvrir" type="submit">Ouvrir la correction</button><div id="msg" role="alert"></div>
 <div class="signature">Par M.COLIN</div></form></div>
 <script>
-const P = {s:'Lfrgup/ypL8rwHtL2+xI9g==', i:'oGvS/ZDro0yHQibQ', n:600000, c:'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'};
+const P = {s:'9FOu0UDSH3OPeAYmgyjqcQ==', i:'835lzP9hVWLSklh0', n:600000, c:'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'};
 function demarrer(DATA){
 (function(){/**
  * @license
@@ -496,7 +497,7 @@ R.dessiner = function(){
   R.jetable.add(barre(new T.Vector3(R.XR - 4.6, .58, R.Z0), new T.Vector3(R.XR - 4.6, .58, zc), .26, CO.bleu));
   /* entre M et H, sur la route : la voiture fantôme à t2, et le morceau de route parcouru pendant Δt */
   const corde = e.corde && Math.abs(t2 - t1) > 1e-9;
-  R.voiture2.visible = corde && Math.abs(zc2 - zc) > 2.2;
+  R.voiture2.visible = e.mobile && corde && Math.abs(zc2 - zc) > 2.2;
   R.voiture2.position.set(R.XR, 0, zc2);
   if (corde){
     R.jetable.add(barre(new T.Vector3(R.XR + 4.6, .62, zc), new T.Vector3(R.XR + 4.6, .62, zc2), .36, CO.rouge));
@@ -613,10 +614,10 @@ const RECIT = [
   cle: 'La voiture part, accélère, ralentit, s’arrête : <b>111 m en 10 s</b>. Mais à un instant précis ?',
   etat: {t: 2, tableau: false, mobile: false, lecture: false, compteur: false},
   appels: [['voit', 'à t₁ = 2 s, la voiture est <b>ici</b>', 'encre', pVoiture, 0, -40]]},
- {titre: 'La <b class="bleu">courbe de la distance</b>',
+ {titre: '',
   cle: 'Chaque point : <b class="bleu">un instant t</b> en abscisse, <b class="bleu">la distance parcourue d</b> en ordonnée.',
   etat: {t: 2, tableau: true, mobile: false, lecture: false, compteur: false},
-  appels: [['tab', 'la courbe de <b>d</b> : à chaque temps,<br>la distance déjà parcourue', 'bleu', pTableau, 0, -46]]},
+  appels: []},
  {titre: 'Le point <b class="encre">M</b>, à l’instant t₁',
   cle: 'À <b>t₁ = 2 s</b>, la voiture a parcouru <b class="bleu">d(2) = 11,6 m</b> — sur la route comme sur la courbe.',
   etat: {t: 2, tableau: true, mobile: true, corde: false, tangente: false, triangle: false, lecture: false, compteur: false},
@@ -650,9 +651,10 @@ const RECIT = [
   appels: [['tan', 'la <b>tangente en M</b>', 'vert', pTan, 0, -34],
            ['inst', () => '<span class="gd">d′(2) = ' + nb(R.der.v, 1) + ' m/s</span>' + kmh(R.der.v) + ' <b>à l’instant 2 s</b>', 'vert', pCompteur, 0, -30]]},
  {titre: 'Le <b class="vert">compteur</b> affiche le <b class="vert">nombre dérivé</b>',
-  cle: 'À chaque instant, l’aiguille rouge donne la pente de la tangente là où est M. <b class="vert">Vitesse instantanée</b> et <b class="vert">nombre dérivé de la distance</b> : deux noms, une seule chose.',
+  cle: 'À chaque instant, la pente de la tangente en M, <b class="vert">d′(t)</b>, et la vitesse de la voiture, <b class="vert">v(t)</b>, sont <b>le même nombre</b>. Vitesse instantanée et nombre dérivé de la distance : deux noms, une seule chose.',
   etat: {t: 0, h: 1, tableau: true, mobile: true, corde: false, tangente: true, triangle: false, lecture: true},
-  appels: [['inst', () => '<span class="gd">' + kmh(R.der.v) + '</span>d′(t) = ' + ms(R.der.v), 'vert', pCompteur, 0, -30]]}
+  appels: [['dM', () => 'sur la courbe : <b>d′(' + nb(R.der.t1, 1) + ') = ' + nb(R.der.v, 1) + ' m/s</b>', 'vert', pM, 0, -22],
+           ['vV', () => 'sur la route : <b>v(' + nb(R.der.t1, 1) + ') = ' + nb(R.der.v, 1) + ' m/s</b><br>' + kmh(R.der.v) + ' au compteur', 'vert', pCompteur, 0, -30]]}
 ];
 
 let pas = 0, libre = false;
@@ -664,7 +666,7 @@ function jouerPas(i){
   majLect(); majBoutons();
   sansAppels();
   for (const [nom, html, cls, pos, dx, dy] of p.appels) appel(nom, html, cls, pos, dx, dy);
-  $('titre3d').innerHTML = p.titre;
+  $('titre3d').innerHTML = p.titre; $('titre3d').hidden = !p.titre;
   $('cle').innerHTML = p.cle;
   $('pasNum').textContent = (pas + 1) + ' / ' + RECIT.length;
   $('rPrec').disabled = pas === 0; $('rSuiv').disabled = pas === RECIT.length - 1;
@@ -675,7 +677,7 @@ function jouerPas(i){
 function passerLibre(){
   if (libre) return;
   libre = true;
-  $('titre3d').innerHTML = 'À vous : les commandes du bas sont libres';
+  $('titre3d').hidden = false; $('titre3d').innerHTML = 'À vous : les commandes du bas sont libres';
   $('cle').innerHTML = 'La <b class="rouge">corde</b> et l’aiguille noire : la moyenne entre t₁ et t₂. La <b class="vert">tangente</b> et l’aiguille rouge : la vitesse à l’instant t₁.';
   $('rLibre').hidden = false;
   sansAppels();

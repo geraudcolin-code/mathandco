@@ -135,7 +135,7 @@
   var pousse = false;         // le chapitre ouvert a ajouté une entrée à l'historique (le bouton « ‹ » fait alors Retour)
   function cle(c, ch) { return c.id + '/' + ch.numero; }
   function nomCh(ch) { return 'Chapitre ' + ch.numero; }
-  function tousItems(ch) { return (ch.dossiers || []).reduce(function (a, d) { return a.concat(d.items); }, ch.items.slice()); }
+  function tousItems(ch, sansDS) { return (ch.dossiers || []).reduce(function (a, d) { return sansDS && d.id === 'ds' ? a : a.concat(d.items); }, ch.items.slice()); }
   function lireAdresse() {
     var h = decodeURIComponent((location.hash || '').slice(1)), p = h.split('/');
     var c = DONNEES && DONNEES.classes.filter(function (x) { return x.id === p[0]; })[0];
@@ -169,7 +169,7 @@
   }
 
   function tuile(c, ch) {
-    var total = ch.items.length, dispo = ch.items.filter(ouverte).length;
+    var tout = tousItems(ch, true), total = tout.length, dispo = tout.filter(ouverte).length;   // les DS ne comptent pas : ils restent fermés jusqu'à leur correction
     var b = el('button', 'ch-tuile'); b.type = 'button'; b.dataset.cle = cle(c, ch);
     if (!ADMIN && dispo === 0) b.classList.add('vide-tuile');
     b.appendChild(el('span', 'ch-tuile-n', nomCh(ch)));
@@ -190,19 +190,18 @@
     return b;
   }
 
-  // dossier « Devoirs surveillés » : onglet orange mat dans le chapitre ; un clic déplie les fiches, rangées par sujet
+  // blocs du chapitre (poly à trous : vert ; exercices : bleu marine ; devoirs surveillés : orange mat, rangés par sujet) ; un clic déplie
   function dossier(d, ch, c) {
-    var bloc = el('div', 'dossier-bloc'), dispo = d.items.filter(ouverte).length;
+    var bloc = el('div', 'dossier-bloc d-' + d.id), dispo = d.items.filter(ouverte).length, n = d.items.length;
     var tete = el('button', 'dossier-tete'); tete.type = 'button'; tete.setAttribute('aria-expanded', 'false');
-    tete.appendChild(el('span', 'dossier-etiquette', 'Dossier'));
     tete.appendChild(el('span', 'dossier-titre', d.titre));
     tete.appendChild(el('span', 'dossier-compte', ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + d.items.length
-      : dispo === 0 ? 'Bientôt disponible' : dispo + ' sur ' + d.items.length));
+      : dispo === 0 ? 'Bientôt disponible' : dispo === n ? n + ' fichier' + (n > 1 ? 's' : '') : dispo + ' sur ' + n));
     tete.appendChild(el('span', 'dossier-fleche', '›'));
     var corps = el('div', 'dossier-corps'); corps.hidden = true;
     var g = el('div', 'grille'), dernier = null;
     d.items.forEach(function (it) {
-      if (it.titre !== dernier) { dernier = it.titre; g.appendChild(el('h4', 'sous-groupe', it.titre)); }
+      if (d.id === 'ds' && it.titre !== dernier) { dernier = it.titre; g.appendChild(el('h4', 'sous-groupe', it.titre)); }
       g.appendChild(fiche(it, ch, c, true));
     });
     corps.appendChild(g);
@@ -235,8 +234,8 @@
         s.appendChild(t);
         var g = el('div', 'grille');
         ch.items.forEach(function (it) { g.appendChild(fiche(it, ch, c)); });
-        (ch.dossiers || []).forEach(function (d) { s.appendChild(dossier(d, ch, c)); });   // l'onglet orange précède les exercices
-        s.appendChild(g);
+        (ch.dossiers || []).forEach(function (d) { s.appendChild(dossier(d, ch, c)); });   // les blocs précèdent les fiches libres
+        if (ch.items.length) s.appendChild(g);
         bloc.appendChild(s);
       });
       liste.appendChild(bloc);

@@ -17,6 +17,8 @@
   --orange-vif: #99521f;
   --orange-fond: #f6e7da;
   --orange-texte: #8f4a18;
+  --vert-mat: #2f7a4d; --vert-mat-vif: #266640; --vert-mat-fond: #e3f1e8; --vert-mat-texte: #1f5e3a;       /* bloc « poly à trous » */
+  --marine: #1f3a68; --marine-vif: #182d51; --marine-fond: #e4eaf5; --marine-texte: #1f3a68;              /* bloc « correction des exercices » */
   --carreau: #dbe9f5;       /* quadrillage */
   --papier: #ffffff;
   --verre: rgba(251, 251, 253, .78);
@@ -38,6 +40,7 @@
     --fond: #000000; --fond-2: #141518; --encre: #f5f5f7; --gris: #a1a4ad; --filet: #2c2e34;
     --bleu: #4a9bff; --bleu-fond: #10233d; --rouge: #ff5c55; --pastille: #17405f; --vert: #4cc985; --violet: #b38cf0;
     --orange: #a85a2a; --orange-vif: #bf6c38; --orange-fond: #2a1e14; --orange-texte: #e8955a;
+    --vert-mat: #2c6b48; --vert-mat-vif: #378457; --vert-mat-fond: #14231a; --vert-mat-texte: #6fcf97; --marine: #2c4f8a; --marine-vif: #3a62a6; --marine-fond: #131c2e; --marine-texte: #8fb4f0;
     --carreau: #1f2a36; --papier: #0e1116; --verre: rgba(0, 0, 0, .72);
     --ombre: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
     color-scheme: dark;
@@ -47,6 +50,7 @@
   --fond: #000000; --fond-2: #141518; --encre: #f5f5f7; --gris: #a1a4ad; --filet: #2c2e34;
   --bleu: #4a9bff; --bleu-fond: #10233d; --rouge: #ff5c55; --pastille: #17405f; --vert: #4cc985; --violet: #b38cf0;
   --orange: #a85a2a; --orange-vif: #bf6c38; --orange-fond: #2a1e14; --orange-texte: #e8955a;
+  --vert-mat: #2c6b48; --vert-mat-vif: #378457; --vert-mat-fond: #14231a; --vert-mat-texte: #6fcf97; --marine: #2c4f8a; --marine-vif: #3a62a6; --marine-fond: #131c2e; --marine-texte: #8fb4f0;
   --carreau: #1f2a36; --papier: #0e1116; --verre: rgba(0, 0, 0, .72);
   --ombre: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
   color-scheme: dark;
@@ -373,11 +377,16 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .bouton.secondaire { background: var(--fond-2); color: var(--encre); }
 .bouton:disabled { opacity: .5; cursor: default; filter: none; }
 
-/* ---------- dossier « Devoirs surveillés » : onglet orange mat dans le chapitre (27 oct.) ---------- */
-.dossier-bloc { margin-bottom: 24px; }
-.dossier-tete { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 20px; border: 0; border-radius: 18px; background: var(--orange); color: #fff;
+/* ---------- blocs du chapitre : poly à trous (vert), exercices (bleu marine), devoirs surveillés (orange mat) ---------- */
+.dossier-bloc { margin-bottom: 14px; --dc: var(--orange); --dc-vif: var(--orange-vif); --dc-fond: var(--orange-fond); --dc-texte: var(--orange-texte); }
+.dossier-bloc.d-poly { --dc: var(--vert-mat); --dc-vif: var(--vert-mat-vif); --dc-fond: var(--vert-mat-fond); --dc-texte: var(--vert-mat-texte); }
+.dossier-bloc.d-exercices { --dc: var(--marine); --dc-vif: var(--marine-vif); --dc-fond: var(--marine-fond); --dc-texte: var(--marine-texte); }
+.chapitre.dossier.d-poly, .chapitre.dossier.d-exercices, .chapitre.dossier.d-ds { --dc: var(--orange); --dc-fond: var(--orange-fond); --dc-texte: var(--orange-texte); }
+.chapitre.dossier.d-poly { --dc: var(--vert-mat); --dc-fond: var(--vert-mat-fond); --dc-texte: var(--vert-mat-texte); }
+.chapitre.dossier.d-exercices { --dc: var(--marine); --dc-fond: var(--marine-fond); --dc-texte: var(--marine-texte); }
+.dossier-tete { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 20px; border: 0; border-radius: 18px; background: var(--dc); color: #fff;
   font: inherit; text-align: left; cursor: pointer; transition: background-color .3s, transform .35s var(--courbe); }
-.dossier-tete:hover { background: var(--orange-vif); }
+.dossier-tete:hover { background: var(--dc-vif); }
 .dossier-tete:active { transform: scale(.992); }
 .dossier-bloc.ouvert .dossier-tete { border-radius: 18px 18px 0 0; }
 .dossier-etiquette { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 3px 9px; border-radius: 999px; background: rgba(255, 255, 255, .22); }
@@ -386,18 +395,19 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .dossier-fleche { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, .22); font-size: 1.2rem; line-height: 1;
   transition: transform .35s var(--courbe); flex: none; }
 .dossier-bloc.ouvert .dossier-fleche { transform: rotate(90deg); }
-.dossier-corps { padding: 18px 16px 18px; border-radius: 0 0 18px 18px; background: var(--orange-fond); }
+.dossier-corps { padding: 18px 16px 18px; border-radius: 0 0 18px 18px; background: var(--dc-fond); }
 .dossier-corps .fiche { background: var(--papier); }
 .dossier-corps .fiche:hover { background: var(--fond); }
-.dossier-corps .fiche .num small { color: var(--orange-texte); }
-.dossier-corps .fiche .action.anim { background: var(--orange-fond); color: var(--orange-texte); }
-.dossier-corps .fiche > .fiche-lien > .titre { display: none; }
+.dossier-corps .fiche .num small, .dossier-corps .fiche.speciale .num { color: var(--dc-texte); }
+.dossier-corps .fiche.speciale { background: var(--papier); }
+.dossier-corps .fiche .action.anim { background: var(--dc-fond); color: var(--dc-texte); }
+.d-ds .dossier-corps .fiche > .fiche-lien > .titre { display: none; }
 @media (max-width: 720px) { .dossier-tete { padding: 14px 16px; gap: 10px; } .dossier-compte { display: none; } }
-.chapitre.dossier .chapitre-tete { border-bottom-color: var(--orange); }
-.chapitre.dossier .chapitre-tete .n { color: var(--orange-texte); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
+.chapitre.dossier .chapitre-tete { border-bottom-color: var(--dc); }
+.chapitre.dossier .chapitre-tete .n { color: var(--dc-texte); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
 .sous-groupe { grid-column: 1 / -1; margin: 10px 0 -2px; font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; color: var(--orange-texte); display: flex; align-items: center; gap: 12px; }
 .sous-groupe:first-child { margin-top: 0; }
 .sous-groupe::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--orange) 35%, transparent); }
-.chapitre.dossier .ligne-acces:nth-child(odd) { background: var(--orange-fond); }
+.chapitre.dossier .ligne-acces:nth-child(odd) { background: var(--dc-fond); }
 .fiche:has(.badge-ferme) { padding-top: 42px; }   /* la mention « Fermée aux élèves » ne recouvre plus le numéro */
 .fiche .action.verrou { white-space: normal; line-height: 1.25; padding-block: 6px; }

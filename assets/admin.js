@@ -160,9 +160,9 @@
       bloc.appendChild(el('h2', null, c.nom));
       c.chapitres.forEach(function (ch) {
         var s = el('div', 'chapitre'), t = el('div', 'chapitre-tete');
-        t.appendChild(el('span', 'n', ch.dossier ? 'Dossier' : 'Chapitre ' + ch.numero));
+        t.appendChild(el('span', 'n', 'Chapitre ' + ch.numero));
         t.appendChild(el('h3', null, ch.titre));
-        if (ch.dossier) s.classList.add('dossier');
+        if (ch.dossier) s.classList.add('dossier', 'd-' + ch.dossier);
         var acts = el('div', 'chap-actions'), lignes = el('div', 'lignes');
         [['Tout ouvrir', true], ['Tout fermer', false]].forEach(function (o) {
           var b = el('button', null, o[0]); b.type = 'button';
@@ -180,7 +180,7 @@
           l.appendChild(nom);
           var ap = el('a', 'apercu', 'Aperçu'); ap.href = it.href; ap.target = '_blank'; ap.rel = 'noopener'; l.appendChild(ap);
           var sw = interrupteur(id); l.appendChild(sw);
-          l.dataset.cherche = norm([c.nom, ch.dossier ? 'dossier ds devoir surveille' : 'chapitre ' + ch.numero, ch.titre, libelle(it), it.titre, it.consigne].join(' '));
+          l.dataset.cherche = norm([c.nom, (ch.dossier ? 'dossier ' + ch.dossier + ' devoir surveille ' : '') + 'chapitre ' + ch.numero, ch.titre, libelle(it), it.titre, it.consigne].join(' '));
           lignes.appendChild(l); sw.maj();
         });
         s.appendChild(lignes); bloc.appendChild(s);
@@ -256,10 +256,10 @@
     DONNEES.classes.forEach(function (c) {      // le dossier « Devoirs surveillés » suit son chapitre, en bloc orange
       var l = [];
       c.chapitres.forEach(function (ch) {
-        l.push(ch);
         (ch.dossiers || []).forEach(function (o) {
-          l.push({ numero: ch.numero + '-' + o.id, titre: o.titre + ' · ' + (ch.titre || 'chapitre ' + ch.numero), dossier: true, items: o.items });
+          l.push({ numero: ch.numero, titre: o.titre + ' · ' + (ch.titre || 'chapitre ' + ch.numero), dossier: o.id, items: o.items });
         });
+        if (ch.items.length) l.push(ch);
       });
       c.chapitres = l;
     });

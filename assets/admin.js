@@ -253,9 +253,15 @@
       .catch(function () { throw new Error('Mot de passe professeur incorrect.'); });
     MDP_PROF = mdpProf;
     DONNEES = await dechiffrer(MDP_ELEVES);
-    DONNEES.classes.forEach(function (c) {      // le dossier « Devoirs surveillés » se range après les chapitres
-      (c.dossiers || []).forEach(function (o) { o.numero = o.id; o.dossier = true; c.chapitres.push(o); });
-      c.dossiers = [];
+    DONNEES.classes.forEach(function (c) {      // le dossier « Devoirs surveillés » suit son chapitre, en bloc orange
+      var l = [];
+      c.chapitres.forEach(function (ch) {
+        l.push(ch);
+        (ch.dossiers || []).forEach(function (o) {
+          l.push({ numero: ch.numero + '-' + o.id, titre: o.titre + ' · ' + (ch.titre || 'chapitre ' + ch.numero), dossier: true, items: o.items });
+        });
+      });
+      c.chapitres = l;
     });
     JETON = jeton;
     var j = await lireAcces();

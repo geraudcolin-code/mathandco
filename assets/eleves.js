@@ -84,13 +84,13 @@
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 
-  function fiche(it, chap, classe) {
+  function fiche(it, chap, classe, dansDossier) {
     // la fiche entière ouvre l'animation ; « Corrigé PDF » (s'il existe) télécharge le corrigé
     var f = el('div', 'fiche'), a = el('a', 'fiche-lien'); a.href = it.href; f.appendChild(a);
     var ferme = !ouverte(it);
     var num = el('div', 'num');
     if (it.type === 'exercice' || it.type === 'evaluation') {
-      num.appendChild(el('small', null, it.type === 'evaluation' && !chap.dossier ? 'Évaluation, ex.' : 'Exercice'));
+      num.appendChild(el('small', null, it.type === 'evaluation' && !dansDossier ? 'Évaluation, ex.' : 'Exercice'));
       num.appendChild(document.createTextNode(it.numero));
     } else {
       f.classList.add('speciale');
@@ -111,7 +111,7 @@
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
       actions.appendChild(el('span', 'action verrou', 'Après la correction en classe'));
       f.appendChild(actions);
-      f.dataset.cherche = norm([classe.nom, chap.dossier ? 'dossier ds devoir surveille' : 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
+      f.dataset.cherche = norm([classe.nom, (dansDossier ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
     }
     if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
@@ -124,7 +124,7 @@
       actions.appendChild(b);
     }
     f.appendChild(actions);
-    f.dataset.cherche = norm([classe.nom, chap.dossier ? 'dossier ds devoir surveille' : 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
+    f.dataset.cherche = norm([classe.nom, (dansDossier ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
     return f;
   }
 
@@ -134,7 +134,8 @@
   var ouvert = null;          // clé « classe/numéro » du chapitre ouvert, ou null
   var pousse = false;         // le chapitre ouvert a ajouté une entrée à l'historique (le bouton « ‹ » fait alors Retour)
   function cle(c, ch) { return c.id + '/' + ch.numero; }
-  function nomCh(ch) { return ch.dossier ? 'Dossier' : 'Chapitre ' + ch.numero; }
+  function nomCh(ch) { return 'Chapitre ' + ch.numero; }
+  function tousItems(ch) { return (ch.dossiers || []).reduce(function (a, d) { return a.concat(d.items); }, ch.items.slice()); }
   function lireAdresse() {
     var h = decodeURIComponent((location.hash || '').slice(1)), p = h.split('/');
     var c = DONNEES && DONNEES.classes.filter(function (x) { return x.id === p[0]; })[0];
@@ -169,7 +170,7 @@
 
   function tuile(c, ch) {
     var total = ch.items.length, dispo = ch.items.filter(ouverte).length;
-    var b = el('button', 'ch-tuile' + (ch.dossier ? ' dossier' : '')); b.type = 'button'; b.dataset.cle = cle(c, ch);
+    var b = el('button', 'ch-tuile'); b.type = 'button'; b.dataset.cle = cle(c, ch);
     if (!ADMIN && dispo === 0) b.classList.add('vide-tuile');
     b.appendChild(el('span', 'ch-tuile-n', nomCh(ch)));
     b.appendChild(el('span', 'ch-tuile-titre', ch.titre || nomCh(ch)));
@@ -189,6 +190,29 @@
     return b;
   }
 
+  // dossier « Devoirs surveillés » : onglet orange mat dans le chapitre ; un clic déplie les fiches, rangées par sujet
+  function dossier(d, ch, c) {
+    var bloc = el('div', 'dossier-bloc'), dispo = d.items.filter(ouverte).length;
+    var tete = el('button', 'dossier-tete'); tete.type = 'button'; tete.setAttribute('aria-expanded', 'false');
+    tete.appendChild(el('span', 'dossier-etiquette', 'Dossier'));
+    tete.appendChild(el('span', 'dossier-titre', d.titre));
+    tete.appendChild(el('span', 'dossier-compte', ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + d.items.length
+      : dispo === 0 ? 'Bientôt disponible' : dispo + ' sur ' + d.items.length));
+    tete.appendChild(el('span', 'dossier-fleche', '›'));
+    var corps = el('div', 'dossier-corps'); corps.hidden = true;
+    var g = el('div', 'grille'), dernier = null;
+    d.items.forEach(function (it) {
+      if (it.titre !== dernier) { dernier = it.titre; g.appendChild(el('h4', 'sous-groupe', it.titre)); }
+      g.appendChild(fiche(it, ch, c, true));
+    });
+    corps.appendChild(g);
+    tete.addEventListener('click', function () {
+      var o = bloc.classList.toggle('ouvert'); tete.setAttribute('aria-expanded', o ? 'true' : 'false'); appliquer();
+    });
+    bloc.appendChild(tete); bloc.appendChild(corps);
+    return bloc;
+  }
+
   function construire() {
     var liste = $('liste'); liste.innerHTML = '';
     DONNEES.classes.forEach(function (c) {
@@ -198,7 +222,7 @@
       c.chapitres.forEach(function (ch) { tuiles.appendChild(tuile(c, ch)); });
       bloc.appendChild(tuiles);
       c.chapitres.forEach(function (ch) {
-        var s = el('div', 'chapitre' + (ch.dossier ? ' dossier' : '')); s.dataset.cle = cle(c, ch);
+        var s = el('div', 'chapitre'); s.dataset.cle = cle(c, ch);
         var retour = el('button', 'ch-retour'); retour.type = 'button';
         retour.innerHTML = '<span aria-hidden="true">‹</span> ' + c.nom;
         retour.addEventListener('click', function () {
@@ -210,11 +234,8 @@
         t.appendChild(el('h3', null, ch.titre));
         s.appendChild(t);
         var g = el('div', 'grille');
-        var dernier = null;
-        ch.items.forEach(function (it) {
-          if (ch.dossier && it.titre !== dernier) { dernier = it.titre; g.appendChild(el('h4', 'sous-groupe', it.titre)); }
-          g.appendChild(fiche(it, ch, c));
-        });
+        ch.items.forEach(function (it) { g.appendChild(fiche(it, ch, c)); });
+        (ch.dossiers || []).forEach(function (d) { s.appendChild(dossier(d, ch, c)); });   // l'onglet orange précède les exercices
         s.appendChild(g);
         bloc.appendChild(s);
       });
@@ -235,7 +256,7 @@
         seg.appendChild(b);
       });
     var tous = [];
-    DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { tous = tous.concat(ch.items); }); });
+    DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { tous = tous.concat(tousItems(ch)); }); });
     var dispo = tous.filter(ouverte).length;
     $('resume').textContent = ACCES === null
       ? 'Impossible de vérifier quelles corrections sont ouvertes : rechargez la page dans un instant.'
@@ -274,12 +295,16 @@
           var ok = okClasse && montre && q.every(function (m) { return f.dataset.cherche.indexOf(m) >= 0; });
           f.hidden = !ok; if (ok) n++;
         });
-        var courant = null, vu = false;
-        Array.prototype.forEach.call(ch.querySelectorAll('.grille > *'), function (x) {
-          if (x.classList.contains('sous-groupe')) { if (courant) courant.hidden = !vu; courant = x; vu = false; }
-          else if (!x.hidden) vu = true;
+        Array.prototype.forEach.call(ch.querySelectorAll('.dossier-bloc'), function (d) {
+          var courant = null, vu = false, total = 0;
+          Array.prototype.forEach.call(d.querySelectorAll('.grille > *'), function (x) {
+            if (x.classList.contains('sous-groupe')) { if (courant) courant.hidden = !vu; courant = x; vu = false; }
+            else if (!x.hidden) { vu = true; total++; }
+          });
+          if (courant) courant.hidden = !vu;
+          d.hidden = total === 0;
+          d.querySelector('.dossier-corps').hidden = !(cherche || d.classList.contains('ouvert'));
         });
-        if (courant) courant.hidden = !vu;
         ch.hidden = n === 0; nb += n;
         ch.querySelector('.ch-retour').hidden = cherche;
       });
@@ -295,11 +320,6 @@
   window.addEventListener('popstate', suivreAdresse);
 
   function ouvrir(d) {
-    // le dossier « Devoirs surveillés » se range après les chapitres, comme un bloc de plus
-    d.classes.forEach(function (c) {
-      (c.dossiers || []).forEach(function (o) { o.numero = o.id; o.dossier = true; c.chapitres.push(o); });
-      c.dossiers = [];
-    });
     DONNEES = d;
     return chargerAcces().then(function (a) {
       ACCES = a;

@@ -373,23 +373,28 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .bouton.secondaire { background: var(--fond-2); color: var(--encre); }
 .bouton:disabled { opacity: .5; cursor: default; filter: none; }
 
-/* ---------- dossier « Devoirs surveillés » : onglet orange mat, à part des chapitres (27 oct.) ---------- */
-.ch-tuile.dossier { background: var(--orange); color: #fff; }
-.ch-tuile.dossier:hover { background: var(--orange-vif); }
-.ch-tuile.dossier .ch-tuile-n { color: rgba(255, 255, 255, .8); text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; font-weight: 600; }
-.ch-tuile.dossier .ch-tuile-titre, .ch-tuile.dossier .ch-tuile-compte { color: #fff; }
-.ch-tuile.dossier .ch-tuile-fleche { background: rgba(255, 255, 255, .22); color: #fff; }
-.ch-tuile.dossier .ch-tuile-barre span { background: #fff; opacity: .6; }
-.ch-tuile.dossier::before { content: ""; position: absolute; top: 0; right: 22px; width: 38px; height: 8px; border-radius: 0 0 6px 6px; background: rgba(255, 255, 255, .35); }
+/* ---------- dossier « Devoirs surveillés » : onglet orange mat dans le chapitre (27 oct.) ---------- */
+.dossier-bloc { margin-bottom: 24px; }
+.dossier-tete { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 20px; border: 0; border-radius: 18px; background: var(--orange); color: #fff;
+  font: inherit; text-align: left; cursor: pointer; transition: background-color .3s, transform .35s var(--courbe); }
+.dossier-tete:hover { background: var(--orange-vif); }
+.dossier-tete:active { transform: scale(.992); }
+.dossier-bloc.ouvert .dossier-tete { border-radius: 18px 18px 0 0; }
+.dossier-etiquette { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 3px 9px; border-radius: 999px; background: rgba(255, 255, 255, .22); }
+.dossier-titre { flex: 1; min-width: 0; font-size: 1.2rem; font-weight: 700; letter-spacing: -.02em; }
+.dossier-compte { font-size: var(--t-petit); opacity: .92; white-space: nowrap; }
+.dossier-fleche { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 255, 255, .22); font-size: 1.2rem; line-height: 1;
+  transition: transform .35s var(--courbe); flex: none; }
+.dossier-bloc.ouvert .dossier-fleche { transform: rotate(90deg); }
+.dossier-corps { padding: 18px 16px 18px; border-radius: 0 0 18px 18px; background: var(--orange-fond); }
+.dossier-corps .fiche { background: var(--papier); }
+.dossier-corps .fiche:hover { background: var(--fond); }
+.dossier-corps .fiche .num small { color: var(--orange-texte); }
+.dossier-corps .fiche .action.anim { background: var(--orange-fond); color: var(--orange-texte); }
+.dossier-corps .fiche > .fiche-lien > .titre { display: none; }
+@media (max-width: 720px) { .dossier-tete { padding: 14px 16px; gap: 10px; } .dossier-compte { display: none; } }
 .chapitre.dossier .chapitre-tete { border-bottom-color: var(--orange); }
 .chapitre.dossier .chapitre-tete .n { color: var(--orange-texte); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
-.chapitre.dossier .fiche { background: var(--orange-fond); }
-.chapitre.dossier .fiche:hover { background: var(--papier); }
-.chapitre.dossier .fiche .num small { color: var(--orange-texte); }
-.chapitre.dossier .fiche .action.anim { background: var(--papier); color: var(--orange-texte); }
-.chapitre.dossier .fiche > .fiche-lien > .titre { display: none; }
-.chapitre.dossier .ch-retour { color: var(--orange-texte); }
-.chapitre.dossier .ch-retour:hover { background: var(--orange-fond); }
 .sous-groupe { grid-column: 1 / -1; margin: 10px 0 -2px; font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; color: var(--orange-texte); display: flex; align-items: center; gap: 12px; }
 .sous-groupe:first-child { margin-top: 0; }
 .sous-groupe::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--orange) 35%, transparent); }

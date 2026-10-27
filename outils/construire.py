@@ -326,17 +326,17 @@ def catalogue(mdp, mdp_prof=None):
             rang = {'poly': 0, 'exercice': 1, 'evaluation': 2, 'flash': 3, 'autre': 4}
             lot.sort(key=lambda e: (rang[e['type']], e['numero'], e['fichier']))
             titre_ch = CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
-            # chaque chapitre range ses pages en blocs repliables de couleur : complétion du poly à trous (vert),
-            # correction des exercices (bleu marine), devoirs surveillés (orange mat) ; le reste (questions flash,
-            # animations) reste en fiches libres sous les blocs
+            # chaque chapitre range ses pages en blocs repliables de couleur : cours (vert : poly à trous puis
+            # animations du chapitre, p. ex. combinaisons de vecteurs, nombre dérivé et vitesse), correction des exercices
+            # (bleu marine), devoirs surveillés (orange mat) ; les questions flash restent en fiches libres sous les blocs
             def bloc(ident, titre, types, cle=lambda e: (e['numero'], e['fichier'])):
                 lst = sorted((e for e in lot if e['type'] in types), key=cle)
                 return {'id': ident, 'titre': titre, 'items': [fiche_cat(e) for e in lst]} if lst else None
-            blocs = [bloc('poly', 'Complétion du poly à trous', ('poly',)),
+            blocs = [bloc('poly', 'Cours : poly à trous et animations', ('poly', 'autre'), lambda e: (rang[e['type']], e['numero'], e['fichier'])),
                      bloc('exercices', 'Correction des exercices', ('exercice',)),
                      bloc('ds', 'Devoirs surveillés', ('evaluation',),
                           lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero']))]
-            chap = {'numero': num, 'titre': titre_ch, 'items': [fiche_cat(e) for e in lot if e['type'] in ('flash', 'autre')]}
+            chap = {'numero': num, 'titre': titre_ch, 'items': [fiche_cat(e) for e in lot if e['type'] == 'flash']}
             chap['dossiers'] = [x for x in blocs if x]
             chaps.append(chap)
         classes.append({'id': cid, 'nom': nom_classe, 'chapitres': chaps})

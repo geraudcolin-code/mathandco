@@ -411,3 +411,13 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .chapitre.dossier .ligne-acces:nth-child(odd) { background: var(--dc-fond); }
 .fiche:has(.badge-ferme) { padding-top: 42px; }   /* la mention « Fermée aux élèves » ne recouvre plus le numéro */
 .fiche .action.verrou { white-space: normal; line-height: 1.25; padding-block: 6px; }
+
+/* Accueil : encarts « version bêta » et « chers élèves » */
+.accueil-bloc { padding-block: clamp(28px, 5vw, 48px) 0; }
+.accueil-cartes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.accueil-carte { padding: 22px 24px; border-radius: 20px; border: 1px solid var(--filet); background: var(--papier); border-left: 5px solid var(--cc); --cc: var(--bleu); }
+.accueil-carte.conseil { --cc: var(--rouge); }
+.accueil-etiquette { display: inline-block; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--cc); }
+.accueil-carte h2 { font-size: 1.25rem; letter-spacing: -.02em; margin: 6px 0 8px; }
+.accueil-carte p { color: var(--gris); font-size: .98rem; line-height: 1.55; margin: 0; }
+@media (max-width: 720px) { .accueil-cartes { grid-template-columns: 1fr; } }

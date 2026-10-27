@@ -33,24 +33,12 @@
         <input id="mdp" type="password" placeholder="Mot de passe des corrections" required autocomplete="current-password">
       </div>
       <div class="champ">
-        <label for="jeton" style="position:absolute;left:-9999px">Clé GitHub</label>
-        <input id="jeton" type="password" placeholder="Clé GitHub (github_pat_…)" required autocomplete="off" spellcheck="false">
+        <label for="jeton" style="position:absolute;left:-9999px">Clé d'accès</label>
+        <input id="jeton" type="password" placeholder="Clé d'accès" required autocomplete="off" spellcheck="false">
       </div>
       <button class="bouton" id="entrer" type="submit">Se connecter</button>
       <label class="souvenir" for="souvenir"><input type="checkbox" id="souvenir" checked> Rester connecté sur cet appareil</label>
       <p class="message" id="message" role="alert"></p>
-      <details class="prof-aide">
-        <summary>Créer la clé GitHub (une seule fois)</summary>
-        <ol>
-          <li>Sur github.com, connecté : photo en haut à droite → <b>Settings</b> → tout en bas à gauche <b>Developer settings</b>.</li>
-          <li><b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b>.</li>
-          <li>Nom : <code>Colinéaire</code> ; Expiration : la plus longue proposée.</li>
-          <li><b>Repository access</b> : <b>Only select repositories</b> → <code>mathandco</code>.</li>
-          <li><b>Permissions</b> → <b>Contents</b> : <b>Read and write</b>.</li>
-          <li><b>Generate token</b>, puis copiez la clé (elle commence par <code>github_pat_</code>) et collez-la ici.</li>
-        </ol>
-        <p style="margin:0 0 12px">La clé reste sur cet appareil. Ne la donnez à personne : c'est elle qui permet de modifier le site.</p>
-      </details>
     </form>
   </section>
 
@@ -82,6 +70,6 @@
   </div>
 </main>
 <script src="assets/catalogue.js?v=353df2216f"></script>
-<script src="assets/admin.js?v=20261021"></script>
+<script src="assets/admin.js?v=20261027"></script>
 </body>
 </html>

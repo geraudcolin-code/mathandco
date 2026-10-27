@@ -1,7 +1,6 @@
 /* Colinéaire : espace professeur. Ouvre ou ferme chaque correction aux élèves.
-   L'état est le fichier acces.json du dépôt GitHub (liste des corrections ouvertes) ; « Publier » l'enregistre par l'API
-   GitHub avec la clé personnelle du professeur (jeton « fine-grained », droit Contents en écriture sur ce seul dépôt).
-   La clé ne quitte pas l'appareil : elle n'est envoyée qu'à api.github.com. */
+   L'état est le fichier acces.json (liste des corrections ouvertes) ; « Publier » l'enregistre avec la clé d'accès
+   du professeur, qui reste sur l'appareil. */
 (function () {
   'use strict';
   var DEPOT = 'geraudcolin-code/mathandco', BRANCHE = 'main', FICHIER = 'acces.json';
@@ -24,16 +23,16 @@
   function b64utf8(s) { return btoa(unescape(encodeURIComponent(s))); }
   function utf8b64(s) { return decodeURIComponent(escape(atob(s.replace(/\s/g, '')))); }
 
-  // ---------- GitHub ----------
+  // ---------- enregistrement ----------
   var JETON = null, SHA = null;
   function entetes() {
     return { 'Authorization': 'Bearer ' + JETON, 'Accept': 'application/vnd.github+json' };
   }
   async function lireDepot() {
     var r = await fetch(API + '?ref=' + BRANCHE + '&t=' + Date.now(), { headers: entetes(), cache: 'no-store' });
-    if (r.status === 401) throw new Error('La clé GitHub est refusée (mal copiée ou expirée). Créez-en une nouvelle.');
-    if (r.status === 403 || r.status === 404) throw new Error('La clé GitHub n\'a pas accès au dépôt mathandco. Vérifiez « Repository access » et « Contents ».');
-    if (!r.ok) throw new Error('GitHub ne répond pas (erreur ' + r.status + '). Réessayez dans un instant.');
+    if (r.status === 401) throw new Error('La clé d’accès est refusée (mal copiée ou expirée).');
+    if (r.status === 403 || r.status === 404) throw new Error('La clé d’accès n’a pas les droits nécessaires.');
+    if (!r.ok) throw new Error('Le serveur ne répond pas (erreur ' + r.status + '). Réessayez dans un instant.');
     var j = await r.json();
     SHA = j.sha;
     return JSON.parse(utf8b64(j.content));
@@ -45,9 +44,9 @@
       body: JSON.stringify({ message: message, content: b64utf8(corps), sha: SHA, branch: BRANCHE })
     });
     if (r.status === 409 || r.status === 422) return 'conflit';
-    if (r.status === 401) throw new Error('La clé GitHub est refusée (expirée ?). Reconnectez-vous avec une nouvelle clé.');
-    if (r.status === 403 || r.status === 404) throw new Error('La clé GitHub ne permet pas d\'écrire : donnez-lui « Contents : Read and write ».');
-    if (!r.ok) throw new Error('GitHub a refusé l\'enregistrement (erreur ' + r.status + ').');
+    if (r.status === 401) throw new Error('La clé d’accès est refusée (expirée ?). Reconnectez-vous avec une nouvelle clé.');
+    if (r.status === 403 || r.status === 404) throw new Error('La clé d’accès ne permet pas d’enregistrer.');
+    if (!r.ok) throw new Error('L’enregistrement a été refusé (erreur ' + r.status + ').');
     SHA = (await r.json()).content.sha;
     return 'ok';
   }

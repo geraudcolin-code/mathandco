@@ -336,15 +336,16 @@ def catalogue(mdp, mdp_prof=None):
             titre_ch = CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
             # chaque chapitre range ses pages en blocs repliables de couleur : cours (vert : poly à trous puis
             # animations du chapitre, p. ex. combinaisons de vecteurs, nombre dérivé et vitesse), correction des exercices
-            # (bleu marine), devoirs surveillés (orange mat) ; les questions flash restent en fiches libres sous les blocs
+            # (bleu marine), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier
             def bloc(ident, titre, types, cle=lambda e: (e['numero'], e['fichier'])):
                 lst = sorted((e for e in lot if e['type'] in types), key=cle)
                 return {'id': ident, 'titre': titre, 'items': [fiche_cat(e) for e in lst]} if lst else None
             blocs = [bloc('poly', 'Cours et animations', ('poly', 'autre'), lambda e: (rang[e['type']], e['numero'], e['fichier'])),
                      bloc('exercices', 'Correction des exercices', ('exercice',)),
                      bloc('ds', 'Devoirs surveillés', ('evaluation',),
-                          lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero']))]
-            chap = {'numero': num, 'titre': titre_ch, 'items': [fiche_cat(e) for e in lot if e['type'] == 'flash']}
+                          lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero'])),
+                     bloc('flash', 'Questions flash', ('flash',))]
+            chap = {'numero': num, 'titre': titre_ch, 'items': []}
             chap['dossiers'] = [x for x in blocs if x]
             chaps.append(chap)
         classes.append({'id': cid, 'nom': nom_classe, 'chapitres': chaps})

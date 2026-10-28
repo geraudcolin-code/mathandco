@@ -111,7 +111,7 @@
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
       actions.appendChild(el('span', 'action verrou', 'Après la correction en classe'));
       f.appendChild(actions);
-      f.dataset.cherche = norm([classe.nom, (dansDossier ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
+      f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
     }
     if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
@@ -124,7 +124,7 @@
       actions.appendChild(b);
     }
     f.appendChild(actions);
-    f.dataset.cherche = norm([classe.nom, (dansDossier ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
+    f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
     return f;
   }
 

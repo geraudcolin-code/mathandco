@@ -1,2 +1,2 @@
 /* Clé de l'Espace professeur (générée par outils/construire.py, ne pas modifier). */
-window.CLE_PROF = {"s": "f5oX+u/OSyfEfZ/jeb97Fw==", "i": "+YfYvTSLes0sUxzA", "n": 600000, "c": "erbnu5XkoTJximcl8YEOATTsfhVLj9E+W75VuI+yhMCBOvT+pbWq"};
+window.CLE_PROF = {"s": "Vruqg6Id0iTcwf5BXBOEvQ==", "i": "aF8WXPjAVv3Z61lz", "n": 600000, "c": "b2Y1zA22fV+YcJ9C+APEOAr+OAVpkxzMybBL2XU0LdEgXBNraUFB"};

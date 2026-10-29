@@ -135,7 +135,7 @@
   function changements() { return items().map(ident).filter(function (s) { return !!VOULU[s] !== !!PUBLIE[s]; }); }
   function libelle(it) {
     if (it.type === 'exercice') return 'Exercice ' + it.numero;
-    if (it.type === 'evaluation') return 'Évaluation, exercice ' + it.numero;
+    if (it.type === 'evaluation') return (it.sujet ? 'Sujet ' + it.sujet + ', ' : 'Évaluation, ') + 'exercice ' + it.numero;
     if (it.type === 'poly') return 'Poly à trous';
     if (it.type === 'flash') return 'Questions flash';
     return it.titre || it.nom;
@@ -248,11 +248,16 @@
   // ---------- connexion ----------
   async function entrer(mdpProf, jeton, garder) {
     if (!window.CLE_PROF) throw new Error('Clé de l’Espace professeur absente du site.');
-    MDP_ELEVES = await ouvrirP(window.CLE_PROF, mdpProf)
-      .then(function (b) { return JSON.parse(new TextDecoder().decode(b)).mdp; })
+    var CLE = await ouvrirP(window.CLE_PROF, mdpProf)
+      .then(function (b) { return JSON.parse(new TextDecoder().decode(b)); })
       .catch(function () { throw new Error('Mot de passe professeur incorrect.'); });
+    MDP_ELEVES = CLE.mdp;
     MDP_PROF = mdpProf;
     DONNEES = await dechiffrer(MDP_ELEVES);
+    // titres et consignes des devoirs surveillés : absents du catalogue des élèves, conservés dans la clé du professeur
+    DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { (ch.dossiers || []).forEach(function (o) {
+      o.items.forEach(function (it) { var d = (CLE.ds || {})[ident(it)]; if (d) { it.titre = d.titre; it.consigne = d.consigne; } });
+    }); }); });
     DONNEES.classes.forEach(function (c) {      // le dossier « Devoirs surveillés » suit son chapitre, en bloc orange
       var l = [];
       c.chapitres.forEach(function (ch) {

@@ -407,6 +407,18 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .dossier-corps .fiche.speciale { background: var(--papier); }
 .dossier-corps .fiche .action.anim { background: var(--dc-fond); color: var(--dc-texte); }
 .d-ds .dossier-corps .fiche > .fiche-lien > .titre { display: none; }
+/* Devoirs surveillés : deux sections pleine largeur (Sujet A, Sujet B) ; bloc entièrement fermé tant qu'aucune correction n'est ouverte */
+.d-ds .dossier-corps { display: flex; flex-direction: column; gap: 16px; }
+.d-ds .sujet { width: 100%; padding: 16px 16px 18px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--orange) 30%, transparent); background: color-mix(in srgb, var(--papier) 45%, transparent); }
+.d-ds .sujet > h4 { margin: 0 0 14px; font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; color: var(--orange-texte); display: flex; align-items: center; gap: 12px; }
+.d-ds .sujet > h4::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--orange) 35%, transparent); }
+.d-ds .sujet .fiche { min-height: 112px; }
+.dossier-bloc.verrouille .dossier-tete { background: color-mix(in srgb, var(--dc) 38%, var(--fond-2)); color: var(--encre); cursor: not-allowed; }
+.dossier-bloc.verrouille .dossier-tete:hover { background: color-mix(in srgb, var(--dc) 38%, var(--fond-2)); }
+.dossier-bloc.verrouille .dossier-fleche { background: rgba(0, 0, 0, .08); color: var(--gris); }
+.dossier-bloc.verrouille .dossier-compte { color: var(--gris); opacity: 1; }
+.dossier-bloc.verrouille.secoue { animation: secoue .45s var(--courbe); }
+@media (max-width: 720px) { .dossier-bloc.verrouille .dossier-compte { display: none; } }
 @media (max-width: 720px) { .dossier-tete { padding: 14px 16px; gap: 10px; } .dossier-compte { display: none; } }
 .chapitre.dossier .chapitre-tete { border-bottom-color: var(--dc); }
 .chapitre.dossier .chapitre-tete .n { color: var(--dc-texte); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }

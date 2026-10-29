@@ -149,10 +149,11 @@ def rechiffrer_pdf(chemin, mdps, vers):
     raise SystemExit(f'Aucun des mots de passe n\'ouvre « {os.path.basename(chemin)} ».')
 
 
-def ecrire_cle(mdp, mdp_prof):
-    """assets/cle.js : le mot de passe des élèves, chiffré avec celui du professeur (pour l'Espace professeur)"""
+def ecrire_cle(mdp, mdp_prof, details=None):
+    """assets/cle.js : le mot de passe des élèves, chiffré avec celui du professeur (pour l'Espace professeur), avec les
+    intitulés des devoirs surveillés (titre, consigne), que le catalogue des élèves ne contient volontairement pas"""
     js = ('/* Clé de l\'Espace professeur (générée par outils/construire.py, ne pas modifier). */\n'
-          'window.CLE_PROF = ' + json.dumps(chiffrer({'mdp': mdp}, mdp_prof)) + ';\n')
+          'window.CLE_PROF = ' + json.dumps(chiffrer({'mdp': mdp, 'ds': details or {}}, mdp_prof)) + ';\n')
     open(os.path.join(RACINE, 'assets', 'cle.js'), 'w', encoding='utf-8').write(js)
     import hashlib
     ad = os.path.join(RACINE, 'admin.html')
@@ -313,16 +314,12 @@ def catalogue(mdp, mdp_prof=None):
         info = analyser_nom(nom)
         titre, consigne, sous = infos_page(page, mdp, nom, mdp_prof)
         titre = TITRES_IMPOSES.get(f, titre)
-        # DS n°1 de Seconde CH01 : deux sections « DS 1, sujet A / B » (le titre de l'exercice passe dans la consigne)
-        mds = re.match(r'2nde-ch01-ds1([ab])-exercice-\d+\.html$', f)
-        if mds:
-            consigne = f'{titre}. {consigne}'.rstrip('.') + '.' if consigne else titre + '.'
-            titre = f'DS 1, sujet {mds.group(1).upper()}'
         info.update(titre=titre, consigne=consigne, sous=sous, fichier=f)
         entrees.append(info)
         print(f'  {nom:52s} {titre}')
 
     classes = []
+    details = {}
     for cid in ORDRE:
         items = [e for e in entrees if e['classe'] == cid]
         if not items:
@@ -330,8 +327,15 @@ def catalogue(mdp, mdp_prof=None):
         nom_classe = next(v[1] for v in CLASSES.values() if v[0] == cid)
         chaps = []
         def fiche_cat(e):
-            return dict({'type': e['type'], 'numero': e['numero'], 'titre': e['titre'], 'consigne': e['consigne'],
-                         'href': 'corrections/' + e['fichier'], 'nom': e['nom']},
+            # devoir surveillé : ni titre ni consigne dans le catalogue des élèves (lisible avec leur mot de passe) ;
+            # ils ne figurent que dans la clé du professeur (cle.js) ; la page ne garde que le sujet (A ou B)
+            ds = e['type'] == 'evaluation'
+            if ds:
+                details[e['fichier'][:-5]] = {'titre': e['titre'], 'consigne': e['consigne']}
+                m = re.search(r'-ch\d+-ds(\d+)-?(?:sujet)?([ab])-exercice-\d+\.html$', e['fichier'])
+                extra = {'ds': int(m.group(1)), 'sujet': m.group(2).upper()} if m else {}
+            return dict({'type': e['type'], 'numero': e['numero'], **({} if ds else {'titre': e['titre'], 'consigne': e['consigne']}),
+                         'href': 'corrections/' + e['fichier'], 'nom': e['nom'], **(extra if ds else {})},
                         **({'pdf': 'corrections/' + e['fichier'][:-5] + '.pdf.bin', 'pdfnom': e['nom'] + '.pdf'}
                            if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
         for num in sorted({e['chapitre'] for e in items}):
@@ -359,7 +363,7 @@ def catalogue(mdp, mdp_prof=None):
     js += 'window.CATALOGUE = ' + json.dumps(chiffrer({'classes': classes}, mdp)) + ';\n'
     open(os.path.join(RACINE, 'assets', 'catalogue.js'), 'w', encoding='utf-8').write(js)
     if mdp_prof:
-        ecrire_cle(mdp, mdp_prof)
+        ecrire_cle(mdp, mdp_prof, details)
     # l'espace élèves charge « catalogue.js?v=… » : la version change avec le catalogue (pas d'ancien catalogue en cache)
     import hashlib
     ev = os.path.join(RACINE, 'eleves.html')
@@ -439,8 +443,8 @@ if __name__ == '__main__':
     if sys.argv[1] in ('ouvrir', 'fermer'):
         basculer(sys.argv[2:], sys.argv[1] == 'ouvrir', mdp, mdp_prof)
         sys.exit(0)
-    if sys.argv[1] == 'cle':
-        ecrire_cle(mdp, mdp_prof)
+    if sys.argv[1] == 'cle':      # la clé contient aussi les intitulés des DS : elle se refait avec le catalogue
+        catalogue(mdp, mdp_prof)
         sys.exit(0)
     if sys.argv[1] == 'ajouter':
         ajouter(sys.argv[2:], mdp, mdp_prof)

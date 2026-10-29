@@ -191,20 +191,53 @@
   }
 
   // blocs du chapitre (poly à trous : vert ; exercices : bleu marine ; devoirs surveillés : orange mat, rangés par sujet) ; un clic déplie
+  var CADENAS = '<svg viewBox="0 0 11 13" aria-hidden="true" width="14" height="16"><path fill="currentColor" d="M2.5 5.5V4a3 3 0 0 1 6 0v1.5h.5a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1zm1.5 0h3V4a1.5 1.5 0 0 0-3 0z"/></svg>';
+  function secouer(e) { e.classList.remove('secoue'); void e.offsetWidth; e.classList.add('secoue'); }
+
   function dossier(d, ch, c) {
+    var ds = d.id === 'ds';
+    // devoirs surveillés : tant qu'aucune correction n'est ouverte, le bloc est fermé pour les élèves — ni nombre
+    // d'exercices ni titres (le catalogue des élèves n'en contient d'ailleurs aucun)
+    var items = ds && !ADMIN ? d.items.filter(ouverte) : d.items;
     var bloc = el('div', 'dossier-bloc d-' + d.id), dispo = d.items.filter(ouverte).length, n = d.items.length;
-    var tete = el('button', 'dossier-tete'); tete.type = 'button'; tete.setAttribute('aria-expanded', 'false');
+    var tete = el('button', 'dossier-tete'); tete.type = 'button';
     tete.appendChild(el('span', 'dossier-titre', d.titre));
-    tete.appendChild(el('span', 'dossier-compte', ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + d.items.length
+    if (ds && !ADMIN && dispo === 0) {
+      bloc.classList.add('verrouille');
+      tete.setAttribute('aria-disabled', 'true');
+      tete.setAttribute('aria-label', d.titre + ' : disponible après la correction en classe');
+      tete.appendChild(el('span', 'dossier-compte', 'Après la correction en classe'));
+      var cad = el('span', 'dossier-fleche dossier-cadenas'); cad.innerHTML = CADENAS; tete.appendChild(cad);
+      tete.addEventListener('click', function () { secouer(bloc); });
+      bloc.appendChild(tete);
+      return bloc;
+    }
+    tete.setAttribute('aria-expanded', 'false');
+    tete.appendChild(el('span', 'dossier-compte', ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + n
+      : ds ? dispo + ' correction' + (dispo > 1 ? 's' : '') + ' disponible' + (dispo > 1 ? 's' : '')
       : dispo === 0 ? 'Bientôt disponible' : dispo === n ? n + ' fichier' + (n > 1 ? 's' : '') : dispo + ' sur ' + n));
     tete.appendChild(el('span', 'dossier-fleche', '›'));
     var corps = el('div', 'dossier-corps'); corps.hidden = true;
-    var g = el('div', 'grille'), dernier = null;
-    d.items.forEach(function (it) {
-      if (d.id === 'ds' && it.titre !== dernier) { dernier = it.titre; g.appendChild(el('h4', 'sous-groupe', it.titre)); }
-      g.appendChild(fiche(it, ch, c, true));
-    });
-    corps.appendChild(g);
+    if (ds) {
+      // deux sections pleine largeur, « Sujet A » et « Sujet B » (une par couple devoir / sujet)
+      var groupes = [], index = {}, nbDS = {};
+      items.forEach(function (it) {
+        var k = (it.ds || 0) + '/' + (it.sujet || '');
+        if (!index[k]) { index[k] = { ds: it.ds, sujet: it.sujet, items: [] }; groupes.push(index[k]); nbDS[it.ds || 0] = true; }
+        index[k].items.push(it);
+      });
+      groupes.forEach(function (gr) {
+        var sec = el('section', 'sujet');
+        sec.appendChild(el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé')));
+        var g = el('div', 'grille');
+        gr.items.forEach(function (it) { g.appendChild(fiche(it, ch, c, true)); });
+        sec.appendChild(g); corps.appendChild(sec);
+      });
+    } else {
+      var g2 = el('div', 'grille');
+      items.forEach(function (it) { g2.appendChild(fiche(it, ch, c, true)); });
+      corps.appendChild(g2);
+    }
     tete.addEventListener('click', function () {
       var o = bloc.classList.toggle('ouvert'); tete.setAttribute('aria-expanded', o ? 'true' : 'false'); appliquer();
     });
@@ -295,12 +328,13 @@
           f.hidden = !ok; if (ok) n++;
         });
         Array.prototype.forEach.call(ch.querySelectorAll('.dossier-bloc'), function (d) {
-          var courant = null, vu = false, total = 0;
-          Array.prototype.forEach.call(d.querySelectorAll('.grille > *'), function (x) {
-            if (x.classList.contains('sous-groupe')) { if (courant) courant.hidden = !vu; courant = x; vu = false; }
-            else if (!x.hidden) { vu = true; total++; }
-          });
-          if (courant) courant.hidden = !vu;
+          if (d.classList.contains('verrouille')) {      // bloc fermé : visible sauf pendant une recherche
+            d.hidden = cherche;
+            if (!cherche && okClasse && montre) n++;
+            return;
+          }
+          Array.prototype.forEach.call(d.querySelectorAll('.sujet'), function (sec) { sec.hidden = !sec.querySelector('.fiche:not([hidden])'); });
+          var total = d.querySelectorAll('.fiche:not([hidden])').length;
           d.hidden = total === 0;
           d.querySelector('.dossier-corps').hidden = !(cherche || d.classList.contains('ouvert'));
         });

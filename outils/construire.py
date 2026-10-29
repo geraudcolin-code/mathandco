@@ -313,6 +313,11 @@ def catalogue(mdp, mdp_prof=None):
         info = analyser_nom(nom)
         titre, consigne, sous = infos_page(page, mdp, nom, mdp_prof)
         titre = TITRES_IMPOSES.get(f, titre)
+        # DS n°1 de Seconde CH01 : deux sections « DS 1, sujet A / B » (le titre de l'exercice passe dans la consigne)
+        mds = re.match(r'2nde-ch01-ds1([ab])-exercice-\d+\.html$', f)
+        if mds:
+            consigne = f'{titre}. {consigne}'.rstrip('.') + '.' if consigne else titre + '.'
+            titre = f'DS 1, sujet {mds.group(1).upper()}'
         info.update(titre=titre, consigne=consigne, sous=sous, fichier=f)
         entrees.append(info)
         print(f'  {nom:52s} {titre}')

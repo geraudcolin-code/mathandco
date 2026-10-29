@@ -440,3 +440,5 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
     93% { text-shadow: -4px 0 var(--cc2), 4px 0 var(--cc); transform: translateX(2px); } 95% { text-shadow: 4px 0 var(--cc2), -4px 0 var(--cc); transform: translateX(-2px); } 97% { text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); transform: none; } }
 }
 @media (max-width: 720px) { .accueil-cartes { grid-template-columns: 1fr; } .accueil-carte h2 { font-size: 1.15rem; } }
+/* devoirs surveillés : les fiches d'un sujet occupent toute la largeur du bloc (les colonnes vides disparaissent) */
+.d-ds .grille { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }

@@ -80,6 +80,7 @@ CHAPITRES = {
     ('terminale', 1): 'Suites et récurrence',
     ('terminale', 2): 'Limites de suites',
     ('terminale', 3): 'Limites de fonctions',
+    ('terminale', 4): 'Vecteurs, droites et plans de l’espace',
 }
 
 
@@ -87,6 +88,7 @@ CHAPITRES = {
 TITRES_IMPOSES = {
     '1ere-ch04-animation-secante-tangente.html': 'Coefficient directeur de la corde AH',
     '1ere-ch04-nombre-derive-et-vitesse.html': 'Animation : Nombre dérivé et vitesse',
+    'term-ch04-poly-a-trous.html': 'Vecteurs, droites et plans de l’espace',
 }
 
 

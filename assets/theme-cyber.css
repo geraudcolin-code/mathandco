@@ -1,0 +1,116 @@
+/* Colinéaire — thème d'essai « Matrice » (cyberpunk, binaire, chiffrement).
+   Tout est rangé sous :root.cyber : sans la classe, ce fichier ne change rien.
+   Activation : bouton « Style » en bas de page, ou ?theme=cyber / ?theme=classique dans l'adresse (retenu par le navigateur).
+   Les corrections animées et les polys ne sont pas concernés. */
+
+:root.cyber {
+  --fond: #04070a; --fond-2: #0a1016; --encre: #d9ffec; --gris: #7fa596; --filet: #143a2c;
+  --bleu: #00f0ff; --bleu-fond: rgba(0, 240, 255, .10); --rouge: #ff2a6d; --pastille: rgba(0, 240, 255, .18);
+  --vert: #00ff9c; --violet: #b967ff;
+  --orange: #ff2a6d; --orange-vif: #ff4f86; --orange-fond: rgba(255, 42, 109, .07); --orange-texte: #ff7aa3;
+  --vert-mat: #00ff9c; --vert-mat-vif: #5dffbf; --vert-mat-fond: rgba(0, 255, 156, .06); --vert-mat-texte: #5dffbf;
+  --marine: #00f0ff; --marine-vif: #6ff7ff; --marine-fond: rgba(0, 240, 255, .06); --marine-texte: #6ff7ff;
+  --jaune: #fcee09; --jaune-vif: #fff36b; --jaune-fond: rgba(252, 238, 9, .06); --jaune-texte: #fff36b;
+  --carreau: #12301f; --papier: #070c10; --verre: rgba(4, 7, 10, .82);
+  --ombre: 0 0 0 1px rgba(0, 255, 156, .35), 0 0 26px rgba(0, 255, 156, .18);
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --coin: 14px;
+  color-scheme: dark;
+}
+
+/* ---------- fond : pluie binaire (canvas posé par theme.js) + trame d'écran ---------- */
+.cyber body { background: var(--fond); }
+#matrice { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; opacity: .22; }
+.cyber body::after { content: ""; position: fixed; inset: 0; z-index: 70; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .18) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+.cyber ::selection { background: var(--vert); color: #000; }
+
+/* ---------- typographie ---------- */
+.cyber h1, .cyber h2, .cyber h3, .cyber .logo, .cyber .nav-liens, .cyber .bouton, .cyber .segments button,
+.cyber .chapitre-tete .n, .cyber .ch-num, .cyber .dossier-titre, .cyber .dossier-compte, .cyber .fiche .num,
+.cyber .fiche .action, .cyber .pied, .cyber .classe-lien, .cyber .lien-fleche, .cyber .recherche, .cyber .champ input {
+  font-family: var(--f-mono); }
+.cyber h1, .cyber h2 { letter-spacing: -.02em; text-shadow: 0 0 18px rgba(0, 255, 156, .35); }
+.cyber .section-tete h2, .cyber .appel h2, .cyber .biblio-tete h1, .cyber .porte h1, .cyber .classe-bloc > h2 { color: #fff; }
+.cyber .section-tete h2::before, .cyber .biblio-tete h1::before, .cyber .classe-bloc > h2::before, .cyber .porte h1::before {
+  content: "> "; color: var(--vert); }
+.cyber .biblio-tete h1::after, .cyber .porte h1::after { content: "_"; color: var(--vert); margin-left: .08em; }
+.cyber a { color: var(--bleu); }
+.cyber .section-tete p, .cyber .appel p { color: var(--gris); }
+
+/* ---------- barre du haut ---------- */
+.cyber .nav { border-bottom: 1px solid var(--filet); }
+.cyber .logo { color: var(--vert); text-shadow: 0 0 10px rgba(0, 255, 156, .55); }
+.cyber .logo .esperluette { color: var(--rouge); text-shadow: 0 0 10px rgba(255, 42, 109, .7); }
+.cyber .nav-liens a { color: var(--encre); text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; }
+.cyber .nav-liens a:hover { color: var(--vert); }
+
+/* ---------- boutons : coins coupés, néon ---------- */
+.cyber .bouton { border-radius: 0; background: transparent; color: var(--vert); border: 1px solid var(--vert);
+  text-transform: uppercase; letter-spacing: .08em; font-size: .9rem; box-shadow: 0 0 14px rgba(0, 255, 156, .25), inset 0 0 14px rgba(0, 255, 156, .08);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+.cyber .bouton:hover { background: var(--vert); color: #000; filter: none; }
+.cyber .bouton.discret { color: var(--bleu); border-color: var(--bleu); background: transparent; }
+
+/* ---------- sections, tuiles, classes ---------- */
+.cyber .section.alt { background: rgba(10, 16, 22, .78); border-block: 1px solid var(--filet); }
+.cyber .tuile, .cyber .section.alt .tuile, .cyber .classe { border-radius: 0; background: rgba(7, 12, 16, .9); border: 1px solid var(--filet);
+  clip-path: polygon(0 0, calc(100% - var(--coin)) 0, 100% var(--coin), 100% 100%, var(--coin) 100%, 0 calc(100% - var(--coin))); }
+.cyber .classe:hover { border-color: var(--vert); box-shadow: var(--ombre); }
+.cyber .classe h3 { color: var(--vert); }
+.cyber .classe h3::after { content: " ▮"; color: var(--vert); animation: cyber-curseur 1.1s steps(1) infinite; }
+.cyber .ch-num { color: var(--bleu); }
+.cyber .cahier, .cyber .mini-cahier { filter: drop-shadow(0 0 18px rgba(0, 240, 255, .25)); }
+
+/* ---------- espace élèves : porte (mot de passe) ---------- */
+.cyber .porte form { padding: 34px 30px; background: rgba(7, 12, 16, .9); border: 1px solid var(--filet);
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 22px 100%, 0 calc(100% - 22px)); }
+.cyber .porte .aide::before { content: "[ ACCÈS CHIFFRÉ — AES-256 ] "; display: block; color: var(--vert); font-family: var(--f-mono); font-size: .75rem; letter-spacing: .12em; margin-bottom: 8px; }
+.cyber .champ input { border-radius: 0; background: #000; border-color: var(--filet); color: var(--vert); caret-color: var(--vert); letter-spacing: .2em; }
+.cyber .champ input:focus { border-color: var(--vert); box-shadow: 0 0 0 1px var(--vert), 0 0 18px rgba(0, 255, 156, .35); }
+
+/* ---------- catalogue ---------- */
+.cyber .outils { border-bottom-color: var(--filet); }
+.cyber .segments { border-radius: 0; background: #000; border: 1px solid var(--filet); }
+.cyber .segments button { border-radius: 0; color: var(--gris); font-size: .82rem; }
+.cyber .segments button[aria-pressed="true"] { background: var(--vert); color: #000; box-shadow: 0 0 14px rgba(0, 255, 156, .45); }
+.cyber .recherche { border-radius: 0; background: #000; color: var(--vert); }
+.cyber .recherche:focus { border-color: var(--vert); box-shadow: 0 0 0 1px var(--vert); }
+.cyber .chapitre-tete { border-bottom-color: var(--filet); }
+.cyber .chapitre-tete .n { color: var(--vert); }
+.cyber .chapitre-tete .n::before { content: "// "; opacity: .6; }
+.cyber .fiche { border-radius: 0; background: rgba(7, 12, 16, .92); border: 1px solid var(--filet);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+.cyber .fiche:hover { background: rgba(10, 20, 18, .96); border-color: var(--vert); box-shadow: var(--ombre); }
+.cyber .fiche .num { color: #fff; }
+.cyber .fiche .num small { color: var(--gris); }
+.cyber .fiche .action { border-radius: 0; text-transform: uppercase; letter-spacing: .06em; font-size: .72rem; }
+.cyber .fiche .action.anim { background: transparent; border: 1px solid var(--bleu); color: var(--bleu); }
+.cyber .fiche .action.pdf { background: transparent; border-color: var(--filet); color: var(--encre); }
+.cyber .fiche .action.pdf:hover { border-color: var(--rouge); color: var(--rouge); }
+.cyber .fiche.ferme { opacity: .55; }
+.cyber .fiche.ferme .num::after { content: " ⌧"; color: var(--rouge); font-size: .6em; }
+.cyber .fiche.speciale { background: rgba(0, 240, 255, .06); }
+
+/* blocs de couleur des chapitres : bandeau néon sur fond sombre */
+.cyber .dossier-tete { border-radius: 0; background: rgba(0, 0, 0, .55); color: var(--dc); border: 1px solid var(--dc);
+  box-shadow: inset 4px 0 0 var(--dc), 0 0 16px color-mix(in srgb, var(--dc) 22%, transparent);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); text-transform: uppercase; letter-spacing: .06em; }
+.cyber .dossier-tete:hover { background: color-mix(in srgb, var(--dc) 14%, #000); }
+.cyber .dossier-bloc.d-flash .dossier-tete { color: var(--dc); }
+.cyber .dossier-fleche, .cyber .dossier-bloc.d-flash .dossier-fleche { border-radius: 0; background: transparent; border: 1px solid currentColor; }
+.cyber .dossier-bloc.ouvert .dossier-tete { border-radius: 0; }
+.cyber .dossier-corps { border-radius: 0; border: 1px solid color-mix(in srgb, var(--dc) 40%, transparent); border-top: 0; }
+.cyber .dossier-corps .fiche { background: rgba(4, 7, 10, .92); }
+
+/* ---------- pied ---------- */
+.cyber .pied { border-top-color: var(--filet); color: var(--gris); font-size: .74rem; }
+.theme-bascule { font: inherit; color: var(--gris); background: none; border: 1px solid var(--filet); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
+.cyber .theme-bascule { border-radius: 0; color: var(--vert); border-color: var(--vert); }
+
+/* titres « déchiffrés » par theme.js : rien à styler, le texte défile puis se fige */
+@keyframes cyber-curseur { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .cyber .classe h3::after { animation: none; }
+  #matrice { display: none; }
+}

@@ -89,7 +89,7 @@
     var f = el('div', 'fiche'), a = el('a', 'fiche-lien'); a.href = it.href; f.appendChild(a);
     var ferme = !ouverte(it);
     var num = el('div', 'num');
-    if (it.type === 'exercice' || it.type === 'evaluation') {
+    if (it.type === 'exercice' || it.type === 'evaluation' || it.type === 'dm') {
       num.appendChild(el('small', null, it.type === 'evaluation' && !dansDossier ? 'Évaluation, ex.' : 'Exercice'));
       num.appendChild(document.createTextNode(it.numero));
     } else {
@@ -105,13 +105,13 @@
       // grisée : ni animation ni corrigé ; un clic ne fait que rappeler pourquoi
       f.classList.add('ferme');
       a.removeAttribute('href'); a.setAttribute('role', 'link'); a.setAttribute('aria-disabled', 'true'); a.tabIndex = 0;
-      a.setAttribute('aria-label', (it.type === 'exercice' ? 'Exercice ' + it.numero : (it.titre || it.nom)) + ' : disponible après la correction en classe');
+      a.setAttribute('aria-label', (it.type === 'exercice' || it.type === 'dm' ? 'Exercice ' + it.numero : (it.titre || it.nom)) + ' : disponible après la correction en classe');
       var refus = function (ev) { ev.preventDefault(); f.classList.remove('secoue'); void f.offsetWidth; f.classList.add('secoue'); };
       a.addEventListener('click', refus);
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
       actions.appendChild(el('span', 'action verrou', 'Après la correction en classe'));
       f.appendChild(actions);
-      f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
+      f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
     }
     if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
@@ -124,7 +124,7 @@
       actions.appendChild(b);
     }
     f.appendChild(actions);
-    f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
+    f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
     return f;
   }
 

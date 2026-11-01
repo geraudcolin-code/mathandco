@@ -136,6 +136,7 @@
   function libelle(it) {
     if (it.type === 'exercice') return 'Exercice ' + it.numero;
     if (it.type === 'evaluation') return (it.sujet ? 'Sujet ' + it.sujet + ', ' : 'Évaluation, ') + 'exercice ' + it.numero;
+    if (it.type === 'dm') return 'Devoir maison, exercice ' + it.numero;
     if (it.type === 'poly') return 'Poly à trous';
     if (it.type === 'flash') return 'Questions flash';
     return it.titre || it.nom;
@@ -180,7 +181,7 @@
           l.appendChild(nom);
           var ap = el('a', 'apercu', 'Aperçu'); ap.href = it.href; ap.target = '_blank'; ap.rel = 'noopener'; l.appendChild(ap);
           var sw = interrupteur(id); l.appendChild(sw);
-          l.dataset.cherche = norm([c.nom, (ch.dossier ? 'dossier ' + ch.dossier + (ch.dossier === 'ds' ? ' devoir surveille ' : ' ') : '') + 'chapitre ' + ch.numero, ch.titre, libelle(it), it.titre, it.consigne].join(' '));
+          l.dataset.cherche = norm([c.nom, (ch.dossier ? 'dossier ' + ch.dossier + (ch.dossier === 'ds' ? ' devoir surveille ' : ch.dossier === 'dm' ? ' devoir maison dm ' : ' ') : '') + 'chapitre ' + ch.numero, ch.titre, libelle(it), it.titre, it.consigne].join(' '));
           lignes.appendChild(l); sw.maj();
         });
         s.appendChild(lignes); bloc.appendChild(s);

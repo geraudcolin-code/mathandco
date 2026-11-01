@@ -13,6 +13,7 @@
   --vert-mat: var(--cp-teal); --vert-mat-vif: #7bffde; --vert-mat-fond: rgba(30, 255, 195, .06); --vert-mat-texte: #7bffde;
   --marine: var(--cp-cyan); --marine-vif: #7ff8ff; --marine-fond: rgba(0, 240, 255, .06); --marine-texte: #7ff8ff;
   --jaune: var(--cp-jaune); --jaune-vif: #fff36b; --jaune-fond: rgba(252, 238, 9, .06); --jaune-texte: #fff36b;
+  --prune: var(--cp-violet); --prune-vif: #cf6bff; --prune-fond: rgba(176, 38, 255, .07); --prune-texte: #d89bff;
   --carreau: #1c1f36; --papier: #0d0e19; --verre: rgba(10, 11, 20, .86);
   --ombre: 0 0 0 1px var(--cp-jaune), 0 0 24px rgba(252, 238, 9, .22);
   --f-titre: "Rajdhani", "Arial Narrow", sans-serif;
@@ -147,6 +148,7 @@
 .cyber .dossier-corps { border-radius: 0; background: color-mix(in srgb, var(--dc) 5%, #0a0b14); border: 1px solid color-mix(in srgb, var(--dc) 35%, transparent); border-top: 0; }
 .cyber .dossier-bloc.d-poly { --dc: var(--cp-teal); }
 .cyber .dossier-bloc.d-exercices { --dc: var(--cp-cyan); }
+.cyber .dossier-bloc.d-dm { --dc: var(--cp-violet); }
 .cyber .dossier-bloc.d-ds { --dc: var(--cp-rose); }
 .cyber .dossier-bloc.d-flash { --dc: var(--cp-jaune); }
 

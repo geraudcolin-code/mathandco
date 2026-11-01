@@ -32,6 +32,9 @@ Ce que fait le script
   fichiers sans .html]}). Une correction absente de la liste est grisée dans l'espace élèves et sa page refuse de
   s'ouvrir ; une correction AJOUTÉE arrive donc FERMÉE. M. Colin ouvre / ferme depuis admin.html (Espace professeur :
   enregistrement par l'API GitHub avec sa clé personnelle) ; Claude peut aussi le faire avec « ouvrir » / « fermer ».
+- NOMS (1er nov. 2026) : [CLASSE]CHxx_Correction_ExerciceN = exercice ; [CLASSE]CHxx_DM_Correction_ExerciceN (ou DM1_,
+  DM2_…) = devoir maison, rangé dans le bloc « Devoirs maison » (prune) du chapitre ; [CLASSE]CHxx_DS…_Correction_ExerciceN
+  = devoir surveillé.
 - « catalogue » : déchiffre chaque correction avec le mot de passe pour lire son titre (« Exercice 7 Sens de
   variation »), range tout par classe puis chapitre, chiffre ce catalogue (AES-256-GCM, même procédé que les
   corrections) dans assets/catalogue.js et met à jour les cartes « classes » de la page d'accueil.
@@ -189,7 +192,7 @@ def analyser_nom(titre):
         prefixe = reste[: e.start()].replace('Correction_', '').strip('_')
         slug = f'{base}-' + (sans_accents(prefixe).lower().replace('_', '-') + '-' if prefixe else '') + f'exercice-{n}'
         if prefixe:
-            t = 'evaluation'
+            t = 'dm' if re.fullmatch(r'dm\d*', prefixe, re.I) else 'evaluation'     # devoir maison (1er nov. 2026) / devoir surveillé
     else:
         t, n, slug = 'autre', 0, f'{base}-' + sans_accents(reste).lower().replace('_', '-')
     return dict(classe=cid, chapitre=chap, type=t, numero=n, fichier=slug + '.html', nom=titre.strip())
@@ -342,17 +345,19 @@ def catalogue(mdp, mdp_prof=None):
                            if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
         for num in sorted({e['chapitre'] for e in items}):
             lot = [e for e in items if e['chapitre'] == num]
-            rang = {'poly': 0, 'exercice': 1, 'evaluation': 2, 'flash': 3, 'autre': 4}
+            rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5}
             lot.sort(key=lambda e: (rang[e['type']], e['numero'], e['fichier']))
             titre_ch = CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
             # chaque chapitre range ses pages en blocs repliables de couleur : cours (vert : poly à trous puis
             # animations du chapitre, p. ex. combinaisons de vecteurs, nombre dérivé et vitesse), correction des exercices
-            # (bleu marine), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier
+            # (bleu marine), devoirs maison (prune), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier
             def bloc(ident, titre, types, cle=lambda e: (e['numero'], e['fichier'])):
                 lst = sorted((e for e in lot if e['type'] in types), key=cle)
                 return {'id': ident, 'titre': titre, 'items': [fiche_cat(e) for e in lst]} if lst else None
             blocs = [bloc('poly', 'Cours et animations', ('poly', 'autre'), lambda e: (rang[e['type']], e['numero'], e['fichier'])),
                      bloc('exercices', 'Correction des exercices', ('exercice',)),
+                     bloc('dm', 'Devoirs maison', ('dm',),
+                          lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero'])),
                      bloc('ds', 'Devoirs surveillés', ('evaluation',),
                           lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero'])),
                      bloc('flash', 'Questions flash', ('flash',))]

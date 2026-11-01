@@ -20,6 +20,7 @@
   --vert-mat: #2f7a4d; --vert-mat-vif: #266640; --vert-mat-fond: #e3f1e8; --vert-mat-texte: #1f5e3a;       /* bloc « poly à trous » */
   --marine: #1f3a68; --marine-vif: #182d51; --marine-fond: #e4eaf5; --marine-texte: #1f3a68;              /* bloc « correction des exercices » */
   --jaune: #d9a515; --jaune-vif: #c4940f; --jaune-fond: #fbf1cf; --jaune-texte: #6b4e00;                      /* bloc « questions flash » */
+  --prune: #7a3b8c; --prune-vif: #653072; --prune-fond: #f1e6f5; --prune-texte: #5c2a6b;                    /* bloc « devoirs maison » */
   --carreau: #dbe9f5;       /* quadrillage */
   --papier: #ffffff;
   --verre: rgba(251, 251, 253, .78);
@@ -41,7 +42,7 @@
     --fond: #000000; --fond-2: #141518; --encre: #f5f5f7; --gris: #a1a4ad; --filet: #2c2e34;
     --bleu: #4a9bff; --bleu-fond: #10233d; --rouge: #ff5c55; --pastille: #17405f; --vert: #4cc985; --violet: #b38cf0;
     --orange: #a85a2a; --orange-vif: #bf6c38; --orange-fond: #2a1e14; --orange-texte: #e8955a;
-    --vert-mat: #2c6b48; --vert-mat-vif: #378457; --vert-mat-fond: #14231a; --vert-mat-texte: #6fcf97; --marine: #2c4f8a; --marine-vif: #3a62a6; --marine-fond: #131c2e; --marine-texte: #8fb4f0;
+    --vert-mat: #2c6b48; --vert-mat-vif: #378457; --vert-mat-fond: #14231a; --vert-mat-texte: #6fcf97; --marine: #2c4f8a; --marine-vif: #3a62a6; --marine-fond: #131c2e; --marine-texte: #8fb4f0; --prune: #6b3a82; --prune-vif: #7d4896; --prune-fond: #1d1426; --prune-texte: #cfa4e6;
     --carreau: #1f2a36; --papier: #0e1116; --verre: rgba(0, 0, 0, .72);
     --ombre: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
     color-scheme: dark;
@@ -51,7 +52,7 @@
   --fond: #000000; --fond-2: #141518; --encre: #f5f5f7; --gris: #a1a4ad; --filet: #2c2e34;
   --bleu: #4a9bff; --bleu-fond: #10233d; --rouge: #ff5c55; --pastille: #17405f; --vert: #4cc985; --violet: #b38cf0;
   --orange: #a85a2a; --orange-vif: #bf6c38; --orange-fond: #2a1e14; --orange-texte: #e8955a;
-  --vert-mat: #2c6b48; --vert-mat-vif: #378457; --vert-mat-fond: #14231a; --vert-mat-texte: #6fcf97; --marine: #2c4f8a; --marine-vif: #3a62a6; --marine-fond: #131c2e; --marine-texte: #8fb4f0;
+  --vert-mat: #2c6b48; --vert-mat-vif: #378457; --vert-mat-fond: #14231a; --vert-mat-texte: #6fcf97; --marine: #2c4f8a; --marine-vif: #3a62a6; --marine-fond: #131c2e; --marine-texte: #8fb4f0; --prune: #6b3a82; --prune-vif: #7d4896; --prune-fond: #1d1426; --prune-texte: #cfa4e6;
   --carreau: #1f2a36; --papier: #0e1116; --verre: rgba(0, 0, 0, .72);
   --ombre: 0 18px 50px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4);
   color-scheme: dark;
@@ -378,13 +379,15 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .bouton.secondaire { background: var(--fond-2); color: var(--encre); }
 .bouton:disabled { opacity: .5; cursor: default; filter: none; }
 
-/* ---------- blocs du chapitre : poly à trous (vert), exercices (bleu marine), devoirs surveillés (orange mat) ---------- */
+/* ---------- blocs du chapitre : poly à trous (vert), exercices (bleu marine), devoirs maison (prune), devoirs surveillés (orange mat), questions flash (jaune) ---------- */
 .dossier-bloc { margin-bottom: 14px; --dc: var(--orange); --dc-vif: var(--orange-vif); --dc-fond: var(--orange-fond); --dc-texte: var(--orange-texte); }
 .dossier-bloc.d-poly { --dc: var(--vert-mat); --dc-vif: var(--vert-mat-vif); --dc-fond: var(--vert-mat-fond); --dc-texte: var(--vert-mat-texte); }
 .dossier-bloc.d-exercices { --dc: var(--marine); --dc-vif: var(--marine-vif); --dc-fond: var(--marine-fond); --dc-texte: var(--marine-texte); }
+.dossier-bloc.d-dm { --dc: var(--prune); --dc-vif: var(--prune-vif); --dc-fond: var(--prune-fond); --dc-texte: var(--prune-texte); }
 .chapitre.dossier.d-poly, .chapitre.dossier.d-exercices, .chapitre.dossier.d-ds { --dc: var(--orange); --dc-fond: var(--orange-fond); --dc-texte: var(--orange-texte); }
 .chapitre.dossier.d-poly { --dc: var(--vert-mat); --dc-fond: var(--vert-mat-fond); --dc-texte: var(--vert-mat-texte); }
 .chapitre.dossier.d-exercices { --dc: var(--marine); --dc-fond: var(--marine-fond); --dc-texte: var(--marine-texte); }
+.chapitre.dossier.d-dm { --dc: var(--prune); --dc-fond: var(--prune-fond); --dc-texte: var(--prune-texte); }
 .dossier-bloc.d-flash { --dc: var(--jaune); --dc-vif: var(--jaune-vif); --dc-fond: var(--jaune-fond); --dc-texte: var(--jaune-texte); }
 .chapitre.dossier.d-flash { --dc: var(--jaune); --dc-fond: var(--jaune-fond); --dc-texte: var(--jaune-texte); }
 .dossier-bloc.d-flash .dossier-tete { color: #3a2a00; }

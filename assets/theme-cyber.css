@@ -1,10 +1,11 @@
-/* Colinéaire — thème d'essai « Cyberpunk » (jaune néon, cyan, rouge ; coins coupés, glitch, bandes de danger).
+/* Colinéaire — thème d'essai « Cyberpunk × Matrice » : jaune néon, cyan, rouge, coins coupés, glitch, bandes de danger,
+   et de la Matrice la pluie binaire, les invites « > » et les titres qui se déchiffrent.
    Tout est rangé sous :root.cyber : sans la classe, ce fichier ne change rien.
    Activation : bouton « Style » en bas de page, ou ?theme=cyber / ?theme=classique dans l'adresse (retenu par le navigateur).
    Les corrections animées et les polys ne sont pas concernés. */
 
 :root.cyber {
-  --cp-jaune: #fcee09; --cp-cyan: #00f0ff; --cp-rouge: #ff003c; --cp-rose: #ff2a6d; --cp-violet: #b026ff; --cp-teal: #1effc3;
+  --cp-jaune: #fcee09; --cp-cyan: #00f0ff; --cp-rouge: #ff003c; --cp-rose: #ff2a6d; --cp-violet: #b026ff; --cp-teal: #00ff9c;
   --fond: #0a0b14; --fond-2: #11121e; --encre: #eaf6ff; --gris: #8f97bd; --filet: #2a2d48;
   --bleu: var(--cp-cyan); --bleu-fond: rgba(0, 240, 255, .10); --rouge: var(--cp-rouge); --pastille: rgba(0, 240, 255, .18);
   --vert: var(--cp-teal); --violet: var(--cp-violet);
@@ -31,6 +32,8 @@
   background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .14) 0 1px, transparent 1px 3px); }
 .cyber ::selection { background: var(--cp-jaune); color: #000; }
 
+#matrice { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; opacity: .2; }
+
 /* ---------- typographie : titres étroits en capitales, étiquettes en chasse fixe ---------- */
 .cyber h1, .cyber h2, .cyber h3, .cyber .logo, .cyber .bouton, .cyber .dossier-titre, .cyber .fiche .num, .cyber .classe-lien,
 .cyber .lien-fleche { font-family: var(--f-titre); }
@@ -39,8 +42,12 @@
 .cyber h1, .cyber h2 { text-transform: uppercase; letter-spacing: .02em; font-weight: 700; }
 .cyber .section-tete h2, .cyber .appel h2, .cyber .biblio-tete h1, .cyber .porte h1, .cyber .classe-bloc > h2 {
   color: var(--cp-jaune); text-shadow: 2px 0 var(--cp-cyan), -2px 0 var(--cp-rouge); }
-.cyber .section-tete h2::before, .cyber .biblio-tete h1::before, .cyber .classe-bloc > h2::before {
-  content: "// "; color: var(--cp-cyan); text-shadow: none; }
+.cyber .section-tete h2::before, .cyber .biblio-tete h1::before, .cyber .classe-bloc > h2::before, .cyber .porte h1::before {
+  content: "> "; color: var(--cp-teal); text-shadow: 0 0 12px rgba(0, 255, 156, .6); }
+.cyber .biblio-tete h1::after, .cyber .porte h1::after { content: "_"; color: var(--cp-teal); text-shadow: none; animation: cp-curseur 1.1s steps(1) infinite; }
+.cyber .classe h3::after { content: " ▮"; color: var(--cp-teal); animation: cp-curseur 1.1s steps(1) infinite; }
+@keyframes cp-curseur { 50% { opacity: 0; } }
+.cyber .chapitre-tete .n::before { content: "0x"; opacity: .7; }
 .cyber .section-tete p, .cyber .appel p { color: var(--gris); }
 .cyber a { color: var(--cp-cyan); }
 
@@ -146,5 +153,6 @@
 /* ---------- pied ---------- */
 .cyber .pied { border-top: 0; position: relative; color: var(--gris); font-size: .74rem; }
 .cyber .pied::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--danger); opacity: .6; }
+@media (prefers-reduced-motion: reduce) { #matrice { display: none; } .cyber .biblio-tete h1::after, .cyber .porte h1::after, .cyber .classe h3::after { animation: none; } }
 .theme-bascule { font: inherit; color: var(--gris); background: none; border: 1px solid var(--filet); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
 .cyber .theme-bascule { border-radius: 0; color: #0a0b14; background: var(--cp-jaune); border-color: var(--cp-jaune); font-weight: 700; }

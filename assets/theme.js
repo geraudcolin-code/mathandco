@@ -1,4 +1,4 @@
-/* Thème d'essai « Cyberpunk » : se charge dans <head> (pas d'éclair au chargement).
+/* Thème d'essai « Cyberpunk × Matrice » : se charge dans <head> (pas d'éclair au chargement).
    ?theme=cyber l'active, ?theme=classique le retire ; le choix est retenu dans ce navigateur.
    Un bouton « Style » en bas de page bascule de l'un à l'autre. */
 (function () {
@@ -18,7 +18,58 @@
   }
   if (racine.classList.contains('cyber')) police();
 
+  var calme = function () { return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; };
+
+  // pluie binaire en fond (0, 1 et quelques octets hexadécimaux) aux couleurs du thème ; 24 images/s, arrêtée onglet caché
+  var arret = null;
+  function pluie() {
+    if (calme() || document.getElementById('matrice')) return;
+    var c = document.createElement('canvas'); c.id = 'matrice'; c.setAttribute('aria-hidden', 'true');
+    document.body.prepend(c);
+    var g = c.getContext('2d'), T = 16, cols, y, larg, haut, ratio = Math.min(window.devicePixelRatio || 1, 2);
+    var SIGNES = '0101010110AF3E7C9D', TEINTES = ['#00ff9c', '#00ff9c', '#00f0ff', '#00ff9c', '#fcee09', '#00ff9c', '#ff2a6d'];
+    function taille() {
+      larg = innerWidth; haut = innerHeight; c.width = larg * ratio; c.height = haut * ratio;
+      g.setTransform(ratio, 0, 0, ratio, 0, 0); g.font = T + 'px "Share Tech Mono", monospace';
+      cols = Math.ceil(larg / T); y = Array.from({ length: cols }, function () { return Math.random() * -haut / T; });
+    }
+    taille(); addEventListener('resize', taille);
+    var dernier = 0, id;
+    function image(t) {
+      id = requestAnimationFrame(image);
+      if (t - dernier < 42) return; dernier = t;
+      g.fillStyle = 'rgba(10, 11, 20, .16)'; g.fillRect(0, 0, larg, haut);
+      for (var i = 0; i < cols; i++) {
+        g.fillStyle = Math.random() < .04 ? '#eaf6ff' : TEINTES[i % TEINTES.length];
+        g.fillText(SIGNES[(Math.random() * SIGNES.length) | 0], i * T, y[i] * T);
+        if (y[i] * T > haut && Math.random() > .975) y[i] = 0; else y[i] += 1;
+      }
+    }
+    id = requestAnimationFrame(image);
+    var vis = function () { cancelAnimationFrame(id); if (!document.hidden) id = requestAnimationFrame(image); };
+    document.addEventListener('visibilitychange', vis);
+    arret = function () { cancelAnimationFrame(id); removeEventListener('resize', taille); document.removeEventListener('visibilitychange', vis); c.remove(); };
+  }
+
+  // « déchiffrement » des grands titres : des 0 et des 1 défilent puis le vrai texte se fige
+  function dechiffrer() {
+    if (calme()) return;
+    Array.prototype.forEach.call(document.querySelectorAll('.section-tete h2, .biblio-tete h1, .porte h1, .appel h2'), function (h) {
+      if (h.children.length) return;
+      var vrai = h.textContent, n = 0, etapes = 14;
+      h.setAttribute('aria-label', vrai);
+      var t = setInterval(function () {
+        n++;
+        h.textContent = vrai.split('').map(function (ch, i) {
+          return ch === ' ' || i < (n / etapes) * vrai.length ? ch : (Math.random() < .5 ? '0' : '1');
+        }).join('');
+        if (n >= etapes) { clearInterval(t); h.textContent = vrai; }
+      }, 45);
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    if (racine.classList.contains('cyber')) { pluie(); dechiffrer(); }
     var pied = document.querySelector('.pied .colonne');
     if (!pied) return;
     var b = document.createElement('button'); b.type = 'button'; b.className = 'theme-bascule';
@@ -26,7 +77,7 @@
     maj();
     b.addEventListener('click', function () {
       var on = racine.classList.toggle('cyber'); ecrire(on ? 'cyber' : 'classique'); maj();
-      if (on) police();
+      if (on) { police(); pluie(); dechiffrer(); } else if (arret) { arret(); arret = null; }
     });
     pied.appendChild(b);
   });

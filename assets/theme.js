@@ -1,8 +1,8 @@
-/* Thème d'essai « Cyberpunk × Matrice » : se charge dans <head> (pas d'éclair au chargement).
+/* Thème « Cyberpunk × Matrice » (par défaut depuis le 1er nov. 2026) : se charge dans <head> (pas d'éclair au chargement).
    ?theme=cyber l'active, ?theme=classique le retire ; le choix est retenu dans ce navigateur.
    Un bouton « Style » en bas de page bascule de l'un à l'autre. */
 (function () {
-  var CLE = 'colineaire-theme', DEFAUT = 'classique';
+  var CLE = 'colineaire-theme', DEFAUT = 'cyber';
   var lire = function () { try { return localStorage.getItem(CLE); } catch (e) { return null; } };
   var ecrire = function (v) { try { localStorage.setItem(CLE, v); } catch (e) {} };
   var p = new URLSearchParams(location.search).get('theme');

@@ -158,3 +158,12 @@
 @media (prefers-reduced-motion: reduce) { #matrice { display: none; } .cyber .biblio-tete h1::after, .cyber .porte h1::after, .cyber .classe h3::after { animation: none; } }
 .theme-bascule { font: inherit; color: var(--gris); background: none; border: 1px solid var(--filet); border-radius: 999px; padding: 2px 10px; cursor: pointer; }
 .cyber .theme-bascule { border-radius: 0; color: #0a0b14; background: var(--cp-jaune); border-color: var(--cp-jaune); font-weight: 700; }
+
+/* Espace professeur : tuiles des chapitres */
+.cyber .tuile-ch { border-radius: 0; background: linear-gradient(135deg, #10121f 0%, #151830 100%); position: relative;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); box-shadow: inset 3px 0 0 var(--cp-jaune); }
+.cyber .tuile-ch:hover { border-color: var(--cp-cyan); box-shadow: inset 3px 0 0 var(--cp-cyan), 0 0 18px rgba(0, 240, 255, .2); }
+.cyber .tuile-ch .n { font-family: var(--f-mono); color: var(--cp-teal); text-transform: uppercase; letter-spacing: .08em; }
+.cyber .tuile-ch .t { font-family: var(--f-titre); color: var(--cp-jaune); font-size: 1.1rem; text-transform: uppercase; letter-spacing: .02em; }
+.cyber .tuile-ch .c { font-family: var(--f-mono); color: var(--cp-cyan); }
+.cyber .chapitre.dossier .chapitre-tete .n { color: #0a0b14; }

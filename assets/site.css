@@ -457,3 +457,15 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 @media (max-width: 720px) { .accueil-cartes { grid-template-columns: 1fr; } .accueil-carte h2 { font-size: 1.15rem; } }
 /* devoirs surveillés : les fiches d'un sujet occupent toute la largeur du bloc (les colonnes vides disparaissent) */
 .d-ds .grille { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
+
+/* Espace professeur : une tuile par chapitre sous le nom de la classe (accès direct, sans défiler) */
+.tuiles-ch { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 10px; margin: 16px 0 8px; scroll-margin-top: 150px; }
+.tuile-ch { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 12px 14px; border: 1px solid var(--filet); border-radius: 14px;
+  background: var(--fond-2); color: var(--encre); font: inherit; cursor: pointer; transition: transform .25s var(--courbe), border-color .2s, box-shadow .25s; }
+.tuile-ch:hover { transform: translateY(-2px); border-color: var(--bleu); box-shadow: var(--ombre); }
+.tuile-ch .n { font-size: var(--t-petit); color: var(--gris); font-variant-numeric: tabular-nums; }
+.tuile-ch .t { font-weight: 600; line-height: 1.25; }
+.tuile-ch .c { font-size: .78rem; color: var(--bleu); margin-top: 2px; }
+.tuile-ch.vide { opacity: .4; cursor: default; transform: none; box-shadow: none; }
+.classe-bloc .chapitre { scroll-margin-top: 150px; }
+.chap-actions .vers-tuiles { opacity: .8; }

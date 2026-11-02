@@ -333,11 +333,11 @@ def catalogue(mdp, mdp_prof=None):
         chaps = []
         def fiche_cat(e):
             # devoir surveillé : ni titre ni consigne dans le catalogue des élèves (lisible avec leur mot de passe) ;
-            # ils ne figurent que dans la clé du professeur (cle.js) ; la page ne garde que le sujet (A ou B)
+            # ils ne figurent que dans la clé du professeur (cle.js) ; la page ne garde que le sujet (A, B, C…)
             ds = e['type'] == 'evaluation'
             if ds:
                 details[e['fichier'][:-5]] = {'titre': e['titre'], 'consigne': e['consigne']}
-                m = re.search(r'-ch\d+-ds(\d+)-?(?:sujet)?([ab])-exercice-\d+\.html$', e['fichier'])
+                m = re.search(r'-ch\d+-ds(\d+)-?(?:sujet)?([a-z])-exercice-\d+\.html$', e['fichier'])
                 extra = {'ds': int(m.group(1)), 'sujet': m.group(2).upper()} if m else {}
             return dict({'type': e['type'], 'numero': e['numero'], **({} if ds else {'titre': e['titre'], 'consigne': e['consigne']}),
                          'href': 'corrections/' + e['fichier'], 'nom': e['nom'], **(extra if ds else {})},

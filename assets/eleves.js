@@ -99,7 +99,6 @@
     a.appendChild(num);
     var titre = it.type === 'poly' ? 'Le cours du chapitre, complété clic par clic' : it.titre;
     if (titre) a.appendChild(el('div', 'titre', titre));
-    if (it.consigne) a.appendChild(el('div', 'detail', it.consigne));
     var actions = el('div', 'fiche-actions');
     if (ferme && !ADMIN) {
       // grisée : ni animation ni corrigé ; un clic ne fait que rappeler pourquoi

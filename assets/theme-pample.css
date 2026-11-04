@@ -1,0 +1,167 @@
+/* Colinéaire — thème « Pamplemousse » : crème et rose pamplemousse, orange d'écorce, vert de feuille ;
+   formes rondes et juteuses, tranches de pamplemousse en décor (fond, cartes, repères).
+   Tout est rangé sous :root.pample : sans la classe, ce fichier ne change rien.
+   Activation : boutons « Style » en bas de page, ou ?theme=pample (retenu par le navigateur).
+   Les corrections animées et les polys ne sont pas concernés. */
+
+:root.pample {
+  --pp-rose: #ff6f61; --pp-rose-fonce: #d63d45; --pp-chair: #ff8e80; --pp-ecorce: #f5a83a; --pp-moelle: #fff3de;
+  --pp-feuille: #4c8c3a; --pp-feuille-vif: #3b7a2c; --pp-brun: #3b1f1b;
+  --fond: #fff8f1; --fond-2: #ffe9df; --encre: #3b1f1b; --gris: #8a5a50; --filet: #f6d3c4;
+  --bleu: #d63d45; --bleu-fond: #ffe3db; --rouge: #d63d45; --pastille: #ffd9c7;
+  --vert: #3f8a3a; --violet: #a4478f;
+  --orange: #e2761c; --orange-vif: #c9650f; --orange-fond: #ffecd6; --orange-texte: #8f4608;
+  --vert-mat: #4c8c3a; --vert-mat-vif: #3b7a2c; --vert-mat-fond: #eaf5e1; --vert-mat-texte: #2f6320;
+  --marine: #cf405c; --marine-vif: #b8314d; --marine-fond: #ffe6ea; --marine-texte: #9c2540;
+  --jaune: #eab01a; --jaune-vif: #d79f0f; --jaune-fond: #fff3c9; --jaune-texte: #6f5000;
+  --prune: #94418a; --prune-vif: #7d3374; --prune-fond: #f8e7f4; --prune-texte: #6d2a64;
+  --carreau: #ffe4d8; --papier: #fffdfa; --verre: rgba(255, 248, 241, .84);
+  --ombre: 0 18px 44px rgba(214, 61, 69, .16), 0 3px 8px rgba(214, 61, 69, .10);
+  --f-titre: "Fredoka", "Nunito", ui-rounded, "SF Pro Rounded", "Varela Round", "Trebuchet MS", sans-serif;
+  --pp-tranche: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22%3E%3Cdefs%3E%3CradialGradient id=%22g%22 cx=%2250%25%22 cy=%2250%25%22 r=%2250%25%22%3E%3Cstop offset=%220%22 stop-color=%22%23FF6B6B%22/%3E%3Cstop offset=%221%22 stop-color=%22%23FF8E80%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Cg opacity=%221.0%22%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%22194%22 fill=%22%23F5A83A%22/%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%22180%22 fill=%22%23FFF3DE%22/%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%22164%22 fill=%22url%28%23g%29%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22355.1%22 y2=%22216.3%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22246.6%22 y1=%22220.7%22 x2=%22263.0%22 y2=%22228.1%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22274.9%22 y1=%22233.4%22 x2=%22298.7%22 y2=%22243.9%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22307.8%22 y1=%22248.0%22 x2=%22326.1%22 y2=%22256.1%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22315.9%22 y2=%22304.4%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22225.5%22 y1=%22244.2%22 x2=%22234.5%22 y2=%22259.8%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22241.0%22 y1=%22271.0%22 x2=%22254.0%22 y2=%22293.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22259.0%22 y1=%22302.2%22 x2=%22269.0%22 y2=%22319.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22232.4%22 y2=%22352.6%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22194.7%22 y1=%22250.7%22 x2=%22192.8%22 y2=%22268.6%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22191.4%22 y1=%22281.6%22 x2=%22188.7%22 y2=%22307.4%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22187.7%22 y1=%22317.4%22 x2=%22185.6%22 y2=%22337.2%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22136.5%22 y2=%22342.5%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22165.9%22 y1=%22237.9%22 x2=%22153.8%22 y2=%22251.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22145.1%22 y1=%22260.9%22 x2=%22127.7%22 y2=%22280.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22121.0%22 y1=%22287.7%22 x2=%22107.7%22 y2=%22302.6%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%2264.9%22 y2=%22278.0%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22150.1%22 y1=%22210.6%22 x2=%22132.5%22 y2=%22214.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22119.8%22 y1=%22217.0%22 x2=%2294.4%22 y2=%22222.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%2284.6%22 y1=%22224.5%22 x2=%2265.0%22 y2=%22228.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%2244.9%22 y2=%22183.7%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22153.4%22 y1=%22179.3%22 x2=%22137.0%22 y2=%22171.9%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22125.1%22 y1=%22166.6%22 x2=%22101.3%22 y2=%22156.1%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%2292.2%22 y1=%22152.0%22 x2=%2273.9%22 y2=%22143.9%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%2284.1%22 y2=%2295.6%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22174.5%22 y1=%22155.8%22 x2=%22165.5%22 y2=%22140.2%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22159.0%22 y1=%22129.0%22 x2=%22146.0%22 y2=%22106.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22141.0%22 y1=%2297.8%22 x2=%22131.0%22 y2=%2280.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22167.6%22 y2=%2247.4%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22205.3%22 y1=%22149.3%22 x2=%22207.2%22 y2=%22131.4%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22208.6%22 y1=%22118.4%22 x2=%22211.3%22 y2=%2292.6%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22212.3%22 y1=%2282.6%22 x2=%22214.4%22 y2=%2262.8%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22263.5%22 y2=%2257.5%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22234.1%22 y1=%22162.1%22 x2=%22246.2%22 y2=%22148.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22254.9%22 y1=%22139.1%22 x2=%22272.3%22 y2=%22119.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22279.0%22 y1=%22112.3%22 x2=%22292.3%22 y2=%2297.4%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22335.1%22 y2=%22122.0%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22249.9%22 y1=%22189.4%22 x2=%22267.5%22 y2=%22185.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22280.2%22 y1=%22183.0%22 x2=%22305.6%22 y2=%22177.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22315.4%22 y1=%22175.5%22 x2=%22335.0%22 y2=%22171.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%2213%22 fill=%22%23FFF3DE%22/%3E%3C/g%3E%3C/svg%3E");
+  --pp-tranche-fond: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22%3E%3Cdefs%3E%3CradialGradient id=%22g%22 cx=%2250%25%22 cy=%2250%25%22 r=%2250%25%22%3E%3Cstop offset=%220%22 stop-color=%22%23FF7C76%22/%3E%3Cstop offset=%221%22 stop-color=%22%23FF9A8C%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Cg opacity=%220.28%22%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%22194%22 fill=%22%23F5A83A%22/%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%22180%22 fill=%22%23FFF3DE%22/%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%22164%22 fill=%22url%28%23g%29%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22355.1%22 y2=%22216.3%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22246.6%22 y1=%22220.7%22 x2=%22263.0%22 y2=%22228.1%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22274.9%22 y1=%22233.4%22 x2=%22298.7%22 y2=%22243.9%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22307.8%22 y1=%22248.0%22 x2=%22326.1%22 y2=%22256.1%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22315.9%22 y2=%22304.4%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22225.5%22 y1=%22244.2%22 x2=%22234.5%22 y2=%22259.8%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22241.0%22 y1=%22271.0%22 x2=%22254.0%22 y2=%22293.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22259.0%22 y1=%22302.2%22 x2=%22269.0%22 y2=%22319.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22232.4%22 y2=%22352.6%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22194.7%22 y1=%22250.7%22 x2=%22192.8%22 y2=%22268.6%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22191.4%22 y1=%22281.6%22 x2=%22188.7%22 y2=%22307.4%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22187.7%22 y1=%22317.4%22 x2=%22185.6%22 y2=%22337.2%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22136.5%22 y2=%22342.5%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22165.9%22 y1=%22237.9%22 x2=%22153.8%22 y2=%22251.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22145.1%22 y1=%22260.9%22 x2=%22127.7%22 y2=%22280.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22121.0%22 y1=%22287.7%22 x2=%22107.7%22 y2=%22302.6%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%2264.9%22 y2=%22278.0%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22150.1%22 y1=%22210.6%22 x2=%22132.5%22 y2=%22214.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22119.8%22 y1=%22217.0%22 x2=%2294.4%22 y2=%22222.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%2284.6%22 y1=%22224.5%22 x2=%2265.0%22 y2=%22228.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%2244.9%22 y2=%22183.7%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22153.4%22 y1=%22179.3%22 x2=%22137.0%22 y2=%22171.9%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22125.1%22 y1=%22166.6%22 x2=%22101.3%22 y2=%22156.1%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%2292.2%22 y1=%22152.0%22 x2=%2273.9%22 y2=%22143.9%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%2284.1%22 y2=%2295.6%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22174.5%22 y1=%22155.8%22 x2=%22165.5%22 y2=%22140.2%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22159.0%22 y1=%22129.0%22 x2=%22146.0%22 y2=%22106.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22141.0%22 y1=%2297.8%22 x2=%22131.0%22 y2=%2280.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22167.6%22 y2=%2247.4%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22205.3%22 y1=%22149.3%22 x2=%22207.2%22 y2=%22131.4%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22208.6%22 y1=%22118.4%22 x2=%22211.3%22 y2=%2292.6%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22212.3%22 y1=%2282.6%22 x2=%22214.4%22 y2=%2262.8%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22263.5%22 y2=%2257.5%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22234.1%22 y1=%22162.1%22 x2=%22246.2%22 y2=%22148.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22254.9%22 y1=%22139.1%22 x2=%22272.3%22 y2=%22119.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22279.0%22 y1=%22112.3%22 x2=%22292.3%22 y2=%2297.4%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22200%22 y1=%22200%22 x2=%22335.1%22 y2=%22122.0%22 stroke=%22%23FFF3DE%22 stroke-width=%229%22 stroke-linecap=%22round%22/%3E%3Cline x1=%22249.9%22 y1=%22189.4%22 x2=%22267.5%22 y2=%22185.7%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22280.2%22 y1=%22183.0%22 x2=%22305.6%22 y2=%22177.5%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Cline x1=%22315.4%22 y1=%22175.5%22 x2=%22335.0%22 y2=%22171.3%22 stroke=%22%23FFD2C8%22 stroke-width=%225%22 stroke-linecap=%22round%22 opacity=%22.75%22/%3E%3Ccircle cx=%22200%22 cy=%22200%22 r=%2213%22 fill=%22%23FFF3DE%22/%3E%3C/g%3E%3C/svg%3E");
+  --pp-feuille-img: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cpath d=%22M10 90 C 8 40, 40 8, 92 10 C 94 60, 62 92, 10 90 Z%22 fill=%22%235E9E45%22/%3E%3Cpath d=%22M10 90 C 35 62, 58 40, 88 14%22 stroke=%22%23CFE8B9%22 stroke-width=%224%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E");
+  --rond: 28px;
+  color-scheme: light;
+}
+
+/* ---------- fond : crème, halos rose et orange, tranches géantes à demi cachées dans les coins ---------- */
+.pample body { background:
+  var(--pp-tranche-fond) no-repeat right -190px top 120px / 520px,
+  var(--pp-tranche-fond) no-repeat left -220px bottom -140px / 460px,
+  radial-gradient(900px 520px at 0% -8%, rgba(255, 142, 128, .22), transparent 62%),
+  radial-gradient(800px 520px at 100% 108%, rgba(245, 168, 58, .20), transparent 60%),
+  var(--fond); background-attachment: fixed; }
+.pample ::selection { background: #ffc4b8; color: var(--pp-brun); }
+.pample :focus-visible { outline-color: var(--pp-rose-fonce); }
+.pample a { color: var(--pp-rose-fonce); }
+
+/* ---------- typographie : titres ronds et gras ---------- */
+.pample h1, .pample h2, .pample h3, .pample .logo, .pample .bouton, .pample .dossier-titre, .pample .fiche .num, .pample .classe-lien,
+.pample .lien-fleche, .pample .chapitre-tete .n, .pample .tuile-ch .t { font-family: var(--f-titre); }
+.pample h1, .pample h2 { font-weight: 600; letter-spacing: -.02em; }
+.pample .section-tete h2, .pample .appel h2, .pample .biblio-tete h1, .pample .porte h1, .pample .classe-bloc > h2 { color: var(--pp-brun); }
+.pample .section-tete h2::after, .pample .biblio-tete h1::after, .pample .porte h1::after, .pample .appel h2::after {
+  content: ""; display: block; width: 74px; height: 8px; margin: 14px auto 0; border-radius: 8px;
+  background: linear-gradient(90deg, var(--pp-rose) 0 55%, var(--pp-ecorce) 55% 80%, var(--pp-feuille) 80%); }
+.pample .biblio-tete h1::after { margin-left: 0; }
+.pample .section-tete p, .pample .appel p { color: var(--gris); }
+
+/* ---------- barre du haut ---------- */
+.pample .nav { border-bottom: 2px solid var(--filet); }
+.pample .logo { color: var(--pp-rose-fonce); font-weight: 600; font-size: 1.3rem; letter-spacing: 0; }
+.pample .logo .esperluette { color: var(--pp-feuille); font-family: var(--f-titre); font-style: normal; font-weight: 600; }
+.pample .nav-liens a { color: var(--encre); opacity: .9; font-weight: 500; }
+.pample .nav-liens a:hover { color: var(--pp-rose-fonce); }
+
+/* ---------- héros ---------- */
+.pample .hero h1 { background: linear-gradient(100deg, #d63d45 0%, #ff6f61 45%, #f5a83a 100%); -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent; font-weight: 700; letter-spacing: -.035em; padding-bottom: .08em; }
+.pample .hero h1 .esperluette { font-family: var(--f-titre); font-style: normal; background: none; color: var(--pp-feuille); -webkit-text-fill-color: var(--pp-feuille); }
+.pample .hero .accroche { color: var(--gris); font-weight: 500; }
+
+/* ---------- boutons : pastilles dégradées ---------- */
+.pample .bouton { background: linear-gradient(135deg, #e5484d 0%, #ff7a55 100%); color: #fff; font-weight: 600; letter-spacing: .01em;
+  box-shadow: 0 8px 20px rgba(229, 72, 77, .28); }
+.pample .bouton:hover { filter: none; background: linear-gradient(135deg, #d63d45 0%, #f5702f 100%); transform: translateY(-2px); }
+.pample .bouton.discret { background: var(--bleu-fond); color: var(--pp-rose-fonce); box-shadow: none; }
+.pample .lien-fleche { font-weight: 600; }
+
+/* ---------- cartes : grandes bulles pêche, bord doux ---------- */
+.pample .section.alt { background: linear-gradient(180deg, rgba(255, 233, 223, .9), rgba(255, 240, 226, .9)); border-block: 2px solid var(--filet); }
+.pample .tuile, .pample .section.alt .tuile, .pample .classe, .pample .fiche {
+  background: #fffdfa; border: 2px solid var(--filet); border-radius: var(--rond); position: relative; box-shadow: 0 6px 18px rgba(214, 61, 69, .07); }
+.pample .classe { padding-right: 96px; }
+.pample .classe::after { content: ""; position: absolute; top: 24px; right: 24px; width: 54px; height: 54px; background: var(--pp-tranche) center / contain no-repeat;
+  transition: transform .6s var(--courbe); }
+.pample .classe:hover { border-color: var(--pp-chair); box-shadow: var(--ombre); }
+.pample .classe:hover::after { transform: rotate(36deg) scale(1.08); }
+.pample .classe h3 { color: var(--pp-rose-fonce); font-weight: 600; }
+.pample .ch-num { color: var(--pp-ecorce); color: #b86f08; font-weight: 600; }
+.pample .classe-lien { color: var(--pp-feuille-vif); font-weight: 600; }
+.pample .cahier, .pample .mini-cahier { box-shadow: var(--ombre); border: 2px solid var(--filet); }
+.pample .cahier::before, .pample .mini-cahier::before { background: var(--pp-chair); }
+
+/* ---------- espace élèves : porte (mot de passe) ---------- */
+.pample .porte form { padding: 36px 30px 30px; background: #fffdfa; border: 2px solid var(--filet); border-radius: 34px; position: relative; box-shadow: var(--ombre); }
+.pample .porte form::before { content: ""; position: absolute; left: 50%; top: -34px; width: 68px; height: 68px; margin-left: -34px; background: var(--pp-tranche) center / contain no-repeat;
+  filter: drop-shadow(0 6px 8px rgba(214, 61, 69, .25)); }
+.pample .champ input { border-radius: 16px; background: #fff; border: 2px solid var(--filet); color: var(--pp-brun); }
+.pample .champ input:focus { border-color: var(--pp-rose); box-shadow: 0 0 0 4px rgba(255, 111, 97, .22); outline: none; }
+.pample .souvenir input { accent-color: var(--pp-rose-fonce); }
+
+/* ---------- catalogue ---------- */
+.pample .outils { border-bottom-color: var(--filet); }
+.pample .segments { background: var(--fond-2); border: 2px solid var(--filet); border-radius: 999px; }
+.pample .segments button { border-radius: 999px; color: var(--gris); font-weight: 600; }
+.pample .segments button[aria-pressed="true"] { background: linear-gradient(135deg, #e5484d, #ff7a55); color: #fff; box-shadow: 0 4px 10px rgba(229, 72, 77, .3); }
+.pample .recherche { border-radius: 999px; background: #fff; border: 2px solid var(--filet); color: var(--pp-brun); }
+.pample .recherche:focus { border-color: var(--pp-rose); box-shadow: 0 0 0 4px rgba(255, 111, 97, .22); outline: none; }
+.pample .ch-retour { border-radius: 999px; background: var(--fond-2); color: var(--pp-rose-fonce); font-weight: 600; }
+.pample .chapitre-tete { border-bottom: 3px dotted var(--pp-chair); }
+.pample .chapitre-tete .n { color: #fff; background: linear-gradient(135deg, #e5484d, #ff7a55); padding: 3px 14px; border-radius: 999px; font-weight: 600; }
+.pample .chapitre-tete h3 { color: var(--pp-brun); font-weight: 600; }
+.pample .fiche { --coin: 0; border-radius: 22px; }
+.pample .fiche:hover { border-color: var(--pp-chair); box-shadow: var(--ombre); transform: translateY(-3px); }
+.pample .fiche .num { color: var(--pp-rose-fonce); font-weight: 600; }
+.pample .fiche .num small { color: #b86f08; font-weight: 600; }
+.pample .fiche .titre { color: var(--pp-brun); font-weight: 600; }
+.pample .fiche .action { border-radius: 999px; font-weight: 600; }
+.pample .fiche .action.anim { background: linear-gradient(135deg, #e5484d, #ff7a55); color: #fff; }
+.pample .fiche .action.pdf { background: #fff; border: 2px solid var(--filet); color: var(--pp-brun); }
+.pample .fiche .action.pdf:hover { border-color: var(--pp-rose); color: var(--pp-rose-fonce); }
+.pample .fiche.ferme { opacity: .55; }
+.pample .fiche .action.verrou { color: var(--pp-rose-fonce); }
+.pample .fiche.speciale { background: linear-gradient(135deg, #fffdfa, #fff0e0); }
+
+/* blocs de couleur des chapitres : bandeau plein de la couleur du bloc, coins ronds */
+.pample .dossier-tete { border-radius: 24px; background: linear-gradient(100deg, var(--dc) 0%, color-mix(in srgb, var(--dc) 72%, #ffb347) 100%); color: #fff;
+  border: 0; box-shadow: 0 8px 18px color-mix(in srgb, var(--dc) 30%, transparent); }
+.pample .dossier-titre { font-size: 1.3rem; font-weight: 600; }
+.pample .dossier-tete:hover { filter: brightness(1.05) saturate(1.05); }
+.pample .dossier-bloc.d-flash .dossier-tete { color: #3b2a00; }
+.pample .dossier-fleche, .pample .dossier-bloc.d-flash .dossier-fleche { background: rgba(255, 255, 255, .32); color: inherit; }
+.pample .dossier-bloc.ouvert .dossier-tete { border-radius: 24px 24px 8px 8px; }
+.pample .dossier-corps { border-radius: 0 0 24px 24px; background: color-mix(in srgb, var(--dc) 7%, #fffdfa); border: 2px solid color-mix(in srgb, var(--dc) 28%, transparent); border-top: 0; }
+.pample .dossier-bloc.d-poly { --dc: #4c8c3a; }
+.pample .dossier-bloc.d-exercices { --dc: #d6405a; }
+.pample .dossier-bloc.d-dm { --dc: #94418a; }
+.pample .dossier-bloc.d-ds { --dc: #e2761c; }
+.pample .dossier-bloc.d-flash { --dc: #f0b81c; }
+
+/* ---------- pied : une feuille et une tranche de chaque côté ---------- */
+.pample .pied { border-top: 2px dotted var(--pp-chair); color: var(--gris); position: relative; }
+.pample .pied::before { content: ""; position: absolute; right: 24px; top: -26px; width: 42px; height: 42px; background: var(--pp-tranche) center / contain no-repeat; }
+.pample .pied::after { content: ""; position: absolute; right: 74px; top: -22px; width: 30px; height: 30px; background: var(--pp-feuille-img) center / contain no-repeat; transform: rotate(-12deg); }
+
+
+/* ---------- accueil : encarts « version bêta » et « chers élèves » ---------- */
+.pample .accueil-carte { --cc: #4c8c3a; --cc2: #d63d45; color: var(--encre); font-family: inherit; background: #fffdfa; border: 2px solid var(--filet);
+  border-radius: var(--rond); clip-path: none; box-shadow: 0 6px 18px rgba(214, 61, 69, .07); }
+.pample .accueil-carte.conseil { --cc: #e2761c; --cc2: #d63d45; }
+.pample .accueil-carte::before { display: none; }
+.pample .accueil-carte::after { left: 22px; top: -2px; bottom: auto; width: 54px; height: 6px; border-radius: 0 0 6px 6px; box-shadow: none; }
+.pample .accueil-etiquette { clip-path: none; border-radius: 999px; color: #fff; padding: 3px 14px; letter-spacing: .1em; font-family: var(--f-titre); }
+.pample .accueil-etiquette::before { content: ''; }
+.pample .accueil-carte h2 { color: var(--pp-brun); text-shadow: none; text-transform: none; font-family: var(--f-titre); font-size: 1.35rem; animation: none; transform: none; }
+.pample .accueil-carte h2::after { display: none; }
+.pample .accueil-carte p { color: var(--gris); font-size: 1rem; line-height: 1.55; }
+.pample .accueil-carte p::before { content: ''; }
+
+/* ---------- espace professeur : tuiles des chapitres ---------- */
+.pample .tuile-ch { border-radius: 20px; background: #fffdfa; border: 2px solid var(--filet); box-shadow: 0 4px 12px rgba(214, 61, 69, .07); }
+.pample .tuile-ch:hover { border-color: var(--pp-chair); box-shadow: var(--ombre); }
+.pample .tuile-ch .n { color: #b86f08; font-weight: 600; }
+.pample .tuile-ch .t { color: var(--pp-brun); font-weight: 600; }
+.pample .tuile-ch .c { color: var(--pp-feuille-vif); }
+
+/* ---------- choix du style (pied de page) ---------- */
+.pample .theme-choix { border-color: var(--filet); background: #fffdfa; }
+.pample .theme-bascule[aria-pressed="true"] { background: linear-gradient(135deg, #e5484d, #ff7a55); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) { .pample .classe::after, .pample .fiche, .pample .bouton { transition: none; } .pample .classe:hover::after { transform: none; } }
+@media (max-width: 640px) {
+  .pample body { background-size: 360px, 320px, auto, auto, auto; }
+  .pample .classe { padding-right: 84px; }
+  .pample .classe::after { width: 44px; height: 44px; top: 20px; right: 18px; }
+}

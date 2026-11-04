@@ -1,22 +1,28 @@
-/* Thème « Cyberpunk × Matrice » (optionnel ; le style classique est le défaut depuis le 3 nov. 2026) : se charge dans <head> (pas d'éclair au chargement).
-   ?theme=cyber l'active, ?theme=classique le retire ; le choix est retenu dans ce navigateur.
-   Un bouton « Style » en bas de page bascule de l'un à l'autre. */
+/* Styles du site : classique (défaut depuis le 3 nov. 2026), « Cyberpunk × Matrice » et « Pamplemousse » (4 nov. 2026).
+   Se charge dans <head> (pas d'éclair au chargement). ?theme=cyber | pample | classique choisit le style ; il est retenu
+   dans ce navigateur. Trois boutons « Style » en bas de page permettent de changer. */
 (function () {
   var CLE = 'colineaire-theme', DEFAUT = 'classique';
   var lire = function () { try { return localStorage.getItem(CLE); } catch (e) { return null; } };
   var ecrire = function (v) { try { localStorage.setItem(CLE, v); } catch (e) {} };
+  var MODES = ['classique', 'cyber', 'pample'];
   var p = new URLSearchParams(location.search).get('theme');
-  if (p === 'cyber' || p === 'classique') ecrire(p);
+  if (p === 'pamplemousse') p = 'pample';
+  if (MODES.indexOf(p) >= 0) ecrire(p);
   var racine = document.documentElement;
-  if ((lire() || DEFAUT) === 'cyber') racine.classList.add('cyber');
+  var mode = lire(); if (MODES.indexOf(mode) < 0) mode = DEFAUT;
+  if (mode !== 'classique') racine.classList.add(mode);
 
-  var POLICE = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap';
-  function police() {
-    if (document.getElementById('police-cyber')) return;
-    var l = document.createElement('link'); l.id = 'police-cyber'; l.rel = 'stylesheet'; l.href = POLICE;
+  var POLICES = {
+    cyber: 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap',
+    pample: 'https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap'
+  };
+  function police(m) {
+    if (!POLICES[m] || document.getElementById('police-' + m)) return;
+    var l = document.createElement('link'); l.id = 'police-' + m; l.rel = 'stylesheet'; l.href = POLICES[m];
     document.head.appendChild(l);
   }
-  if (racine.classList.contains('cyber')) police();
+  police(mode);
 
   var calme = function () { return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; };
 
@@ -69,16 +75,25 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    if (racine.classList.contains('cyber')) { pluie(); dechiffrer(); }
+    if (mode === 'cyber') { pluie(); dechiffrer(); }
     var pied = document.querySelector('.pied .colonne');
     if (!pied) return;
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'theme-bascule';
-    var maj = function () { b.textContent = racine.classList.contains('cyber') ? 'Style : Cyberpunk ⇄ classique' : 'Style : classique ⇄ Cyberpunk'; };
-    maj();
-    b.addEventListener('click', function () {
-      var on = racine.classList.toggle('cyber'); ecrire(on ? 'cyber' : 'classique'); maj();
-      if (on) { police(); pluie(); dechiffrer(); } else if (arret) { arret(); arret = null; }
+    var groupe = document.createElement('span'); groupe.className = 'theme-choix'; groupe.setAttribute('role', 'group'); groupe.setAttribute('aria-label', 'Style du site');
+    groupe.appendChild(document.createTextNode('Style '));
+    var NOMS = { classique: 'Classique', cyber: 'Cyberpunk', pample: 'Pamplemousse' }, boutons = {};
+    MODES.forEach(function (m) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'theme-bascule'; b.textContent = NOMS[m];
+      b.addEventListener('click', function () { choisir(m); });
+      boutons[m] = b; groupe.appendChild(b);
     });
-    pied.appendChild(b);
+    function maj() { MODES.forEach(function (m) { boutons[m].setAttribute('aria-pressed', m === mode ? 'true' : 'false'); }); }
+    function choisir(m) {
+      if (m === mode) return;
+      racine.classList.remove('cyber', 'pample'); if (m !== 'classique') racine.classList.add(m);
+      if (arret) { arret(); arret = null; }
+      mode = m; ecrire(m); police(m); maj();
+      if (m === 'cyber') { pluie(); dechiffrer(); }
+    }
+    maj(); pied.appendChild(groupe);
   });
 })();

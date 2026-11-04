@@ -162,3 +162,43 @@
   .pample .classe { padding-right: 84px; }
   .pample .classe::after { width: 44px; height: 44px; top: 20px; right: 18px; }
 }
+
+/* ================= Pamplemousse en mouvement (voir theme-pample.js) ================= */
+/* gouttes de jus qui pendent sous la barre du haut */
+.pample .nav::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 34px; pointer-events: none; z-index: -1;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22260%22 height=%2234%22 viewBox=%220 0 260 34%22%3E%3Cg fill=%22%23ff7a6b%22 opacity=%22.88%22%3E%3Cpath d=%22M0 0H260V4C250 4 248 6 246 12C244 18 238 18 236 12C234 6 230 4 222 4C214 4 212 7 210 14L209 26C209 31 203 31 203 26L202 14C201 7 198 4 190 4C170 4 166 6 164 9C162 12 158 12 156 9C154 6 150 4 140 4C128 4 126 8 125 16C124 22 118 22 117 16C116 8 112 4 100 4C84 4 82 6 80 11C78 17 72 17 70 11C68 6 64 4 52 4C38 4 36 8 35 18L34 31C34 34 28 34 28 31L27 18C26 8 22 4 12 4C6 4 2 4 0 4Z%22/%3E%3C/g%3E%3C/svg%3E") left top / 260px 34px repeat-x; }
+/* fruit qui tombe de l'arbre puis roule */
+#pp-branche { position: fixed; top: 0; right: 9vw; width: 220px; height: 90px; z-index: 56; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22220%22 height=%2290%22 viewBox=%220 0 220 90%22%3E%3Cpath d=%22M220 6C170 10 120 14 70 34%22 stroke=%22%236b4a2b%22 stroke-width=%227%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M150 14C140 -2 120 -2 108 6C120 18 140 20 150 14Z%22 fill=%22%235e9e45%22/%3E%3Cpath d=%22M104 28C96 14 78 14 66 22C78 34 94 36 104 28Z%22 fill=%22%234c8c3a%22/%3E%3Cpath d=%22M72 34L72 62%22 stroke=%22%236b4a2b%22 stroke-width=%224%22 stroke-linecap=%22round%22/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: pp-branche 2.2s ease-in-out forwards; }
+@keyframes pp-branche { 0% { opacity: 0; transform: translateY(-40px); } 18%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-40px); } }
+#pp-fruit { position: fixed; left: 0; top: 0; width: 92px; height: 92px; z-index: 55; pointer-events: none; will-change: transform;
+  animation: pp-chute 6.2s linear .55s both; }
+#pp-fruit i { display: block; width: 100%; height: 100%; background: var(--pp-tranche) center / contain no-repeat; filter: drop-shadow(0 8px 6px rgba(120, 40, 30, .28));
+  animation: pp-tourne 6.2s linear .55s both; }
+@keyframes pp-chute {
+  0% { transform: translate(calc(100vw - 9vw - 194px), 62px); animation-timing-function: cubic-bezier(.5, 0, 1, .6); }
+  14% { transform: translate(calc(100vw - 9vw - 204px), calc(100vh - 96px)); animation-timing-function: cubic-bezier(0, .5, .5, 1); }
+  21% { transform: translate(calc(100vw - 9vw - 274px), calc(100vh - 230px)); animation-timing-function: cubic-bezier(.5, 0, 1, .6); }
+  28% { transform: translate(calc(100vw - 9vw - 344px), calc(100vh - 96px)); animation-timing-function: cubic-bezier(0, .5, .5, 1); }
+  33% { transform: translate(calc(100vw - 9vw - 389px), calc(100vh - 150px)); animation-timing-function: cubic-bezier(.5, 0, 1, .6); }
+  38% { transform: translate(calc(100vw - 9vw - 434px), calc(100vh - 96px)); animation-timing-function: linear; }
+  100% { transform: translate(-140px, calc(100vh - 96px)); } }
+@keyframes pp-tourne { 0% { transform: rotate(0); } 14% { transform: rotate(160deg); } 38% { transform: rotate(-120deg); } 100% { transform: rotate(-1500deg); } }
+/* gouttelettes au clic */
+.pp-goutte { position: fixed; z-index: 90; width: 11px; height: 11px; margin: -5px 0 0 -5px; border-radius: 50% 50% 50% 8%; pointer-events: none; }
+/* transition entre deux pages : le jus monte, une tranche tombe ; sur la page suivante le jus redescend */
+:root.pample.pp-sortie::after, :root.pample.pp-entree::after { content: ""; position: fixed; left: 0; top: 0; width: 100%; height: calc(100% + 44px); z-index: 1000; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%2244%22 viewBox=%220 0 200 44%22%3E%3Cpath d=%22M0 44V22C25 -2 75 -2 100 22S175 46 200 22V44Z%22 fill=%22%23ff7a6b%22/%3E%3C/svg%3E") left top / 200px 44px repeat-x, linear-gradient(#ff7a6b, #ff9a5c) 0 43px / 100% 100% no-repeat; }
+:root.pample.pp-sortie::after { animation: pp-monte .62s cubic-bezier(.5, 0, .2, 1) forwards; }
+:root.pample.pp-entree::after { animation: pp-descend .75s cubic-bezier(.6, 0, .4, 1) .12s forwards; transform: translateY(0); }
+:root.pample.pp-sortie::before, :root.pample.pp-entree::before { content: ""; position: fixed; left: 50%; top: 50%; width: 130px; height: 130px; margin: -65px 0 0 -65px; z-index: 1001; pointer-events: none;
+  background: var(--pp-tranche) center / contain no-repeat; }
+:root.pample.pp-sortie::before { animation: pp-tombe .62s cubic-bezier(.5, 0, .8, .6) forwards; }
+:root.pample.pp-entree::before { animation: pp-glisse .75s cubic-bezier(.6, 0, .4, 1) .12s forwards; }
+@keyframes pp-monte { from { transform: translateY(105%); } to { transform: translateY(0); } }
+@keyframes pp-descend { from { transform: translateY(0); } to { transform: translateY(108%); } }
+@keyframes pp-tombe { from { transform: translateY(-75vh) rotate(0); opacity: 1; } to { transform: translateY(0) rotate(540deg); opacity: 1; } }
+@keyframes pp-glisse { from { transform: translateY(0) rotate(0); } to { transform: translateY(80vh) rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #pp-fruit, #pp-branche, .pp-goutte { display: none; } :root.pample.pp-sortie::after, :root.pample.pp-entree::after,
+  :root.pample.pp-sortie::before, :root.pample.pp-entree::before { display: none; } }
+@media (max-width: 640px) { #pp-branche { width: 150px; height: 62px; right: 4vw; } #pp-fruit { width: 70px; height: 70px; } }

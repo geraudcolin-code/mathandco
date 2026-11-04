@@ -23,6 +23,18 @@
     document.head.appendChild(l);
   }
   police(mode);
+  var BASE = document.currentScript && document.currentScript.src ? document.currentScript.src.replace(/theme\.js.*$/, '') : 'assets/';
+  function mouvement() {
+    if (window.__pamplemousse) { window.__pamplemousse.demarrer(); return; }
+    if (document.getElementById('script-pample')) return;
+    var sc = document.createElement('script'); sc.id = 'script-pample'; sc.src = BASE + 'theme-pample.js?v=20261104d'; sc.defer = true;
+    document.head.appendChild(sc);
+  }
+  if (mode === 'pample') {
+    var entree = false; try { entree = sessionStorage.getItem('pp-entree') === '1'; sessionStorage.removeItem('pp-entree'); } catch (e) {}
+    if (entree) { racine.classList.add('pp-entree'); setTimeout(function () { racine.classList.remove('pp-entree'); }, 1300); }
+    document.addEventListener('DOMContentLoaded', mouvement);
+  }
 
   var calme = function () { return window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches; };
 
@@ -91,7 +103,9 @@
       if (m === mode) return;
       racine.classList.remove('cyber', 'pample'); if (m !== 'classique') racine.classList.add(m);
       if (arret) { arret(); arret = null; }
+      if (window.__pamplemousse) window.__pamplemousse.arreter();
       mode = m; ecrire(m); police(m); maj();
+      if (m === 'pample') mouvement();
       if (m === 'cyber') { pluie(); dechiffrer(); }
     }
     maj(); pied.appendChild(groupe);

@@ -432,29 +432,15 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .fiche:has(.badge-ferme) { padding-top: 42px; }   /* la mention « Fermée aux élèves » ne recouvre plus le numéro */
 .fiche .action.verrou { white-space: normal; line-height: 1.25; padding-block: 6px; }
 
-/* Accueil : encarts « version bêta » et « chers élèves », style cyberpunk (néon jaune / cyan / magenta, coins coupés) */
+/* Accueil : encarts « version bêta » et « chers élèves » (style classique ; le néon est dans theme-cyber.css) */
 .accueil-bloc { padding-block: clamp(28px, 5vw, 48px) 0; }
-.accueil-cartes { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-.accueil-carte { --cc: #fcee09; --cc2: #00f0ff; position: relative; padding: 24px 26px 26px; color: #e9f7ff; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  background: linear-gradient(135deg, #0b0f1a 0%, #111a2e 100%); isolation: isolate; overflow: hidden;
-  clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 26px 100%, 0 calc(100% - 26px)); }
-.accueil-carte.conseil { --cc: #ff2a6d; --cc2: #fcee09; }
-.accueil-carte::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
-  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 3px); }
-.accueil-carte::after { content: ''; position: absolute; left: 0; top: 0; bottom: 26px; width: 5px; background: var(--cc); box-shadow: 0 0 14px var(--cc); }
-.accueil-etiquette { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .16em; color: #0b0f1a; background: var(--cc); padding: 3px 10px 3px 8px;
-  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
-.accueil-etiquette::before { content: '// '; }
-.accueil-carte h2 { font-family: inherit; font-size: 1.3rem; font-weight: 700; letter-spacing: .01em; text-transform: uppercase; color: #fff; margin: 12px 0 10px;
-  text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); }
-.accueil-carte p { color: #b9cfe0; font-family: inherit; font-size: .92rem; line-height: 1.65; margin: 0; }
-.accueil-carte p::before { content: '> '; color: var(--cc2); font-weight: 700; }
-@media (prefers-reduced-motion: no-preference) {
-  .accueil-carte h2 { animation: accueil-glitch 5.5s infinite steps(1); }
-  @keyframes accueil-glitch { 0%, 92%, 100% { text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); transform: none; }
-    93% { text-shadow: -4px 0 var(--cc2), 4px 0 var(--cc); transform: translateX(2px); } 95% { text-shadow: 4px 0 var(--cc2), -4px 0 var(--cc); transform: translateX(-2px); } 97% { text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); transform: none; } }
-}
-@media (max-width: 720px) { .accueil-cartes { grid-template-columns: 1fr; } .accueil-carte h2 { font-size: 1.15rem; } }
+.accueil-cartes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.accueil-carte { --cc: var(--bleu-fond); --cc2: var(--bleu); position: relative; padding: 28px 30px 30px; border-radius: 26px; background: var(--fond-2); color: var(--encre); }
+.accueil-carte.conseil { --cc: var(--orange-fond); --cc2: var(--orange-texte); }
+.accueil-etiquette { display: inline-block; font-size: .78rem; font-weight: 700; letter-spacing: .02em; color: var(--cc2); background: var(--cc); padding: 4px 12px; border-radius: 999px; }
+.accueil-carte h2 { font-size: 1.35rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; color: var(--encre); margin: 14px 0 10px; }
+.accueil-carte p { color: var(--gris); font-size: var(--t-corps); line-height: 1.55; margin: 0; }
+@media (max-width: 720px) { .accueil-cartes { grid-template-columns: 1fr; } .accueil-carte h2 { font-size: 1.2rem; } }
 /* devoirs surveillés : les fiches d'un sujet occupent toute la largeur du bloc (les colonnes vides disparaissent) */
 .d-ds .grille { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
 

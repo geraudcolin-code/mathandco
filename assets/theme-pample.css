@@ -137,16 +137,13 @@
 
 /* ---------- accueil : encarts « version bêta » et « chers élèves » ---------- */
 .pample .accueil-carte { --cc: #4c8c3a; --cc2: #d63d45; color: var(--encre); font-family: inherit; background: #fffdfa; border: 2px solid var(--filet);
-  border-radius: var(--rond); clip-path: none; box-shadow: 0 6px 18px rgba(214, 61, 69, .07); }
+  border-radius: var(--rond); box-shadow: 0 6px 18px rgba(214, 61, 69, .07); }
 .pample .accueil-carte.conseil { --cc: #e2761c; --cc2: #d63d45; }
-.pample .accueil-carte::before { display: none; }
-.pample .accueil-carte::after { left: 22px; top: -2px; bottom: auto; width: 54px; height: 6px; border-radius: 0 0 6px 6px; box-shadow: none; }
+.pample .accueil-carte::after { content: ''; position: absolute; left: 22px; top: -2px; width: 54px; height: 6px; border-radius: 0 0 6px 6px; background: var(--cc); }
 .pample .accueil-etiquette { clip-path: none; border-radius: 999px; color: #fff; padding: 3px 14px; letter-spacing: .1em; font-family: var(--f-titre); }
-.pample .accueil-etiquette::before { content: ''; }
 .pample .accueil-carte h2 { color: var(--pp-brun); text-shadow: none; text-transform: none; font-family: var(--f-titre); font-size: 1.35rem; animation: none; transform: none; }
 .pample .accueil-carte h2::after { display: none; }
 .pample .accueil-carte p { color: var(--gris); font-size: 1rem; line-height: 1.55; }
-.pample .accueil-carte p::before { content: ''; }
 
 /* ---------- espace professeur : tuiles des chapitres ---------- */
 .pample .tuile-ch { border-radius: 20px; background: #fffdfa; border: 2px solid var(--filet); box-shadow: 0 4px 12px rgba(214, 61, 69, .07); }

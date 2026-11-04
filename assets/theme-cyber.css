@@ -170,3 +170,24 @@
 .cyber .tuile-ch .t { font-family: var(--f-titre); color: var(--cp-jaune); font-size: 1.1rem; text-transform: uppercase; letter-spacing: .02em; }
 .cyber .tuile-ch .c { font-family: var(--f-mono); color: var(--cp-cyan); }
 .cyber .chapitre.dossier .chapitre-tete .n { color: #0a0b14; }
+
+/* ---------- accueil : encarts « version bêta » et « chers élèves » en néon ---------- */
+.cyber .accueil-carte { --cc: #fcee09; --cc2: #00f0ff; padding: 24px 26px 26px; color: #e9f7ff; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  background: linear-gradient(135deg, #0b0f1a 0%, #111a2e 100%); isolation: isolate; overflow: hidden; border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 26px 100%, 0 calc(100% - 26px)); }
+.cyber .accueil-carte.conseil { --cc: #ff2a6d; --cc2: #fcee09; }
+.cyber .accueil-carte::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 3px); }
+.cyber .accueil-carte::after { content: ''; position: absolute; left: 0; top: 0; bottom: 26px; width: 5px; background: var(--cc); box-shadow: 0 0 14px var(--cc); }
+.cyber .accueil-etiquette { font-size: .72rem; text-transform: uppercase; letter-spacing: .16em; color: #0b0f1a; background: var(--cc); padding: 3px 10px 3px 8px; border-radius: 0;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); }
+.cyber .accueil-etiquette::before { content: '// '; }
+.cyber .accueil-carte h2 { font-family: inherit; font-size: 1.3rem; letter-spacing: .01em; text-transform: uppercase; color: #fff; margin: 12px 0 10px; text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); }
+.cyber .accueil-carte p { color: #b9cfe0; font-family: inherit; font-size: .92rem; line-height: 1.65; }
+.cyber .accueil-carte p::before { content: '> '; color: var(--cc2); font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) {
+  .cyber .accueil-carte h2 { animation: accueil-glitch 5.5s infinite steps(1); }
+  @keyframes accueil-glitch { 0%, 92%, 100% { text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); transform: none; }
+    93% { text-shadow: -4px 0 var(--cc2), 4px 0 var(--cc); transform: translateX(2px); } 95% { text-shadow: 4px 0 var(--cc2), -4px 0 var(--cc); transform: translateX(-2px); } 97% { text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); transform: none; } }
+}
+@media (max-width: 720px) { .cyber .accueil-carte h2 { font-size: 1.15rem; } }

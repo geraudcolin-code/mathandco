@@ -27,7 +27,7 @@
   function mouvement() {
     if (window.__pamplemousse) { window.__pamplemousse.demarrer(); return; }
     if (document.getElementById('script-pample')) return;
-    var sc = document.createElement('script'); sc.id = 'script-pample'; sc.src = BASE + 'theme-pample.js?v=20261104d'; sc.defer = true;
+    var sc = document.createElement('script'); sc.id = 'script-pample'; sc.src = BASE + 'theme-pample.js?v=20261104f'; sc.defer = true;
     document.head.appendChild(sc);
   }
   if (mode === 'pample') {

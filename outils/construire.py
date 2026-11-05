@@ -54,7 +54,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOSSIER = os.path.join(RACINE, 'corrections')
 ITER = 600_000
-BALISE = '<script src="../assets/deverrou.js?v=2" data-mathandco></script>'
+BALISE = '<script src="../assets/deverrou.js?v=3" data-mathandco></script>'
 
 # Classes, dans l'ordre d'affichage : préfixe du nom de fichier -> (identifiant, nom affiché)
 # Noms affichés (21 oct., M. Colin) : « Première spécialité », « Première spécifique », « Terminale spécialité » ;

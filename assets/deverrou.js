@@ -23,7 +23,9 @@
     '@keyframes mc-pivot{0%,25%{transform:rotate(0)}55%,85%{transform:rotate(-90deg)}100%{transform:rotate(0)}}' +
     '@media (prefers-reduced-motion:reduce){#mc-tourner svg{animation:none;transform:rotate(-90deg)}}' +
     '#mc-tourner button{margin-top:8px;font:inherit;font-size:15px;color:#fff;background:transparent;border:1px solid rgba(255,255,255,.5);' +
-    'border-radius:999px;padding:10px 18px;cursor:pointer}';
+    'border-radius:999px;padding:10px 18px;cursor:pointer}' +
+    // fond blanc : plus de quadrillage de cahier derrière les corrections animées (5 nov. 2026)
+    '#defil{background-image:none!important;background-color:#fff!important}';
   document.head.appendChild(st);
 
   var telephone = window.matchMedia && matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;

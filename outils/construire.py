@@ -359,6 +359,9 @@ def catalogue(mdp, mdp_prof=None):
                 details[e['fichier'][:-5]] = {'titre': e['titre'], 'consigne': e['consigne']}
                 m = re.search(r'-ch\d+-ds(\d+)-?(?:sujet)?([a-z])-exercice-\d+\.html$', e['fichier'])
                 extra = {'ds': int(m.group(1)), 'sujet': m.group(2).upper()} if m else {}
+                mi = re.search(r'-ch\d+-interrogation-flash-([a-z])-exercice-\d+\.html$', e['fichier'])   # interrogation flash : section propre dans le bloc des devoirs surveillés
+                if mi:
+                    extra = {'interro': mi.group(1).upper()}
             return dict({'type': e['type'], 'numero': e['numero'], **({} if ds else {'titre': e['titre'], 'consigne': e['consigne']}),
                          'href': 'corrections/' + e['fichier'], 'nom': e['nom'], **(extra if ds else {})},
                         **({'pdf': 'corrections/' + e['fichier'][:-5] + '.pdf.bin', 'pdfnom': e['nom'] + '.pdf'}

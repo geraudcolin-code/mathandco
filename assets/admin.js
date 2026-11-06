@@ -135,7 +135,7 @@
   function changements() { return items().map(ident).filter(function (s) { return !!VOULU[s] !== !!PUBLIE[s]; }); }
   function libelle(it) {
     if (it.type === 'exercice') return 'Exercice ' + it.numero;
-    if (it.type === 'evaluation') return (it.sujet ? 'Sujet ' + it.sujet + ', ' : 'Évaluation, ') + 'exercice ' + it.numero;
+    if (it.type === 'evaluation') return (it.interro ? 'Interrogation flash ' + it.interro + ', ' : it.sujet ? 'Sujet ' + it.sujet + ', ' : 'Évaluation, ') + 'exercice ' + it.numero;
     if (it.type === 'dm') return 'Devoir maison, exercice ' + it.numero;
     if (it.type === 'poly') return 'Poly à trous';
     if (it.type === 'flash') return 'Questions flash';

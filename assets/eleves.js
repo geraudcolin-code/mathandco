@@ -221,13 +221,13 @@
       // deux sections pleine largeur, « Sujet A » et « Sujet B » (une par couple devoir / sujet)
       var groupes = [], index = {}, nbDS = {};
       items.forEach(function (it) {
-        var k = (it.ds || 0) + '/' + (it.sujet || '');
-        if (!index[k]) { index[k] = { ds: it.ds, sujet: it.sujet, items: [] }; groupes.push(index[k]); nbDS[it.ds || 0] = true; }
+        var k = (it.ds || 0) + '/' + (it.sujet || '') + '/' + (it.interro || '');
+        if (!index[k]) { index[k] = { ds: it.ds, sujet: it.sujet, interro: it.interro, items: [] }; groupes.push(index[k]); nbDS[it.ds || 0] = true; }
         index[k].items.push(it);
       });
       groupes.forEach(function (gr) {
         var sec = el('section', 'sujet');
-        sec.appendChild(el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé')));
+        sec.appendChild(el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.interro ? 'Interrogation flash ' + gr.interro : gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé')));
         var g = el('div', 'grille');
         gr.items.forEach(function (it) { g.appendChild(fiche(it, ch, c, true)); });
         sec.appendChild(g); corps.appendChild(sec);

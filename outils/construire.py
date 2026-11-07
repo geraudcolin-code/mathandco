@@ -91,6 +91,7 @@ CHAPITRES = {
 # Intitulés imposés par M. Colin pour des pages dont le titre n'est pas lisible dans la page elle-même (fichier -> titre)
 TITRES_IMPOSES = {
     '1ere-ch04-animation-secante-tangente.html': 'Coefficient directeur de la corde AH',
+    'term-ch04-comment-construire-une-dimension.html': 'Comment construire une dimension',
     '1ere-ch04-nombre-derive-et-vitesse.html': 'Animation : Nombre dérivé et vitesse',
     '2nde-ch02-exercice-1.html': 'Représentants de vecteurs sur un quadrillage',
     '2nde-ch02-exercice-2.html': 'Somme de deux vecteurs',

@@ -364,6 +364,9 @@ def catalogue(mdp, mdp_prof=None):
                 details[e['fichier'][:-5]] = {'titre': e['titre'], 'consigne': e['consigne']}
                 m = re.search(r'-ch\d+-ds(\d+)-?(?:sujet)?([a-z])-exercice-\d+\.html$', e['fichier'])
                 extra = {'ds': int(m.group(1)), 'sujet': m.group(2).upper()} if m else {}
+                ms = re.search(r'-ch\d+-interro-sujet([a-z])-exercice-\d+\.html$', e['fichier'])   # interrogation écrite à plusieurs sujets (9 nov. 2026) : une section par sujet
+                if ms:
+                    extra = {'sujet': ms.group(1).upper()}
                 mi = re.search(r'-ch\d+-interrogation-flash-([a-z])-exercice-\d+\.html$', e['fichier'])   # interrogation flash : section propre dans le bloc des devoirs surveillés
                 if mi:
                     extra = {'interro': mi.group(1).upper()}

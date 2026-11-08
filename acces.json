@@ -1,5 +1,5 @@
 {
- "maj": "2026-11-07T23:02:27.376Z",
+ "maj": "2026-11-08T09:27:20+00:00",
  "ouvertes": [
   "1ere-ch01-ds1-sujeta-exercice-1",
   "1ere-ch01-ds1-sujeta-exercice-2",
@@ -270,6 +270,7 @@
   "term-ch04-exercice-1",
   "term-ch04-exercice-2",
   "term-ch04-exercice-4",
+  "term-ch04-histoire-vecteurs-droites-plans",
   "term-ch04-poly-a-trous"
  ]
 }

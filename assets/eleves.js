@@ -94,7 +94,7 @@
       num.appendChild(document.createTextNode(it.numero));
     } else {
       f.classList.add('speciale');
-      num.textContent = it.type === 'poly' ? 'Poly à trous' : it.type === 'flash' ? 'Questions flash' : (it.titre || it.nom);
+      num.textContent = it.type === 'poly' ? 'Poly à trous' : it.type === 'flash' ? 'Questions flash' : it.type === 'histoire' ? 'Repères historiques' : (it.titre || it.nom);
     }
     a.appendChild(num);
     var titre = it.type === 'poly' ? 'Le cours du chapitre, complété clic par clic' : it.titre;

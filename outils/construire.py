@@ -215,6 +215,8 @@ def analyser_nom(titre):
         slug = f'{base}-' + (sans_accents(prefixe).lower().replace('_', '-') + '-' if prefixe else '') + f'exercice-{n}'
         if prefixe:
             t = 'dm' if re.fullmatch(r'dm\d*', prefixe, re.I) else 'evaluation'     # devoir maison (1er nov. 2026) / devoir surveillé
+    elif re.match(r'(Histoire|Elements?_?historiques?)', sans_accents(reste), re.I):     # repères historiques (8 nov. 2026) : bloc à part
+        t, n, slug = 'histoire', 0, f'{base}-' + sans_accents(reste).lower().replace('_', '-')
     else:
         t, n, slug = 'autre', 0, f'{base}-' + sans_accents(reste).lower().replace('_', '-')
     return dict(classe=cid, chapitre=chap, type=t, numero=n, fichier=slug + '.html', nom=titre.strip())
@@ -370,16 +372,18 @@ def catalogue(mdp, mdp_prof=None):
                            if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
         for num in sorted({e['chapitre'] for e in items}):
             lot = [e for e in items if e['chapitre'] == num]
-            rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5}
+            rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5, 'histoire': 6}
             lot.sort(key=lambda e: (rang[e['type']], e['numero'], e['fichier']))
             titre_ch = CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
             # chaque chapitre range ses pages en blocs repliables de couleur : cours (vert : poly à trous puis
             # animations du chapitre, p. ex. combinaisons de vecteurs, nombre dérivé et vitesse), correction des exercices
-            # (bleu marine), devoirs maison (prune), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier
+            # (bleu marine), devoirs maison (prune), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier ;
+            # « Éléments historiques » (sépia, 8 nov. 2026) juste après le cours
             def bloc(ident, titre, types, cle=lambda e: (e['numero'], e['fichier'])):
                 lst = sorted((e for e in lot if e['type'] in types), key=cle)
                 return {'id': ident, 'titre': titre, 'items': [fiche_cat(e) for e in lst]} if lst else None
             blocs = [bloc('poly', 'Cours et animations', ('poly', 'autre'), lambda e: (rang[e['type']], e['numero'], e['fichier'])),
+                     bloc('histoire', 'Éléments historiques', ('histoire',)),
                      bloc('exercices', 'Correction des exercices', ('exercice',)),
                      bloc('dm', 'Devoirs maison', ('dm',),
                           lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero'])),

@@ -148,6 +148,7 @@
 .cyber .dossier-corps { border-radius: 0; background: color-mix(in srgb, var(--dc) 5%, #0a0b14); border: 1px solid color-mix(in srgb, var(--dc) 35%, transparent); border-top: 0; }
 .cyber .dossier-bloc.d-poly { --dc: var(--cp-teal); }
 .cyber .dossier-bloc.d-exercices { --dc: var(--cp-cyan); }
+.cyber .dossier-bloc.d-histoire { --dc: #ffa93d; }
 .cyber .dossier-bloc.d-dm { --dc: var(--cp-violet); }
 .cyber .dossier-bloc.d-ds { --dc: var(--cp-rose); }
 .cyber .dossier-bloc.d-flash { --dc: var(--cp-jaune); }

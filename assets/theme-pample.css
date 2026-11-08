@@ -123,6 +123,7 @@
 .pample .dossier-corps { border-radius: 0 0 24px 24px; background: color-mix(in srgb, var(--dc) 7%, #fffdfa); border: 2px solid color-mix(in srgb, var(--dc) 28%, transparent); border-top: 0; }
 .pample .dossier-bloc.d-poly { --dc: #4c8c3a; }
 .pample .dossier-bloc.d-exercices { --dc: #d6405a; }
+.pample .dossier-bloc.d-histoire { --dc: #a3773a; }
 .pample .dossier-bloc.d-dm { --dc: #94418a; }
 .pample .dossier-bloc.d-ds { --dc: #e2761c; }
 .pample .dossier-bloc.d-flash { --dc: #f0b81c; }

@@ -85,6 +85,7 @@ CHAPITRES = {
     ('terminale', 2): 'Limites de suites',
     ('terminale', 3): 'Limites de fonctions',
     ('terminale', 4): 'Vecteurs, droites et plans de l’espace',
+    ('terminale', 5): 'Compléments sur la dérivation',
 }
 
 

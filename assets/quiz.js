@@ -441,7 +441,7 @@
       c._msg.textContent = 'Bonne réponse !'; c._msg.classList.add('ok');
       c._bv.hidden = true; c._bs.hidden = true; c._bn.hidden = false;
       if (c._champ) { c._champ.readOnly = true; c._champ.blur(); }
-      c.querySelectorAll('.signe, .quiz-tab math-field').forEach(function (s) { s.disabled = true; s.readOnly = true; });
+      c.querySelectorAll('.quiz-tab button, .quiz-tab math-field').forEach(function (s) { s.disabled = true; s.readOnly = true; });
       window.mathVirtualKeyboard && window.mathVirtualKeyboard.hide();
       signalerJuste();
       setTimeout(function () { c._bn.focus(); }, 50);
@@ -481,60 +481,100 @@
     this.fin.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   };
 
-  /* ----- tableau de signes ----- */
+  /* ----- tableau de signes : une ligne (le signe du résultat), valeurs de x ajoutées par l'élève ----- */
+  var TRAITS = ['pointille', 'zero', 'double'];
+  var NOM_TRAIT = { pointille: 'pointillés', zero: 'trait avec un 0', double: 'double trait (valeur interdite)' };
   Quiz.prototype.tableau = function (q, zone) {
-    var nv = q.valeurs.length;                         // valeurs intérieures (hors ±∞)
-    var nCols = 2 * nv + 3;                            // ∞, int, v1, int, …, vn, int, ∞
     var wrap = el('div', 'quiz-tab-cadre'), tab = el('div', 'quiz-tab');
-    tab.style.gridTemplateColumns = 'minmax(4em, max-content) ' + Array(nCols).fill(0).map(function (_, j) { return j % 2 === 0 ? 'minmax(2.6em, auto)' : 'minmax(1.6em, 1fr)'; }).join(' ');
-    var champsX = [];
+    var gauche = nouveauChamp('quiz-champ petit', 'Première valeur de la ligne x');
+    var droite = nouveauChamp('quiz-champ petit', 'Dernière valeur de la ligne x');
+    var racines = [];                 // { mf, trait }
+    var signes = [''];                // un signe par intervalle
+    var lab = el('span', null, '\\(x\\)'); rendre(lab);
+    var labL = el('span', null, q.ligne.label); rendre(labL);
+
     function cellule(classe, contenu) { var c = el('div', 'tcell ' + (classe || '')); if (contenu) c.appendChild(contenu); tab.appendChild(c); return c; }
-    var lx = el('span', null, '\\(x\\)'); cellule('tlab tx', lx); rendre(lx);
-    for (var j = 0; j < nCols; j++) {
-      if (j % 2 === 0) {
-        var bord = j === 0 ? 'gauche' : j === nCols - 1 ? 'droite' : 'interieur';
-        var mf = nouveauChamp('quiz-champ petit', 'Valeur ' + (j / 2 + 1) + ' de la ligne x');
-        champsX.push(mf); cellule('tx tval ' + bord, mf);
-      } else cellule('tx tint');
+    function bouton(classe, texte, aria, action) {
+      var b = el('button', classe, texte); b.type = 'button'; b.setAttribute('aria-label', aria);
+      b.addEventListener('click', action); return b;
     }
-    var lignes = q.lignes.map(function (L) {
-      var lab = el('span', null, L.label); cellule('tlab', lab); rendre(lab);
-      var boutons = [];
-      for (var j = 0; j < nCols; j++) {
-        if (j === 0 || j === nCols - 1) { cellule('tval tvide'); continue; }
-        var interv = j % 2 === 1;
-        var b = el('button', 'signe ' + (interv ? 'sint' : 'sval')); b.type = 'button';
-        b.dataset.v = '';
-        b.setAttribute('aria-label', interv ? 'Signe sur l’intervalle ' + ((j + 1) / 2) : 'Valeur ' + (j / 2 + 1) + ' : zéro ou rien');
-        b.addEventListener('click', function () {
-          var cy = this.classList.contains('sint') ? ['', '+', '−'] : ['', '0'];
-          var v = cy[(cy.indexOf(this.dataset.v) + 1) % cy.length];
-          this.dataset.v = v; this.textContent = v;
-        });
-        boutons.push(b); cellule(interv ? 'tint' : 'tval trait', b);
-      }
-      return boutons;
-    });
-    wrap.appendChild(tab); zone.appendChild(wrap);
-    zone.appendChild(el('p', 'quiz-aide-tab', 'Tape les valeurs de \\(x\\) dans la première ligne ; touche une case pour y mettre +, − (ou 0 sur un trait).'));
-    rendre(zone.lastChild);
-    return function () {
-      var attendus = [-Infinity].concat(q.valeurs, [Infinity]);
-      for (var i = 0; i < champsX.length; i++) {
-        var v;
-        try { v = evaluer(analyser(champsX[i].value), {}); }
-        catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? 'Remplis toute la ligne des valeurs de x (aux extrémités : −∞ et +∞).' : 'Une valeur de la ligne x est illisible.' }; }
-        if (v !== attendus[i] && !(isFinite(v) && Math.abs(v - attendus[i]) < 1e-9)) return { etat: 'faux', msg: 'La ligne des valeurs de x n’est pas juste.' };
-      }
-      for (var l = 0; l < lignes.length; l++) {
-        var att = q.lignes[l].signes;
-        for (var s = 0; s < att.length; s++) {
-          if (lignes[l][s].dataset.v !== att[s]) {
-            var vide = lignes.some(function (L) { return L.some(function (b) { return b.classList.contains('sint') && !b.dataset.v; }); });
-            return { etat: 'faux', msg: vide ? 'Il reste des signes à placer.' : 'Il y a une erreur dans les signes.' };
-          }
+    function ajouter(k) {             // nouvelle valeur entre la valeur k et la valeur k+1
+      var mf = nouveauChamp('quiz-champ petit', 'Valeur de x');
+      racines.splice(k, 0, { mf: mf, trait: 'pointille' });
+      signes.splice(k + 1, 0, '');
+      dessiner();
+      setTimeout(function () { try { mf.focus(); } catch (e) {} }, 30);
+    }
+    function retirer(k) {
+      racines.splice(k, 1);
+      signes.splice(k + 1, 1);
+      dessiner();
+    }
+    function dessiner() {
+      var n = racines.length;
+      while (tab.firstChild) tab.removeChild(tab.firstChild);
+      var cols = ['minmax(4em, max-content)'];
+      for (var c = 0; c < 2 * n + 3; c++) cols.push(c % 2 === 0 ? 'minmax(2.4em, auto)' : 'minmax(1.9em, 1fr)');
+      tab.style.gridTemplateColumns = cols.join(' ');
+      // ligne des x
+      cellule('tlab tx', lab);
+      cellule('tx tval', gauche);
+      for (var k = 0; k <= n; k++) {
+        (function (k) { cellule('tx tint', bouton('tab-plus', '+', 'Ajouter une valeur de x ici', function () { ajouter(k); })); })(k);
+        if (k < n) {
+          (function (k) {
+            var boite = el('div', 'tab-valeur'); boite.appendChild(racines[k].mf);
+            boite.appendChild(bouton('tab-suppr', '×', 'Retirer cette valeur', function () { retirer(k); }));
+            cellule('tx tval', boite);
+          })(k);
         }
       }
+      cellule('tx tval', droite);
+      // ligne du signe
+      cellule('tlab', labL);
+      cellule('tval tvide');
+      for (var m = 0; m <= n; m++) {
+        (function (m) {
+          var b = bouton('signe sint', signes[m], 'Signe sur l’intervalle ' + (m + 1), function () {
+            var cy = ['', '+', '−']; signes[m] = cy[(cy.indexOf(signes[m]) + 1) % 3];
+            b.textContent = signes[m]; b.dataset.v = signes[m];
+          });
+          b.dataset.v = signes[m];
+          cellule('tint', b);
+        })(m);
+        if (m < n) {
+          (function (m) {
+            var r = racines[m];
+            var t = bouton('trait-choix', '', '', function () {
+              r.trait = TRAITS[(TRAITS.indexOf(r.trait) + 1) % 3];
+              t.dataset.t = r.trait; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
+            });
+            t.dataset.t = r.trait; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
+            t.innerHTML = '<span>0</span>';
+            cellule('tval ttrait', t);
+          })(m);
+        }
+      }
+      cellule('tval tvide');
+    }
+    dessiner();
+    wrap.appendChild(tab); zone.appendChild(wrap);
+    var aide = el('p', 'quiz-aide-tab', 'Le bouton <b>+</b> ajoute une valeur de \\(x\\) (× la retire). Touche une case pour y mettre + ou −, et un trait pour choisir : pointillés, trait avec un 0, ou double trait (valeur interdite).');
+    zone.appendChild(aide); rendre(aide);
+
+    function lire(mf) { return evaluer(analyser(mf.value), {}); }
+    return function () {
+      var vg, vd, vals = [];
+      try { vg = lire(gauche); vd = lire(droite); racines.forEach(function (r) { vals.push(lire(r.mf)); }); }
+      catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? 'Remplis toutes les cases de la ligne des x (aux extrémités : −∞ et +∞).' : 'Une valeur de la ligne des x est illisible.' }; }
+      if (vg !== -Infinity || vd !== Infinity) return { etat: 'faux', msg: 'Regarde les extrémités de la ligne des x.' };
+      for (var i = 1; i < vals.length; i++) if (!(vals[i] > vals[i - 1])) return { etat: 'faux', msg: 'Les valeurs de x doivent être rangées dans l’ordre croissant.' };
+      var att = q.valeurs;
+      var memes = vals.length === att.length && vals.every(function (v, i) { return Math.abs(v - att[i]) < 1e-9; });
+      if (!memes) return { etat: 'faux', msg: 'Les valeurs placées sur la ligne des x ne sont pas les bonnes.' };
+      for (var t = 0; t < att.length; t++) if (racines[t].trait !== q.ligne.traits[t]) return { etat: 'faux', msg: 'Vérifie les traits sous les valeurs de x.' };
+      if (signes.some(function (sg) { return !sg; })) return { etat: 'faux', msg: 'Il reste des signes à placer.' };
+      for (var k = 0; k < signes.length; k++) if (signes[k] !== q.ligne.signes[k]) return { etat: 'faux', msg: 'Il y a une erreur dans les signes.' };
       return { etat: 'juste' };
     };
   };

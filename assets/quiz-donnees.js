@@ -2,7 +2,7 @@
    enonce / correction : HTML, formules entre \( … \).
    type 'expr' : attendu (LaTeX), variable, gauche (lettre admise à gauche du « = »), gaucheObligatoire,
                  forme : 'libre' | 'affine' (y = mx + p) | 'polynome' (développée réduite) | 'puissance' (une seule puissance)
-   type 'signes' : valeurs (racines rangées), lignes [{label, signes : [int, val, int, val, int]}], '+', '−', '0' ou '' */
+   type 'signes' : valeurs (rangées), ligne {label, traits : 'pointille' | 'zero' | 'double' sous chaque valeur, signes : '+' ou '−' par intervalle} */
 window.QUIZ = window.QUIZ || {};
 window.QUIZ['1ere-automatismes-1'] = {
   etiquette: 'Première · Automatismes',
@@ -10,9 +10,9 @@ window.QUIZ['1ere-automatismes-1'] = {
   questions: [
     {
       type: 'expr',
-      enonce: '<p>On a l’égalité \\(x=\\dfrac{X}{X-1}\\).</p><p>Exprimer \\(X\\) en fonction de \\(x\\).</p>',
-      prefixe: '\\(X=\\)', gauche: 'X', variable: 'x', attendu: '\\frac{x}{x-1}', forme: 'libre',
-      correction: '<p>Pour \\(X\\neq1\\) : \\(x=\\dfrac{X}{X-1}\\)</p><p>c-à-d \\(x(X-1)=X\\)</p><p>c-à-d \\(xX-x=X\\)</p><p>c-à-d \\(xX-X=x\\)</p><p>c-à-d \\(X(x-1)=x\\)</p><p>c-à-d \\(X=\\dfrac{x}{x-1}\\) (pour \\(x\\neq1\\)).</p>'
+      enonce: '<p>On a l’égalité \\(x=\\dfrac{2X}{X-1}\\).</p><p>Exprimer \\(X\\) en fonction de \\(x\\).</p>',
+      prefixe: '\\(X=\\)', gauche: 'X', variable: 'x', attendu: '\\frac{x}{x-2}', forme: 'libre',
+      correction: '<p>Pour \\(X\\neq1\\) : \\(x=\\dfrac{2X}{X-1}\\)</p><p>c-à-d \\(x(X-1)=2X\\)</p><p>c-à-d \\(xX-x=2X\\)</p><p>c-à-d \\(xX-2X=x\\)</p><p>c-à-d \\(X(x-2)=x\\)</p><p>c-à-d \\(X=\\dfrac{x}{x-2}\\) (pour \\(x\\neq2\\)).</p>'
     },
     {
       type: 'expr',
@@ -25,12 +25,8 @@ window.QUIZ['1ere-automatismes-1'] = {
       type: 'signes',
       enonce: '<p>Construire le tableau de signes de \\((x+8)(x-5)\\).</p>',
       valeurs: [-8, 5],
-      lignes: [
-        { label: '\\(x+8\\)', signes: ['−', '0', '+', '', '+'] },
-        { label: '\\(x-5\\)', signes: ['−', '', '−', '0', '+'] },
-        { label: '\\((x+8)(x-5)\\)', signes: ['+', '0', '−', '0', '+'] }
-      ],
-      correction: '<p>\\(x+8=0\\) pour \\(x=-8\\) et \\(x-5=0\\) pour \\(x=5\\) : on range \\(-8<5\\) sur la ligne des \\(x\\).</p><p>\\(x+8\\) et \\(x-5\\) sont des fonctions affines de coefficient directeur positif : chacune est négative avant sa racine, positive après.</p><p>La règle des signes donne : \\((x+8)(x-5)\\) est positif sur \\(]-\\infty\\,;-8[\\) et sur \\(]5\\,;+\\infty[\\), négatif sur \\(]-8\\,;5[\\), et nul en \\(-8\\) et en \\(5\\).</p>'
+      ligne: { label: '\\((x+8)(x-5)\\)', traits: ['zero', 'zero'], signes: ['+', '−', '+'] },
+      correction: '<p>\\(x+8=0\\) pour \\(x=-8\\) et \\(x-5=0\\) pour \\(x=5\\) : on range \\(-8<5\\) sur la ligne des \\(x\\), avec un trait et un \\(0\\) sous chacune.</p><p>\\(x+8\\) et \\(x-5\\) sont des fonctions affines de coefficient directeur positif : chacune est négative avant sa racine, positive après.</p><p>La règle des signes donne : \\((x+8)(x-5)\\) est positif sur \\(]-\\infty\\,;-8[\\) et sur \\(]5\\,;+\\infty[\\), négatif sur \\(]-8\\,;5[\\), et nul en \\(-8\\) et en \\(5\\).</p>'
     },
     {
       type: 'expr',

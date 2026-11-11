@@ -511,12 +511,31 @@ math-field::part(menu-toggle) { display: none; }
 math-field.quiz-champ.petit { min-height: 40px; min-width: 2.4em; font-size: 1.15rem; padding: 4px 6px; border-radius: 8px; border-width: 1.5px; text-align: center; }
 .tval.gauche, .tval.droite, .tval.interieur { padding: 4px; }
 .signe { border: 0; background: none; color: var(--encre); font: 600 1.35rem var(--f-maths); cursor: pointer; width: 100%; align-self: stretch; min-height: 46px; border-radius: 8px; }
-.signe:hover:not(:disabled) { background: var(--bleu-fond); }
+@media (hover: hover) { .signe:hover:not(:disabled) { background: var(--bleu-fond); } }
 .signe:disabled { cursor: default; }
 .signe.sint[data-v=""]::after { content: "·"; color: var(--filet); }
 .signe.sval { width: 34px; height: 34px; min-height: 0; align-self: center; border-radius: 50%; }
 math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
 .signe.sval[data-v="0"] { background: var(--papier); }
+.tcell.tint { padding: 0 2px; }
+.tab-plus { width: 30px; height: 30px; border-radius: 50%; border: 1.5px dashed var(--gris); background: var(--papier); color: var(--gris);
+  font: 600 1.15rem/1 var(--f-texte); cursor: pointer; padding: 0; transition: border-color .2s, color .2s, transform .2s; }
+.tab-plus:hover { border-color: var(--bleu); color: var(--bleu); transform: scale(1.08); }
+.tab-valeur { position: relative; }
+.tab-suppr { position: absolute; top: -9px; right: -9px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--filet);
+  background: var(--papier); color: var(--gris); font: 600 .8rem/1 var(--f-texte); cursor: pointer; padding: 0; z-index: 1; }
+.tab-suppr:hover { color: var(--rouge); border-color: var(--rouge); }
+.quiz-carte.reussie .tab-plus, .quiz-carte.reussie .tab-suppr { visibility: hidden; }
+.trait-choix { align-self: stretch; width: 40px; min-height: 48px; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center;
+  color: var(--encre); font: 700 1.25rem var(--f-maths); border-radius: 6px; }
+.trait-choix span { visibility: hidden; background: var(--papier); line-height: 1.1; padding: 1px 3px; }
+.trait-choix[data-t="pointille"] { background: repeating-linear-gradient(to bottom, var(--encre) 0 5px, transparent 5px 10px) center / 1.5px 100% no-repeat; }
+.trait-choix[data-t="zero"] { background: linear-gradient(var(--encre), var(--encre)) center / 1.5px 100% no-repeat; }
+.trait-choix[data-t="zero"] span { visibility: visible; }
+.trait-choix[data-t="double"] { background: linear-gradient(var(--encre), var(--encre)) calc(50% - 3px) 0 / 1.5px 100% no-repeat,
+  linear-gradient(var(--encre), var(--encre)) calc(50% + 3px) 0 / 1.5px 100% no-repeat; }
+@media (hover: hover) { .trait-choix:hover:not(:disabled) { background-color: var(--bleu-fond); } }
+.trait-choix:disabled { cursor: default; }
 .quiz-aide-tab { font-size: var(--t-petit); color: var(--gris); margin: 10px 0 0; }
 /* retours : écran rouge qui tremble, coche verte */
 .quiz-voile { position: fixed; inset: 0; z-index: 900; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(220, 38, 38, .25), rgba(200, 20, 20, .6)); }
@@ -544,6 +563,9 @@ math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
   math-field.quiz-champ.petit { font-size: .9rem; min-width: 1.8em; padding: 2px; }
   .signe { font-size: 1.1rem; padding: 0; }
   .signe.sval { width: 28px; height: 28px; }
+  .tcell.tint { padding: 0 1px; }
+  .tab-plus { width: 23px; height: 23px; font-size: .95rem; }
+  .trait-choix { width: 28px; font-size: 1.05rem; }
   .quiz-points { gap: 6px; }
   .quiz-point { width: 34px; height: 34px; }
 }

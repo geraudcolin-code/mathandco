@@ -101,6 +101,7 @@ p { margin: 0; }
 }
 .bouton:hover { text-decoration: none; filter: brightness(1.08); }
 .bouton:active { transform: scale(.97); }
+.nav .bouton { white-space: nowrap; }
 .bouton.petit { min-height: 32px; padding: 0 14px; font-size: var(--t-petit); }
 .bouton.discret { background: var(--bleu-fond); color: var(--bleu); }
 .lien-fleche { font-size: var(--t-sous); font-weight: 500; }
@@ -321,7 +322,8 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 @media (max-width: 720px) {
   .tuiles { grid-template-columns: 1fr; }
   .nav-liens .masque-tel { display: none; }
-  .nav-int { gap: 16px; }
+  .nav-int { gap: 8px; }
+  .nav-int .bouton.petit { padding: 0 11px; }
   .cahier::before { left: 40px; }
   .cahier-tete { padding-left: 56px; }
   .cahier-tete .q { left: 12px; }

@@ -192,3 +192,9 @@
     93% { text-shadow: -4px 0 var(--cc2), 4px 0 var(--cc); transform: translateX(2px); } 95% { text-shadow: 4px 0 var(--cc2), -4px 0 var(--cc); transform: translateX(-2px); } 97% { text-shadow: 2px 0 var(--cc2), -2px 0 var(--cc); transform: none; } }
 }
 @media (max-width: 720px) { .cyber .accueil-carte h2 { font-size: 1.15rem; } }
+
+/* téléphone : deux boutons dans la barre (Accès libre + Espace élèves) sans débordement */
+@media (max-width: 720px) {
+  .cyber .nav-int .bouton.petit { letter-spacing: .04em; padding: 0 9px; font-size: .72rem; }
+  .cyber .logo { font-size: 1.1rem; letter-spacing: .02em; }
+}

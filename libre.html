@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Accès libre, Colinéaire</title>
+<meta name="description" content="Accès libre : s'exercer en mathématiques au lycée avec Colinéaire, sans mot de passe.">
+<link rel="canonical" href="https://xn--colinaire-f4a.fr/libre.html">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" href="assets/icone.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=20261111a">
+<link rel="stylesheet" href="assets/theme-cyber.css?v=20261111a">
+<link rel="stylesheet" href="assets/theme-pample.css?v=20261108a">
+<script src="assets/theme.js?v=20261104f"></script>
+</head>
+<body>
+<header class="nav gouttiere" id="nav">
+  <div class="colonne nav-int">
+    <a class="logo" href="./" aria-label="Colinéaire, accueil">Colin<span class="esperluette">éaire</span></a>
+    <nav class="nav-liens" aria-label="Navigation">
+      <a href="./">Accueil</a>
+    </nav>
+    <a class="bouton petit" href="eleves.html">Espace élèves</a>
+  </div>
+</header>
+
+<main>
+  <section class="gouttiere">
+    <div class="colonne biblio-tete">
+      <div>
+        <h1>Accès libre</h1>
+        <p>Pour s'exercer, sans mot de passe.</p>
+      </div>
+    </div>
+  </section>
+  <div class="outils gouttiere">
+    <div class="colonne">
+      <div class="segments" role="tablist" aria-label="Choisir un onglet" id="onglets">
+        <button type="button" role="tab" id="t-seconde" aria-controls="p-seconde" aria-selected="true" data-id="seconde">Seconde</button>
+        <button type="button" role="tab" id="t-premiere" aria-controls="p-premiere" aria-selected="false" data-id="premiere" tabindex="-1">Première</button>
+        <button type="button" role="tab" id="t-terminale" aria-controls="p-terminale" aria-selected="false" data-id="terminale" tabindex="-1">Terminale</button>
+      </div>
+    </div>
+  </div>
+  <section class="gouttiere">
+    <div class="colonne">
+      <!-- Un onglet = un bouton ci-dessus + un panneau ci-dessous (même data-id / id p-…). -->
+      <div class="panneau" role="tabpanel" id="p-seconde" aria-labelledby="t-seconde" data-id="seconde">
+        <p class="vide">Des exercices pour s'entraîner arriveront bientôt ici.</p>
+      </div>
+      <div class="panneau" role="tabpanel" id="p-premiere" aria-labelledby="t-premiere" data-id="premiere" hidden>
+        <p class="vide">Des exercices pour s'entraîner arriveront bientôt ici.</p>
+      </div>
+      <div class="panneau" role="tabpanel" id="p-terminale" aria-labelledby="t-terminale" data-id="terminale" hidden>
+        <p class="vide">Des exercices pour s'entraîner arriveront bientôt ici.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="pied gouttiere">
+  <div class="colonne">
+  </div>
+</footer>
+<script src="assets/libre.js"></script>
+</body>
+</html>

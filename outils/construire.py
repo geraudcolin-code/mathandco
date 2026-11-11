@@ -94,6 +94,7 @@ TITRES_IMPOSES = {
     '1ere-ch04-animation-secante-tangente.html': 'Coefficient directeur de la corde AH',
     'term-ch04-comment-construire-une-dimension.html': 'Comment construire une dimension',
     'term-ch04-histoire-vecteurs-droites-plans.html': 'Éléments historiques : vecteurs, droites et plans',
+    'term-ch02-histoire-limites-de-suites.html': 'Éléments historiques : limites de suites',
     'term-ch03-histoire-limites-de-fonctions.html': 'Éléments historiques : limites de fonctions',
     '1ere-ch04-nombre-derive-et-vitesse.html': 'Animation : Nombre dérivé et vitesse',
     '2nde-ch02-exercice-1.html': 'Représentants de vecteurs sur un quadrillage',

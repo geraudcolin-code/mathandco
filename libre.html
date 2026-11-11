@@ -11,8 +11,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
-<link rel="stylesheet" href="assets/site.css?v=20261111a">
-<link rel="stylesheet" href="assets/theme-cyber.css?v=20261111a">
+<link rel="stylesheet" href="assets/site.css?v=20261112c">
+<link rel="stylesheet" href="assets/theme-cyber.css?v=20261112b">
 <link rel="stylesheet" href="assets/theme-pample.css?v=20261108a">
 <script src="assets/theme.js?v=20261104f"></script>
 </head>
@@ -52,7 +52,18 @@
         <p class="vide">Des exercices pour s'entraîner arriveront bientôt ici.</p>
       </div>
       <div class="panneau" role="tabpanel" id="p-premiere" aria-labelledby="t-premiere" data-id="premiere" hidden>
-        <p class="vide">Des exercices pour s'entraîner arriveront bientôt ici.</p>
+        <!-- Une tuile par contenu : data-ouvre = id du bloc à afficher. -->
+        <div class="ch-tuiles" data-tuiles>
+          <button type="button" class="ch-tuile" data-ouvre="c-1ere-automatismes-1">
+            <span class="ch-tuile-n">Automatismes</span>
+            <span class="ch-tuile-titre">Quiz 1 : cinq automatismes</span>
+            <span class="ch-tuile-pied"><span class="ch-tuile-compte">5 questions</span><span class="ch-tuile-fleche">›</span></span>
+          </button>
+        </div>
+        <div class="libre-contenu" id="c-1ere-automatismes-1" hidden>
+          <button type="button" class="ch-retour" data-retour><span>‹</span> Première</button>
+          <div class="quiz" data-quiz="1ere-automatismes-1"></div>
+        </div>
       </div>
       <div class="panneau" role="tabpanel" id="p-terminale" aria-labelledby="t-terminale" data-id="terminale" hidden>
         <p class="vide">Des exercices pour s'entraîner arriveront bientôt ici.</p>
@@ -65,6 +76,9 @@
   <div class="colonne">
   </div>
 </footer>
-<script src="assets/libre.js"></script>
+<script src="assets/libre.js?v=20261112b"></script>
+<script src="assets/quiz-donnees.js?v=20261112b"></script>
+<script src="assets/quiz.js?v=20261112c"></script>
+<script defer src="assets/mathlive/mathlive.min.js"></script>
 </body>
 </html>

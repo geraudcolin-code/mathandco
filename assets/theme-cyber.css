@@ -198,3 +198,10 @@
   .cyber .nav-int .bouton.petit { letter-spacing: .04em; padding: 0 9px; font-size: .72rem; }
   .cyber .logo { font-size: 1.1rem; letter-spacing: .02em; }
 }
+
+/* clavier mathématique (quiz en accès libre) */
+.cyber { --keyboard-background: #07080f; --keyboard-border: #2a2d45; --keycap-background: #141626; --keycap-background-hover: #1d2036;
+  --keycap-text: #e8f7ff; --keycap-border: #2a2d45; --keycap-border-bottom: #2a2d45; --keycap-secondary-background: #0d0f1c;
+  --keycap-secondary-text: var(--cp-cyan); --keyboard-accent-color: var(--cp-jaune); --keyboard-toolbar-text: #e8f7ff;
+  --keyboard-toolbar-background-hover: #1d2036; --placeholder-color: var(--cp-jaune); }
+.cyber math-field.quiz-champ { border-radius: 0; }

@@ -266,8 +266,14 @@
     { label: '123', tooltip: 'Nombres et opérations', rows: [
       [k('x'), k('y'), { class: 'separator w5' }, '[7]', '[8]', '[9]', k('\\frac{#@}{#?}', { tooltip: 'fraction' }), k('#@^{#?}', { tooltip: 'puissance' }), k('#@^2', { tooltip: 'carré' }), k('\\sqrt{#0}', { tooltip: 'racine carrée' })],
       [k('X'), k('a'), { class: 'separator w5' }, '[4]', '[5]', '[6]', k('\\times'), '[(]', '[)]', k('\\infty', { tooltip: 'infini' })],
-      [k('n'), k('t'), { class: 'separator w5' }, '[1]', '[2]', '[3]', '[-]', k('\\le'), k('\\ge'), k('\\ne')],
+      [k('n'), k('\\overrightarrow{#0}', { tooltip: 'vecteur' }), { class: 'separator w5' }, '[1]', '[2]', '[3]', '[-]', k('\\le'), k('\\ge'), k('\\ne')],
       ['[left]', '[right]', { class: 'separator w5' }, '[0]', { label: ',', latex: '{,}', insert: '{,}' }, '[=]', '[+]', k('\\pi'), k('\\mathrm{e}'), '[backspace]']
+    ] },
+    { label: 'géo', tooltip: 'Vecteurs, points, angles', rows: [
+      [k('\\overrightarrow{#0}', { tooltip: 'vecteur AB' }), k('\\vec{#0}', { tooltip: 'vecteur u' }), k('\\left\\Vert #0\\right\\Vert', { tooltip: 'norme' }), k('\\begin{pmatrix}#?\\\\#?\\end{pmatrix}', { tooltip: 'coordonnées en colonne' }), k('\\cdot', { tooltip: 'produit scalaire' }), k('\\widehat{#0}', { tooltip: 'angle' }), k('#@^{\\circ}', { tooltip: 'degré' }), k('\\parallel')],
+      [k('A'), k('B'), k('C'), k('D'), k('E'), k('F'), k('M'), k('\\perp')],
+      [k('I'), k('J'), k('O'), k('\\vec{u}'), k('\\vec{v}'), k('\\vec{i}'), k('\\vec{j}'), k('#@\'', { tooltip: 'prime' })],
+      ['[left]', '[right]', '[(]', k(';'), '[)]', k('\\sqrt{#0}'), '[=]', '[backspace]']
     ] },
     { label: 'f(x)', tooltip: 'Fonctions et puissances', rows: [
       [k('#@^{#?}', { tooltip: 'puissance' }), k('#@^2'), k('#@^3'), k('#@^{-1}'), k('\\sqrt{#0}'), k('\\sqrt[#?]{#0}'), k('\\left|#0\\right|', { tooltip: 'valeur absolue' }), k('\\frac{#@}{#?}')],
@@ -275,7 +281,7 @@
       [k('f\\left(#0\\right)'), k("f'\\left(#0\\right)"), k('g\\left(#0\\right)'), k('#@_{#?}', { tooltip: 'indice' }), k('u_n'), k('u_{n+1}'), k('\\Delta'), k('\\infty')],
       ['[left]', '[right]', k('\\pm'), k('\\mapsto'), k('\\to'), k('\\lim_{#?\\to#?}'), k('\\sum_{#?}^{#?}'), '[backspace]']
     ] },
-    { label: '≤ ∈ ℝ', tooltip: 'Comparaisons, ensembles, logique', rows: [
+    { label: '≤∈ℝ', tooltip: 'Comparaisons, ensembles, logique', rows: [
       [k('<'), k('>'), k('\\le'), k('\\ge'), k('='), k('\\ne'), k('\\approx'), k('\\equiv')],
       [k('\\in'), k('\\notin'), k('\\subset'), k('\\cup'), k('\\cap'), k('\\varnothing'), k('\\lbrack'), k('\\rbrack')],
       [k('\\mathbb{R}'), k('\\mathbb{N}'), k('\\mathbb{Z}'), k('\\mathbb{Q}'), k('\\mathbb{C}'), k('\\mathbb{R}^*'), k(';'), k('\\overline{#0}', { tooltip: 'barre (événement contraire)' })],
@@ -296,6 +302,7 @@
       var vk = window.mathVirtualKeyboard;
       try { vk.alphabeticLayout = 'azerty'; } catch (e) {}
       vk.layouts = CLAVIERS;
+      if (window.matchMedia && window.matchMedia('(max-width: 520px)').matches) try { vk.editToolbar = 'none'; } catch (e) {}   // téléphone : place pour les onglets
       vk.addEventListener('geometrychange', function () {
         var h = vk.visible ? vk.boundingRect.height : 0;
         document.documentElement.style.setProperty('--clavier', h + 'px');
@@ -317,7 +324,7 @@
     var dy = bas - limite;
     var dispo = a.getBoundingClientRect().top - haut;              // ne pas faire passer le champ sous la barre
     if (dy > dispo) dy = dispo;
-    if (dy > 4) window.scrollBy({ top: dy, behavior: 'smooth' });
+    if (dy > 4) window.scrollBy(0, dy);                             // instantané : deux appels rapprochés ne s'additionnent pas
   }
 
   function nouveauChamp(classe, etiquette) {

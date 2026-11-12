@@ -6,17 +6,19 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--nuit);color:var(--txt);font-family:'Lex',Lexend,'Segoe UI',sans-serif;
   overflow:hidden;-webkit-tap-highlight-color:transparent}
-#app{position:fixed;inset:0;display:grid;grid-template-columns:minmax(0,35fr) minmax(0,65fr);
-  grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"col stage" "barre barre"}
+#app{position:fixed;inset:0;display:grid;grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"col" "stage" "barre"}
 #stage{grid-area:stage;position:relative;min-width:0;min-height:0;overflow:hidden;container-type:size;
   background:radial-gradient(ellipse at 50% 45%,var(--nuit2),var(--nuit) 75%)}
-/* ===== la colonne du récit (à gauche) : fiche (portrait + cartouche + époque), puis le texte ===== */
-#col{grid-area:col;position:relative;z-index:1;min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column;
-  --ph:clamp(64px,22vh,250px);--fr:clamp(17px,min(1.4vw,2.45vh),30px);
-  gap:clamp(10px,2.4vh,26px);padding:clamp(12px,2.8vh,30px) clamp(14px,1.9vw,38px) clamp(8px,1.6vh,18px);
+/* ===== le BANDEAU du récit, AU-DESSUS de la scène (M. Colin, 12 nov. 2026 : « je suis pas fan des textes à gauche
+   finalement, peux-tu les mettre au-dessus ») : fiche (portrait + cartouche + époque) à gauche du bandeau, puis le
+   texte sur toute la largeur. Téléphone à l'horizontale : écran trop bas, le récit reste à côté de la scène. ===== */
+#col{grid-area:col;position:relative;z-index:1;min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:row;align-items:center;
+  --fr:clamp(18px,min(1.4vw,2.6vh),30px);--ph:calc(var(--fr) * 5.95);
+  gap:clamp(14px,1.8vw,36px);padding:clamp(8px,1.5vh,16px) clamp(14px,1.9vw,38px) clamp(6px,1.1vh,12px);
   background:linear-gradient(180deg,rgba(6,9,22,.93),rgba(9,13,30,.88) 60%,rgba(8,11,26,.93));
-  border-right:1px solid rgba(130,195,255,.30);box-shadow:1px 0 22px rgba(79,195,247,.14),inset -1px 0 0 rgba(206,147,216,.10)}
-#tete{position:relative;flex:0 0 auto;height:var(--ph)}
+  border-bottom:1px solid rgba(130,195,255,.30);box-shadow:0 1px 22px rgba(79,195,247,.14),inset 0 -1px 0 rgba(206,147,216,.10)}
+#tete{position:relative;flex:0 0 auto;height:var(--ph);width:clamp(270px,31vw,600px)}
 .fiche{position:absolute;inset:0;display:flex;gap:clamp(10px,1.3vw,24px);align-items:flex-start;opacity:0;pointer-events:none}
 .cadre{height:100%;flex:0 0 auto;padding:2.5px;border-radius:15px;background:linear-gradient(135deg,var(--cu),var(--cw));
   box-shadow:0 0 26px rgba(110,190,255,.45)}
@@ -27,11 +29,33 @@ html,body{margin:0;height:100%;background:var(--nuit);color:var(--txt);font-fami
 .cart b{font-size:clamp(17px,min(1.65vw,3vh),34px);line-height:1.15;color:#fff}
 .cart span{font-size:clamp(14px,min(1.15vw,2.15vh),24px);line-height:1.2}
 .cart .dt{color:#9FD8FF}.cart .li{color:rgba(232,236,248,.78)}
-#recit{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;
+#recit{position:relative;flex:1 1 auto;align-self:stretch;height:var(--hr,auto);min-width:0;min-height:0;overflow:hidden;
   -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 .9em,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 .9em,#000 100%)}
 #recitIn{position:absolute;left:0;right:0;top:0;padding-top:.6em;font-size:var(--fr)}
+/* ordinateur, récit en bandeau. Pas à pas : la boîte de texte grandit (4 lignes pleines et une citation : presque tous
+   les paragraphes se lisent d'un coup ; pour les plus longs, « continuer » montre la suite) et l'indicateur
+   « continuer » sort du bandeau (posé en haut à droite de la scène) pour ne pas rétrécir le texte.
+   Fenêtre basse ou étroite : la 3e ligne du cartouche s'efface ; fenêtre étroite : 6 lignes de texte. */
+@media (min-width:701px) and (min-height:521px) and (min-aspect-ratio:1/1){
+  .fiche.deux .li{display:none}
+  #col.pas{--hr:calc(var(--fr) * 7.4)}
+  #col.pas #recit{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 .4em,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 .4em,#000 100%)}
+  #attente{position:fixed;right:clamp(14px,1.9vw,38px);top:0;max-width:none;white-space:nowrap;background:rgba(9,13,30,.82)}
+}
+@media (min-width:701px) and (min-height:521px) and (max-height:760px) and (min-aspect-ratio:1/1){.cart .li{display:none}}
+@media (max-width:1250px) and (min-width:701px) and (min-height:521px) and (min-aspect-ratio:1/1){
+  #col,#col.pas{--hr:calc(var(--fr) * 9.3)}
+  #tete{width:clamp(300px,31vw,600px);height:var(--hr)}
+  .cadre{height:var(--ph)}
+  #col #tete>#annee{max-width:100%}
+  .cart .li{display:none}
+}
+/* pas à pas, paragraphe plus haut que la boîte : le bas du texte se fond et l'indicateur annonce « la suite du texte » */
+#col.pas.suite #recit{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 .4em,#000 calc(100% - 1.7em),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 .4em,#000 calc(100% - 1.7em),transparent 100%)}
+#col.attend.suite #attente .pc,#col.attend.suite #attente .tc{display:none}
+#col.attend.suite #attente .su{display:inline}
 .chap{display:none}.chap.on{display:block}
-.par{margin:0 0 .9em;line-height:1.52;color:#E8ECF8;hyphens:manual}
+.par{margin:0 0 .5em;line-height:1.52;color:#E8ECF8;hyphens:manual}
 .ph{position:relative;opacity:0}
 .par .d{color:#9FD8FF;font-weight:700}.par .o{color:#FFD778;font-style:italic}.par .k{color:#fff;font-weight:700}
 .par .u{color:var(--cu);font-weight:700}.par .v{color:var(--cv);font-weight:700}.par .w{color:var(--cw);font-weight:700}
@@ -43,7 +67,7 @@ html,body{margin:0;height:100%;background:var(--nuit);color:var(--txt);font-fami
 .vec::after{content:'';position:absolute;right:0;top:-.215em;border-left:.34em solid currentColor;border-top:.19em solid transparent;border-bottom:.19em solid transparent}
 #recit{touch-action:none}
 /* mode pas à pas : indicateur discret sous le récit, qui pulse quand le film attend */
-#attente{display:none;flex:0 0 auto;align-self:center;max-width:100%;font-size:clamp(16px,min(1.05vw,2vh),20px);line-height:1.25;
+#attente{display:none;flex:0 0 auto;align-self:center;max-width:12em;font-size:clamp(16px,min(1.05vw,2vh),20px);line-height:1.25;
   color:rgba(159,216,255,.6);padding:.3em 1em;border-radius:999px;border:1px solid rgba(159,216,255,.2);cursor:pointer;
   user-select:none;text-align:center;white-space:normal}
 #col.pas #attente{display:block}
@@ -56,6 +80,10 @@ html,body{margin:0;height:100%;background:var(--nuit);color:var(--txt);font-fami
 /* repère d'époque (en haut à droite) */
 #annee{position:absolute;right:22px;top:14px;display:flex;flex-direction:column;align-items:flex-end;pointer-events:none}
 #tete>#annee{right:0;top:auto;bottom:0}
+#tete>#annee .lg{padding:.18em .5em .18em .45em;gap:.45em;font-size:var(--fr)}
+#tete>#annee #aN{font-size:1.7em}
+#tete>#annee #aT{font-size:max(15px,.8em)}
+#tete>#annee #aT small{font-size:max(13px,.6em)}
 #annee .lg{display:flex;align-items:center;gap:12px;padding:6px 14px 6px 12px;border-radius:14px;
   background:rgba(20,27,51,.55);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(4px)}
 #aN{font-size:46px;font-weight:700;line-height:1;background:linear-gradient(160deg,#fff,#9FD8FF);-webkit-background-clip:text;
@@ -65,7 +93,7 @@ html,body{margin:0;height:100%;background:var(--nuit);color:var(--txt);font-fami
 #annee.pulse .lg{animation:pulse .9s ease-out}
 @keyframes pulse{0%{transform:scale(1.15);box-shadow:0 0 0 0 rgba(140,210,255,.75)}
   100%{transform:scale(1);box-shadow:0 0 0 22px rgba(140,210,255,0)}}
-#legende{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);font-size:clamp(26px,3.1cqw,44px);font-weight:700;
+#legende{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);font-size:clamp(26px,min(3.1cqw,4.5cqh),44px);font-weight:700;
   text-align:center;white-space:normal;width:max-content;max-width:94%;text-wrap:balance;line-height:1.15;pointer-events:none;letter-spacing:.01em;
   text-shadow:0 0 18px rgba(11,16,32,.95),0 0 4px rgba(11,16,32,.9)}
 #legende i{font-family:var(--mf);font-size:1.15em;font-weight:400}
@@ -155,13 +183,16 @@ button.on{background:rgba(79,195,247,.22);border-color:rgba(79,195,247,.8)}
   .cart b{font-size:16px}.cart span{font-size:14px}
   .par{margin-bottom:.6em;line-height:1.45}
   #col.attend #attente .pc{display:none}#col.attend #attente .tc{display:inline}
-  #attente{font-size:16px;padding:.2em .8em;white-space:nowrap}
+  #attente{font-size:16px;padding:.2em .8em;white-space:nowrap;max-width:100%}
   #attente .lg2{display:none}
   #bNotes .nl{display:none}
   #bPas{padding:8px 10px}
 }
 @media (max-height:520px) and (min-aspect-ratio:1/1){
-  #app{grid-template-columns:minmax(0,45fr) minmax(0,55fr)}
+  #app{grid-template-columns:minmax(0,45fr) minmax(0,55fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"col stage" "barre barre"}
+  #col{flex-direction:column;align-items:stretch;border-bottom:none;border-right:1px solid rgba(130,195,255,.30);
+    box-shadow:1px 0 22px rgba(79,195,247,.14),inset -1px 0 0 rgba(206,147,216,.10)}
+  #tete{width:auto}
   .cart .li{display:none}
   #legende{font-size:26px;bottom:4%}
   #frise{grid-template-columns:repeat(3,1fr);row-gap:8px;top:42%;--ic:clamp(44px,14cqh,64px)}
@@ -170,9 +201,10 @@ button.on{background:rgba(79,195,247,.22);border-color:rgba(79,195,247,.8)}
   #fin{bottom:4%}
 }
 @media (max-aspect-ratio:1/1){
-  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"stage" "col" "barre"}
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"col" "stage" "barre"}
   #stage{height:min(100vw,52vh)}
-  #col{border-right:none;border-top:1px solid rgba(130,195,255,.30);box-shadow:0 -1px 22px rgba(79,195,247,.14);--ph:74px}
+  #col{flex-direction:column;align-items:stretch;--ph:74px}
+  #tete{width:auto}
   #barre{flex-wrap:wrap;row-gap:4px}
   #piste{order:-1;flex:1 0 100%}
   #temps{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -185,7 +217,7 @@ button.on{background:rgba(79,195,247,.22);border-color:rgba(79,195,247,.8)}
 </style></head><body>
 <div id="app">
  <aside id="col" aria-live="polite"><div id="tete"></div><div id="recit"><div id="recitIn"></div></div>
-  <div id="attente" role="button" tabindex="0"><span class="re">Pas à pas<span class="lg2"> : arrêt à chaque paragraphe</span></span><span class="go pc">Espace ou clic pour continuer ▸</span><span class="go tc">Touchez la scène pour continuer ▸</span></div></aside>
+  <div id="attente" role="button" tabindex="0"><span class="re">Pas à pas<span class="lg2"> : arrêt à chaque paragraphe</span></span><span class="go pc">Espace ou clic pour continuer ▸</span><span class="go tc">Touchez la scène pour continuer ▸</span><span class="go su">La suite du texte ▾</span></div></aside>
  <div id="stage">
   <canvas id="cv"></canvas>
   <div id="annee" style="opacity:0"><div class="lg"><b id="aN"></b><span id="aT"></span></div></div>
@@ -773,7 +805,7 @@ const vg = (t0, d = 1) => er(VV.u, t0, t0 + d);                 // temps depuis 
 const vs = (j, t0 = 0, d = 1) => er(VV.s(j), t0, t0 + d);        // temps depuis la j-ième phrase du groupe
 const vsr = j => VV.s(j);
 function vCadre() {             // la boîte de dessin : sous le repère d'époque (téléphone), au-dessus de la légende
-  const p = PAD() * 0.6, haut = Math.max(annBas() + 8, p), bas = CH_ * 0.085, w = CW - 2 * p, h = CH_ - haut - bas;
+  const p = PAD() * 0.6, haut = Math.max(annBas() + 8, p), bas = CW > 1.55 * CH_ ? Math.max(0.13 * CH_, 76) : CH_ * 0.085, w = CW - 2 * p, h = CH_ - haut - bas;
   VU_ = Math.min(w / 16.6, h / 10.6, 80);
   VX = CW / 2 + 0.1 * VU_ * Math.sin(TR * 0.23); VY = haut + h / 2 + 0.08 * VU_ * Math.sin(TR * 0.29 + 1);
 }
@@ -2509,14 +2541,16 @@ const RCH = RC.map(ch => {
 // mode pas à pas : le film s'arrête de lui-même au début de chaque paragraphe, une fois celui-ci affiché en entier
 const PAUSES = []; RCH.forEach((C, i) => C.debut.forEach(d => PAUSES.push(Math.round((T0N[i] + d + 0.75) * 1000) / 1000)));
 let PAS = false, attente = false;
-let recitCour = -1, recitWH = '', RUSR = 0, rDernier = -1;
+let recitCour = -1, recitWH = '', RUSR = 0, rDernier = -1, RESTE = 0;
 function mesurer() {               // défilement nécessaire pour voir chaque phrase (et chaque paragraphe) en entier
   if (recitCour < 0) return;
   const C = RCH[recitCour], H = RBOX.clientHeight, top0 = RIN.getBoundingClientRect().top;
   const bas = s => { const rs = s.el.getClientRects(), dy = parseFloat(s.el.style.top || 0) || 0; return rs.length ? rs[rs.length - 1].bottom - top0 - dy : 0; };
   for (const s of C.phr) { s.cible = Math.max(0, Math.ceil(bas(s) - H + 10));
-    const rs = s.el.getClientRects(), dy = parseFloat(s.el.style.top || 0) || 0; s.haut = rs.length ? Math.floor(rs[0].top - top0 - dy - 4) : 0; }
+    const rs = s.el.getClientRects(), dy = parseFloat(s.el.style.top || 0) || 0; s.haut = rs.length ? Math.floor(rs[0].top - top0 - dy - 4) : 0;
+    const rg = document.createRange(); rg.selectNodeContents(s.el); s.lb = [...rg.getClientRects()].map(r => r.bottom - top0 - dy); }
   C.phaut = [];
+  C.pfin = C.pars.map((p, k) => { const der = C.phr.filter(x => x.p === k).pop(); return der ? Math.ceil(bas(der) - RBOX.clientHeight + 10) : 0; });   // défilement qui montre la fin du paragraphe
   C.pars.forEach((p, k) => {          // paragraphe entier ; s'il est plus haut que la colonne : son début en haut
     const der = C.phr.filter(x => x.p === k).pop(), haut = p.getBoundingClientRect().top - top0;
     C.phaut[k] = Math.floor(haut - 6);
@@ -2526,7 +2560,7 @@ function mesurer() {               // défilement nécessaire pour voir chaque p
 function majRecit(i, qn) {
   if (recitCour !== i) { if (recitCour >= 0) RCH[recitCour].div.classList.remove('on'); recitCour = i; RCH[i].div.classList.add('on'); RUSR = 0; mesurer(); }
   else if (RBOX.clientWidth + 'x' + RBOX.clientHeight !== recitWH) mesurer();
-  const C = RCH[i]; let off = 0, nb = 0, cur = null, curP = -1;
+  const C = RCH[i]; let off = 0, nb = 0, cur = null, curP = -1, longue = null;
   for (const s of C.phr) {
     if (qn >= s.tn) cur = s;
     const d = PAS ? C.debut[s.p] : s.tn;                                           // pas à pas : tout le paragraphe d'un coup
@@ -2537,15 +2571,27 @@ function majRecit(i, qn) {
   }
   if (PAS) C.debut.forEach((d, k) => { if (qn >= d) curP = k; if (qn >= d - 0.1) off = lerp(off, C.pcible[k], er(qn, d - 0.1, d + 0.5)); });
   // le défilement anticipé ne doit jamais faire sortir par le haut la phrase (le paragraphe) qui vient d'apparaître
-  if (!PAS && cur) off = Math.min(off, Math.max(cur.cible, cur.haut));
+  if (!PAS && cur) {
+    if (cur.cible > cur.haut - 12) {       // phrase plus haute que la boîte (bandeau) : on lit son début, puis elle défile jusqu'à sa fin
+      longue = cur;
+      const k = C.phr.indexOf(cur), fin = k + 1 < C.phr.length ? C.phr[k + 1].tn : cur.tn + 9, d = Math.max(2, fin - cur.tn);
+      off = Math.min(off, lerp(Math.max(0, cur.haut - 12), cur.cible, er(qn, cur.tn + 0.38 * d, cur.tn + 0.6 * d)));
+    } else off = Math.min(off, Math.max(cur.cible, cur.haut));
+  }
   if (PAS && curP >= 0) off = Math.min(off, Math.max(C.pcible[curP], C.phaut[curP]));
   if (nb !== rDernier) { rDernier = nb; RUSR = 0; }                                // nouvelle phrase : on oublie le défilement manuel
-  const o0 = off; off = clamp(off + RUSR, 0, Math.max(o0, 0)); RUSR = off - o0;      // relire plus haut (molette, doigt)
+  const bout = PAS && curP >= 0 && C.pfin ? C.pfin[curP] : 0;       // pas à pas : le paragraphe en cours se lit jusqu'au bout, même plus haut que la boîte
+  const o0 = off; off = clamp(off + RUSR, 0, Math.max(o0, bout, 0)); RUSR = off - o0; RESTE = PAS && attente ? Math.max(0, Math.max(o0, bout) - off) : 0;      // relire plus haut (molette, doigt)
   C.pars.forEach((p, k) => {                                                       // paragraphes précédents : atténués
     const d = k + 1 < C.debut.length ? er(qn, C.debut[k + 1], C.debut[k + 1] + 0.8) : 0, v = Math.round(d * 100) / 100;
     if (p._d !== v) { p._d = v; p.style.opacity = (1 - 0.48 * d).toFixed(2); p.style.filter = d > 0.01 ? `saturate(${(1 - 0.7 * d).toFixed(2)})` : ''; }
   });
   const o = Math.round(off); if (C.off !== o) { C.off = o; RIN.style.transform = `translateY(${-o}px)`; }
+  let cb = 0;                               // phrase plus haute que la boîte : la ligne du bas à moitié visible est masquée
+  if (longue && longue.lb && longue.lb.length) { const lim = o + RBOX.clientHeight, der = Math.max(...longue.lb); let b = 0;
+    for (const y of longue.lb) if (y <= lim + 1 && y > b) b = y; if (b > 0 && b < der - 1) cb = clamp(Math.round(lim - b), 0, 60); }
+  if (memo.cb !== cb) { memo.cb = cb; RBOX.style.clipPath = cb ? `inset(0 0 ${cb}px 0)` : ''; }
+  const su = RESTE > 4; if (memo.su !== su) { memo.su = su; $('col').classList.toggle('suite', su); }
   const cl = (PAS ? 'pas' : '') + (attente ? ' attend' : ''); if (memo.colcl !== cl) { memo.colcl = cl; $('col').classList.toggle('pas', PAS); $('col').classList.toggle('attend', attente); }
   const Ln = CHN[i][1]; setOp(RBOX, 'rcA', er(qn, 0, 0.45) * (1 - er(qn, Ln - 0.9, Ln - 0.05)));   // la colonne se vide en fondu
 }
@@ -2678,11 +2724,11 @@ const FILM = {
 };
 window.FILM = FILM;
 $('bGo').onclick = () => FILM.play();
-$('bPlay').onclick = () => joue ? FILM.pause() : FILM.play();
+$('bPlay').onclick = () => joue ? FILM.pause() : suiteOuJoue();
 $('bRejouer').onclick = $('bRejouer2').onclick = () => { FILM.seek(0); FILM.play(); };
 $('bNotes').onclick = () => FILM.notes(); $('bNotesX').onclick = () => FILM.notes(false);
 $('bPas').onclick = () => FILM.pasApas();
-$('attente').onclick = () => { if (attente) FILM.play(); };
+$('attente').onclick = () => { if (attente) suiteOuJoue(); };
 /* la colonne du récit : on peut remonter relire (molette, doigt) ; elle revient d'elle-même à la phrase suivante */
 RBOX.addEventListener('wheel', ev => { ev.preventDefault(); RUSR += ev.deltaY; dessiner(performance.now()); }, { passive: false });
 const RPT = { id: null, y: 0 };
@@ -2701,22 +2747,42 @@ cv.addEventListener('pointermove', ev => {
 function lacher() { PTR.cam = false; PTR.id = null; USR.lache = performance.now() / 1000; cv.classList.remove('prise'); }
 cv.addEventListener('pointerup', ev => {      // un simple clic (ou toucher) sur la scène fait reprendre le pas à pas
   const clic = PTR.cam && Math.hypot(ev.clientX - PTR.x0, ev.clientY - PTR.y0) < 8 && performance.now() - PTR.t0 < 600;
-  lacher(); if (clic && attente) FILM.play(); }); cv.addEventListener('pointercancel', lacher);
+  lacher(); if (clic && attente) suiteOuJoue(); }); cv.addEventListener('pointercancel', lacher);
 cv.addEventListener('wheel', ev => { ev.preventDefault(); USR.zf = clamp(USR.zf * Math.exp(ev.deltaY * 0.0012), 0.55, 1.9); USR.lache = performance.now() / 1000; }, { passive: false });
 addEventListener('keydown', ev => {
   if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
-  if (ev.key === ' ') { ev.preventDefault(); joue ? FILM.pause() : FILM.play(); }
+  if (ev.key === ' ') { ev.preventDefault(); joue ? FILM.pause() : suiteOuJoue(); }
   else if (ev.key === 'ArrowRight') { ev.preventDefault(); const w = joue; FILM.chapitre(chapAtN(t) + 1); if (w) FILM.play(); }
   else if (ev.key === 'ArrowLeft') { ev.preventDefault(); const i = chapAtN(t), w = joue; FILM.chapitre(t - T0N[i] > 1.5 ? i : i - 1); if (w) FILM.play(); }
   else if (ev.key === 'n' || ev.key === 'N') FILM.notes();
   else if (ev.key === 'p' || ev.key === 'P') FILM.pasApas();
   else if (ev.key === 'Escape') FILM.notes(false);
 });
+// bandeau : un nom trop long pour une ligne du cartouche est réduit (jusqu'à 0,8) ; s'il reste sur deux lignes, la 3e ligne
+// du cartouche s'efface (classe « deux ») : elle passerait sous le repère d'époque
+function majDeux() {
+  const bandeau = matchMedia('(min-width:701px) and (min-height:521px) and (min-aspect-ratio:1/1)').matches;
+  for (const f of document.querySelectorAll('.fiche')) { const b = f.querySelector('.cart b'); if (!b) continue;
+    b.style.fontSize = ''; f.classList.remove('deux'); if (!bandeau) continue;
+    const deux = () => b.offsetHeight > 1.6 * parseFloat(getComputedStyle(b).lineHeight);
+    if (deux()) { const fs = parseFloat(getComputedStyle(b).fontSize); for (const k of [0.93, 0.86, 0.8]) { if (fs * k < 16) break; b.style.fontSize = (fs * k).toFixed(1) + 'px'; if (!deux()) break; }
+      if (deux()) { b.style.fontSize = ''; f.classList.add('deux'); } }
+  }
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(majDeux);
+// pas à pas, paragraphe plus haut que la boîte : « continuer » montre d'abord la suite du texte (par lignes entières)
+function suiteOuJoue() {
+  if (PAS && attente && RESTE > 4) { const lh = parseFloat(getComputedStyle(RIN).fontSize) * 1.52;
+    RUSR += Math.min(RESTE, Math.max(lh, Math.floor((RBOX.clientHeight - 0.4 * lh) / lh - 1) * lh)); dessiner(performance.now()); return; }
+  FILM.play();
+}
 function taille() {
   const tel = matchMedia('(max-width:700px), (max-height:520px)').matches, ou = tel ? $('stage') : $('tete');
   if (ann.parentNode !== ou) { ou.appendChild(ann); memo = {}; }
+  $('attente').style.top = ($('col').offsetHeight + 10) + 'px';      // récit en bandeau : l'indicateur du pas à pas se pose sous le bandeau
   const st = $('stage'), w = st.clientWidth, h = st.clientHeight; DPR = Math.min(2, window.devicePixelRatio || 1);
   if (w === CW && h === CH_ && cv.width === Math.round(w * DPR)) return;
+  majDeux();
   CW = w; CH_ = h; cv.width = cvM.width = Math.round(w * DPR); cv.height = cvM.height = Math.round(h * DPR); dessiner(performance.now());
 }
 new ResizeObserver(taille).observe($('stage'));

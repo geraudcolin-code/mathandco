@@ -2,11 +2,12 @@
    enonce / correction : HTML, formules entre \( … \).
    type 'expr' : attendu (LaTeX), variable, gauche (lettre admise à gauche du « = »), gaucheObligatoire,
                  forme : 'libre' | 'affine' (y = mx + p) | 'polynome' (développée réduite) | 'puissance' (une seule puissance)
+   type 'coords' : valeurs [x, y] (deux cases en colonne), prefixe (ex. vecteur AB), indiceSigne / indiceFaux facultatifs
    type 'signes' : valeurs (rangées), ligne {label, traits : 'pointille' | 'zero' | 'double' sous chaque valeur, signes : '+' ou '−' par intervalle} */
 window.QUIZ = window.QUIZ || {};
 window.QUIZ['1ere-automatismes-1'] = {
   etiquette: 'Première · Automatismes',
-  titre: 'Quiz 1 : cinq automatismes',
+  titre: 'Quiz 1 : six automatismes',
   questions: [
     {
       type: 'expr',
@@ -41,6 +42,12 @@ window.QUIZ['1ere-automatismes-1'] = {
       prefixe: '\\(\\dfrac{\\left(a^3\\right)^4}{a^{10}}=\\)', variable: 'a', attendu: 'a^2', forme: 'puissance',
       indiceForme: 'C’est égal, mais on peut encore simplifier : une seule puissance de a.',
       correction: '<p>\\(\\left(a^3\\right)^4=a^{3\\times4}=a^{12}\\)</p><p>donc \\(\\dfrac{a^{12}}{a^{10}}=a^{12-10}=a^2\\).</p>'
+    },
+    {
+      type: 'coords',
+      enonce: '<p>On donne les points \\(A(2\\,;4)\\) et \\(B(5\\,;6)\\).</p><p>Donner les coordonnées du vecteur \\(\\overrightarrow{AB}\\).</p>',
+      prefixe: '\\(\\overrightarrow{AB}\\)', valeurs: [3, 2],
+      correction: '<p>\\(\\overrightarrow{AB}\\begin{pmatrix}x_B-x_A\\\\y_B-y_A\\end{pmatrix}\\)</p><p>c-à-d \\(\\overrightarrow{AB}\\begin{pmatrix}5-2\\\\6-4\\end{pmatrix}\\)</p><p>c-à-d \\(\\overrightarrow{AB}\\begin{pmatrix}3\\\\2\\end{pmatrix}\\).</p>'
     }
   ]
 };

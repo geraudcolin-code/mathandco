@@ -540,6 +540,10 @@ math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
   linear-gradient(var(--encre), var(--encre)) calc(50% + 3px) 0 / 1.5px 100% no-repeat; }
 @media (hover: hover) { .trait-choix:hover:not(:disabled) { background-color: var(--bleu-fond); } }
 .trait-choix:disabled { cursor: default; }
+.quiz-coords { gap: 6px; }
+.coords-col { display: flex; flex-direction: column; gap: 6px; padding: 6px 12px; border-left: 2.5px solid var(--encre); border-right: 2.5px solid var(--encre);
+  border-radius: 22px / 50%; }
+.coords-col math-field.quiz-champ.petit { width: 5.5em; font-size: 1.3rem; min-height: 46px; }
 .quiz-aide-tab { font-size: var(--t-petit); color: var(--gris); margin: 10px 0 0; }
 /* retours : écran rouge qui tremble, coche verte */
 .quiz-voile { position: fixed; inset: 0; z-index: 900; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(220, 38, 38, .25), rgba(200, 20, 20, .6)); }

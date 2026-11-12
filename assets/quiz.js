@@ -396,6 +396,7 @@
     var zone = el('div', 'quiz-zone'); c.appendChild(zone);
     var lire;
     if (q.type === 'signes') lire = this.tableau(q, zone);
+    else if (q.type === 'coords') { lire = this.coords(q, zone, n); c._champ = zone.querySelector('math-field'); }
     else {
       var ligne = el('div', 'quiz-ligne');
       var mf = nouveauChamp('quiz-champ', 'Ta réponse à la question ' + (n + 1));
@@ -438,7 +439,7 @@
   Quiz.prototype.valider = function (n) {
     var q = this.def.questions[n], c = this.cartes[n], e = this.etat[n];
     if (e.juste) return;
-    var r = q.type === 'signes' ? c._lire() : verifierExpr(q, c._lire());
+    var r = (q.type === 'signes' || q.type === 'coords') ? c._lire() : verifierExpr(q, c._lire());
     c._msg.className = 'quiz-message';
     if (r.etat === 'lecture') { c._msg.textContent = r.msg; c._msg.classList.add('info'); return; }
     e.essais++;
@@ -486,6 +487,32 @@
     this.fin.hidden = false;
     this.majPoints();
     this.fin.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+
+  /* ----- coordonnées d'un vecteur : deux cases en colonne ----- */
+  Quiz.prototype.coords = function (q, zone, n) {
+    var self = this;
+    var ligne = el('div', 'quiz-ligne quiz-coords');
+    if (q.prefixe) { var pf = el('span', 'quiz-prefixe', q.prefixe); ligne.appendChild(pf); rendre(pf); }
+    var col = el('div', 'coords-col');
+    var noms = q.noms || ['abscisse', 'ordonnée'];
+    var champs = q.valeurs.map(function (_, i) {
+      var mf = nouveauChamp('quiz-champ petit', (noms[i] || 'coordonnée ' + (i + 1)) + ' (question ' + (n + 1) + ')');
+      mf.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); self.valider(n); } });
+      col.appendChild(mf); return mf;
+    });
+    ligne.appendChild(col); zone.appendChild(ligne);
+    return function () {
+      var v = [];
+      try { champs.forEach(function (mf) { v.push(evaluer(analyser(mf.value), {})); }); }
+      catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? 'Remplis les deux cases (abscisse en haut, ordonnée en bas).' : 'Une des coordonnées est illisible.' }; }
+      function pres(a, b) { return isFinite(a) && Math.abs(a - b) < 1e-9; }
+      var att = q.valeurs;
+      if (v.every(function (x, i) { return pres(x, att[i]); })) return { etat: 'juste' };
+      if (v.length === 2 && pres(v[0], att[1]) && pres(v[1], att[0])) return { etat: 'faux', msg: 'Attention à l’ordre : l’abscisse en haut, l’ordonnée en bas.' };
+      if (v.every(function (x, i) { return pres(x, -att[i]); })) return { etat: 'faux', msg: q.indiceSigne || 'Attention au sens : on calcule « arrivée − départ ».' };
+      return { etat: 'faux', msg: q.indiceFaux || '' };
+    };
   };
 
   /* ----- tableau de signes : une ligne (le signe du résultat), valeurs de x ajoutées par l'élève ----- */

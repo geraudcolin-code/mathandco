@@ -1341,9 +1341,13 @@
   function placerJustifs(racine) {              // flèches de la marge : après mise en page (positions réelles)
     Array.prototype.forEach.call(racine.querySelectorAll('.qv-al.avec-just'), function (g) {
       var R = g.getBoundingClientRect(); if (!R.width) return;
-      function bord(d) {                          // bord droit d'un membre de droite (la cellule s'étire sur la colonne)
-        var r = d.lastChild ? d.lastChild.getBoundingClientRect() : d.getBoundingClientRect();
-        return r.right - R.left + g.scrollLeft;
+      function bord(d) {                          // bord droit de ce qui est ÉCRIT dans un membre (la cellule s'étire sur la colonne ;
+        var mx = d.getBoundingClientRect().left;  // un radical ou un exposant peut dépasser la boîte de son morceau)
+        Array.prototype.forEach.call(d.querySelectorAll('span'), function (e) {
+          if (e.closest('.ML__sr-only')) return;
+          var r = e.getBoundingClientRect(); if (r.width && r.height) mx = Math.max(mx, r.right);
+        });
+        return mx - R.left + g.scrollLeft;
       }
       var bas = -Infinity;                       // une justification ne chevauche jamais la précédente
       g._justifs.forEach(function (j) {
@@ -1356,7 +1360,10 @@
         svg.firstChild.setAttribute('d', 'M2 0 C ' + (bo + 2) + ' 2, ' + (bo + 2) + ' ' + (h - 2) + ', 4 ' + h);
         svg.lastChild.setAttribute('d', 'M4 ' + h + ' l 7 -6.5 M4 ' + h + ' l 9.5 1.5');
         j.lab.style.left = (x + bo + 10) + 'px';
-        j.lab.style.maxWidth = Math.max(44, g.clientWidth + g.scrollLeft - (x + bo + 10) - 4) + 'px';   // reste dans la largeur visible
+        var place = Math.max(44, g.clientWidth + g.scrollLeft - (x + bo + 10) - 4);   // reste dans la largeur visible
+        j.lab.style.maxWidth = place + 'px'; j.lab.style.fontSize = '';
+        if (j.lab.scrollWidth > place + 1)          // une formule qui ne se coupe pas (« 100 > 0 ») : on la rétrécit un peu
+          j.lab.style.fontSize = (Math.max(0.6, place / j.lab.scrollWidth) * 0.82).toFixed(3) + 'em';
         var hl = j.lab.offsetHeight, c = y1 + h / 2;
         if (c - hl / 2 < bas + 4) c = bas + 4 + hl / 2;
         j.lab.style.top = c + 'px'; bas = c + hl / 2;
@@ -1476,6 +1483,7 @@
   }
   function montrer(v, k, anime) {               // affiche les étapes 1…k (jamais moins d'une)
     var et = v.e; et.k = Math.max(Math.min(1, et.n), Math.min(et.n, k));
+    placerJustifs(et.racine);                      // les polices des formules ont pu finir de charger : on recale les flèches
     var neufs = [];
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-e'), function (x) {
       var i = +x.dataset.e;

@@ -749,7 +749,6 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 @media (max-width: 720px) {
   .qv-corps { padding: 14px 12px 22px; font-size: 1.12rem; }
   .qv-corps .ML__latex { font-size: 1.1em; }
-  .qv-al.avec-just { padding-right: 3.4em; }
   .qv-just { font-size: .78em; }
   .qv-pied { padding-left: 12px; padding-right: 12px; gap: 6px; }
   .qv-pied .bouton.petit { padding: 0 12px; }
@@ -803,3 +802,4 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-just .ML__latex { font-size: 1.08em; }
 .qv-sens { color: #D62828; }
 .qv-just [data-latex] { padding: .32em 0; }       /* une fraction ne déborde pas sur la ligne voisine */
+@media (max-width: 720px) { .qv-al.avec-just { padding-right: 2.8em; } }   /* après la règle générale : elle l'emporte sur téléphone */

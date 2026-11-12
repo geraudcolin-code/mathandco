@@ -467,7 +467,7 @@ main { padding-bottom: var(--clavier, 0px); transition: padding-bottom .2s; }
 .quiz-tete { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
 .quiz-etiquette { display: inline-block; font-size: .78rem; font-weight: 600; color: var(--bleu); background: var(--bleu-fond); padding: 3px 10px; border-radius: 999px; }
 .quiz-titres h2 { font-size: clamp(1.5rem, 3.6vw, 2rem); letter-spacing: -.03em; line-height: 1.1; margin: 8px 0 0; }
-.quiz-points { display: flex; gap: 8px; }
+.quiz-points { display: flex; flex-wrap: wrap; gap: 8px; }
 .quiz-point { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--filet); background: var(--papier); color: var(--encre);
   font: 600 .95rem var(--f-texte); cursor: pointer; transition: border-color .2s, background-color .2s, transform .2s; }
 .quiz-point:hover { transform: translateY(-2px); }
@@ -568,6 +568,50 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .quiz-coche.actif path { animation: quiz-trait .45s .18s ease-out forwards; }
 @keyframes quiz-coche { 0% { opacity: 0; transform: scale(.4); } 18% { opacity: 1; transform: scale(1.08); } 30% { transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
 @keyframes quiz-trait { to { stroke-dashoffset: 0; } }
+/* quiz : figures, cases multiples, comparaison, ensembles, variations, repère (12 nov. 2026) */
+.quiz-sous-titre { margin: 6px 0 0; color: var(--gris); font-size: var(--t-petit); }
+.quiz-figure { margin: 14px auto 4px; padding: 10px; background: #fff; border: 1px solid var(--filet); border-radius: 14px; max-width: 460px; }
+.quiz-figure.large { max-width: 640px; }
+.quiz-figure img { display: block; width: 100%; height: auto; }
+.quiz-enonce-apres { margin-top: 8px; }
+.quiz-cases { flex-wrap: wrap; row-gap: 8px; }
+.quiz-cases math-field.quiz-champ.petit { width: 4.6em; font-size: 1.3rem; min-height: 46px; flex: none; }
+.quiz-cases math-field.quiz-champ.petit.large { width: 8em; }
+.quiz-comparer { flex-wrap: wrap; }
+.quiz-comparer math-field.quiz-champ.petit.symbole { width: 2.6em; font-size: 1.5rem; min-height: 50px; flex: none; }
+.quiz-accolade { font-size: 1.5em; }
+.quiz-suffixe { margin-left: 2px; }
+/* une ligne de saisie avec un long préfixe passe à la ligne plutôt que d'écraser le cadre */
+.quiz-ligne:not(.quiz-cases):not(.quiz-coords):not(.quiz-comparer) { flex-wrap: wrap; row-gap: 8px; }
+.quiz-ligne > math-field.quiz-champ:not(.petit) { min-width: min(100%, 9em); }
+.quiz-var .tcell.timg, .quiz-var .tcell.tint:not(.tx) { min-height: 112px; }
+.quiz-var .tcell.timg { flex-direction: column; padding: 4px; }
+.quiz-var .tcell.timg math-field { flex: none; }
+.quiz-var .tcell.timg[data-pos="haut"] { justify-content: flex-start; }
+.quiz-var .tcell.timg[data-pos="bas"] { justify-content: flex-end; }
+.signe.fleche { font-size: 1.9rem; }
+.signe.fleche[data-v="↗"], .signe.fleche[data-v="↘"] { color: var(--bleu); }
+.quiz-repere-cadre { background: #fff; border: 1px solid var(--filet); border-radius: 14px; padding: 6px; max-width: 460px; margin: 0 auto; }
+.quiz-repere { display: block; width: 100%; height: auto; cursor: crosshair; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.quiz-repere .r-fond { fill: #fff; }
+.quiz-repere .r-grille { stroke: #c9d3df; stroke-width: 1; }
+.quiz-repere .r-axe { stroke: #1d1d1f; stroke-width: 1.6; }
+.quiz-repere .r-axe.fin { stroke-width: 1.4; }
+.quiz-repere .r-txt { font: 13px system-ui, sans-serif; fill: #1d1d1f; text-anchor: middle; }
+.quiz-repere .r-txt.fin { text-anchor: end; }
+.quiz-repere .r-point { stroke: #0a5fd1; stroke-width: 2.6; stroke-linecap: round; }
+.quiz-repere .r-nom { font: italic 600 15px Georgia, serif; fill: #0a5fd1; }
+.quiz-repere .r-droite { stroke: #d4322c; stroke-width: 2.4; }
+.quiz-repere-bas { display: flex; align-items: center; justify-content: space-between; gap: 10px; max-width: 460px; margin: 8px auto 0; }
+.quiz-repere-info { font-family: var(--f-maths); font-size: 1.1rem; }
+.bouton.petit { padding: 6px 14px; font-size: .95rem; }
+/* tableaux de données dans les énoncés */
+.quiz-enonce .quiz-table { border-collapse: collapse; margin: 10px 0; font-size: 1.02rem; max-width: 100%; }
+.quiz-enonce .quiz-table th, .quiz-enonce .quiz-table td { border: 1.5px solid var(--encre); padding: 5px 12px; text-align: center; }
+.quiz-enonce .quiz-table th { font-weight: 600; text-align: left; background: var(--fond-2); }
+.quiz-enonce { overflow-x: auto; }
+.quiz-correction .tab-corr { border-collapse: collapse; margin: 6px 0; }
+.quiz-correction .tab-corr td, .quiz-correction .tab-corr th { border: 1px solid var(--encre); padding: 3px 10px; text-align: center; }
 @media (max-width: 720px) {
   .quiz-enonce { font-size: 1.08rem; }
   math-field.quiz-champ { font-size: 1.35rem; }
@@ -587,4 +631,7 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   .trait-choix::before { inset: 4px 5px; }
   .quiz-points { gap: 6px; }
   .quiz-point { width: 34px; height: 34px; }
+  .quiz-cases math-field.quiz-champ.petit { width: 3.8em; font-size: 1.1rem; min-height: 40px; }
+  .quiz-var .tcell.timg, .quiz-var .tcell.tint:not(.tx) { min-height: 96px; }
+  .signe.fleche { font-size: 1.5rem; }
 }

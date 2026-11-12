@@ -753,5 +753,34 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   .quiz-volet, .quiz-volet.ouvert, .qv-e, .qv-e.vu { transition: none; }
   .qv-e.neuf, .quiz-languette { animation: none; }
 }
-/* résultat encadré (\boxed) : MathLive trace le cadre en noir, invisible sur fond sombre → couleur du texte */
-.quiz .ML__box, .quiz-volet .ML__box { border-color: currentColor !important; }
+/* résultat encadré (\boxed) : MathLive trace le cadre en noir, invisible sur fond sombre → couleur du texte ;
+   dans la correction, la conclusion est encadrée en rouge (charte) */
+.quiz .ML__box { border-color: currentColor !important; }
+.quiz-volet .ML__box { border-color: var(--rouge) !important; border-width: .07em !important; }
+/* surlignage doux de ce qui change d'une ligne à l'autre (charte § 3) : orange, vert, violet à tour de rôle */
+.quiz-volet { --qv-c0: #e8792b; --qv-c1: #1f9d55; --qv-c2: #8b5cf6; }
+.qv-corps .qv-c { border-radius: .3em; transition: background-color .35s var(--courbe), box-shadow .35s var(--courbe), color .35s; }
+.qv-corps .qv-c.allume.c0 { background: color-mix(in srgb, var(--qv-c0) 24%, transparent); box-shadow: 0 0 0 .12em color-mix(in srgb, var(--qv-c0) 24%, transparent); color: color-mix(in srgb, var(--qv-c0) 70%, var(--encre)); }
+.qv-corps .qv-c.allume.c1 { background: color-mix(in srgb, var(--qv-c1) 22%, transparent); box-shadow: 0 0 0 .12em color-mix(in srgb, var(--qv-c1) 22%, transparent); color: color-mix(in srgb, var(--qv-c1) 70%, var(--encre)); }
+.qv-corps .qv-c.allume.c2 { background: color-mix(in srgb, var(--qv-c2) 22%, transparent); box-shadow: 0 0 0 .12em color-mix(in srgb, var(--qv-c2) 22%, transparent); color: color-mix(in srgb, var(--qv-c2) 70%, var(--encre)); }
+
+/* tableau de variations : flèche longue qui couvre tout l'intervalle (M. Colin, 12 nov. 2026) */
+.signe.fleche { position: relative; }
+.fleche-longue { position: absolute; left: 2px; right: 2px; top: 8px; bottom: 8px; width: calc(100% - 4px); height: calc(100% - 16px); overflow: visible; pointer-events: none; color: var(--bleu); }
+.signe.sint.fleche[data-v="↗"]::before, .signe.sint.fleche[data-v="↘"]::before { display: none; }
+.quiz-carte.reussie .fleche-longue { color: var(--encre); }
+/* le tableau tracé dans la correction */
+.qv-tab-cadre { margin: 8px 0 14px; }
+.qv-tab { font-size: 1.02rem; }
+.qv-tab .tcell { min-height: 42px; }
+.qv-tab.quiz-var .tcell.timg, .qv-tab.quiz-var .tcell.tint:not(.tx) { min-height: 104px; }
+.qv-tab .tcell.tint { position: relative; }
+.qv-tab .tcell.tint > .qv-fleche { position: absolute; inset: 0; }
+.qv-tab { min-width: 0; width: 100%; }
+.qv-tab .tcell.tlab { padding: 0 8px; white-space: normal; max-width: 7.5em; line-height: 1.25; }
+.qv-tab .tcell.ttrait { align-self: stretch; }
+.qv-tab .trait-choix { align-self: stretch; height: auto; min-height: 42px; width: 28px; }
+.qv-tab .tcell.ttrait { padding: 0; }
+.qv-tab .tcell.tval { padding: 0 4px; }
+.qv-tab .trait-choix { cursor: default; }
+.qv-tab .trait-choix::before { display: none; }

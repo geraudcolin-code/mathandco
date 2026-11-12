@@ -12,7 +12,8 @@
   var PC = R`\(\%\)`;
   function quiz(id, titre, theme, questions) {
     questions.forEach(function (q) { q.theme = theme; });
-    Q[id] = { etiquette: 'Automatismes · 2nde et 1re', titre: titre, questions: questions };
+    Q[id] = { etiquette: 'Automatismes · 2nde et 1re', titre: titre, questions: questions,
+      sousTitre: '20 questions tirées au hasard dans la banque du thème, nouveau tirage à chaque essai.', tirage: { n: 20, ordre: 'banque' } };
   }
 
   /* ===================================================================== */
@@ -259,8 +260,8 @@
       prefixe: R`\(F=\)`, attendu: R`-\frac52`, forme: 'nombre',
       correction: p(R`\(cd=4\times\left(-\dfrac14\right)=-1\).`) + al(R`F&=\dfrac12+\dfrac{3}{-1}`, R`&=\dfrac12-\dfrac62`, R`&=\boxed{-\dfrac52}`) },
     { type: 'expr', enonce: p(R`La résistance d’un appareil est donnée par \(R=\dfrac{U^2}{P}\), où \(U\) est la tension (en volts) et \(P\) la puissance (en watts).`, R`Calculer \(R\) pour une tension de 20 V et une puissance de 80 W.`),
-      prefixe: R`\(R=\)`, suffixe: 'ohms', attendu: '5', forme: 'nombre',
-      correction: p(R`\(R=\dfrac{20^2}{80}=\dfrac{400}{80}=\boxed{5}\) ohms.`) }
+      prefixe: R`\(R=\)`, suffixe: R`\(\Omega\)`, attendu: '5', forme: 'nombre',
+      correction: p(R`\(R=\dfrac{20^2}{80}=\dfrac{400}{80}=\boxed{5}\) \(\Omega\).`) }
   ]);
 
   /* ===================================================================== */
@@ -415,14 +416,14 @@
     { type: 'expr', enonce: p(R`Le triangle \(RST\) est rectangle en \(S\), avec \(RS=4\) cm et \(RT=8\) cm. Déterminer la mesure de l’angle \(\widehat{SRT}\).`), figure: FIG + 'auto-trigo2.svg', figureAlt: 'Triangle RST rectangle en S',
       prefixe: R`\(\widehat{SRT}=\)`, suffixe: R`\(^\circ\)`, attendu: '60', forme: 'decimal',
       pieges: [{ si: '30', msg: 'Attention : RS est le côté ADJACENT à l’angle en R.' }],
-      correction: p(R`\(\cos\widehat{R}=\dfrac{RS}{RT}=\dfrac48=\dfrac12\), donc \(\widehat{SRT}=\boxed{60}^\circ\).`) },
+      correction: p(R`\(\cos\widehat{R}=\dfrac{RS}{RT}=\dfrac48=\dfrac12\), donc \(\widehat{SRT}=\boxed{60^\circ}\).`) },
     { type: 'expr', enonce: p(R`Dans le triangle \(ABC\), \(M\in[AB]\), \(N\in[AC]\) et les droites \((MN)\) et \((BC)\) sont parallèles. On donne \(AM=2\) cm, \(AB=5\) cm et \(MN=3\) cm. Calculer \(BC\).`),
       figure: FIG + 'auto-thales.svg', figureAlt: 'Configuration de Thalès', prefixe: R`\(BC=\)`, suffixe: 'cm', attendu: '7{,}5', forme: 'nombre',
       correction: p(R`D’après le théorème de Thalès, \(\dfrac{AM}{AB}=\dfrac{MN}{BC}\), c-à-d \(\dfrac25=\dfrac3{BC}\).`, R`Donc \(BC=\dfrac{3\times5}{2}=\boxed{7{,}5}\) cm.`) },
-    { type: 'expr', enonce: p(R`Calculer le périmètre d’un cercle de rayon 3 cm (valeur exacte).`), suffixe: 'cm', attendu: R`6\pi`, forme: 'libre',
+    { type: 'expr', enonce: p(R`Calculer le périmètre d’un cercle de rayon 3 cm (valeur exacte).`), suffixe: 'cm', attendu: R`6\pi`, forme: 'pi',
       pieges: [{ si: R`9\pi`, msg: 'πr², c’est l’aire du disque : le périmètre est 2πr.' }, { si: R`3\pi`, msg: 'Le périmètre est 2πr (ou π × diamètre).' }],
       correction: p(R`\(\mathcal P=2\pi r=2\pi\times3=\boxed{6\pi}\) cm.`) },
-    { type: 'expr', enonce: p(R`Calculer l’aire d’un disque de rayon 5 cm (valeur exacte).`), suffixe: R`cm\(^2\)`, attendu: R`25\pi`, forme: 'libre',
+    { type: 'expr', enonce: p(R`Calculer l’aire d’un disque de rayon 5 cm (valeur exacte).`), suffixe: R`cm\(^2\)`, attendu: R`25\pi`, forme: 'pi',
       pieges: [{ si: R`10\pi`, msg: '2πr, c’est le périmètre : l’aire est πr².' }],
       correction: p(R`\(\mathcal A=\pi r^2=\pi\times5^2=\boxed{25\pi}\) cm\(^2\).`) },
     { type: 'expr', enonce: p('Calculer l’aire d’un triangle de base 6 cm et de hauteur associée 4 cm.'), suffixe: R`cm\(^2\)`, attendu: '12', forme: 'nombre',
@@ -431,12 +432,12 @@
     { type: 'expr', enonce: p('Calculer le périmètre d’un rectangle de longueur 4,5 cm et de largeur 2 cm.'), suffixe: 'cm', attendu: '13', forme: 'nombre',
       pieges: [{ si: '9', msg: '9 cm², c’est l’aire : le périmètre est la longueur du tour.' }],
       correction: p(R`\(\mathcal P=2\times(4{,}5+2)=\boxed{13}\) cm.`) },
-    { type: 'expr', enonce: p('Calculer le volume d’un cylindre de rayon 5 cm et de hauteur 4 cm (valeur exacte).'), suffixe: R`cm\(^3\)`, attendu: R`100\pi`, forme: 'libre',
+    { type: 'expr', enonce: p('Calculer le volume d’un cylindre de rayon 5 cm et de hauteur 4 cm (valeur exacte).'), suffixe: R`cm\(^3\)`, attendu: R`100\pi`, forme: 'pi',
       correction: p(R`\(V=\pi r^2h=\pi\times25\times4=\boxed{100\pi}\) cm\(^3\).`) },
-    { type: 'expr', enonce: p('Calculer le volume d’un cône de rayon 3 cm et de hauteur 4 cm (valeur exacte).'), suffixe: R`cm\(^3\)`, attendu: R`12\pi`, forme: 'libre',
+    { type: 'expr', enonce: p('Calculer le volume d’un cône de rayon 3 cm et de hauteur 4 cm (valeur exacte).'), suffixe: R`cm\(^3\)`, attendu: R`12\pi`, forme: 'pi',
       pieges: [{ si: R`36\pi`, msg: 'Pour un cône, ne pas oublier le facteur 1/3.' }],
       correction: p(R`\(V=\dfrac13\pi r^2h=\dfrac13\pi\times9\times4=\boxed{12\pi}\) cm\(^3\).`) },
-    { type: 'expr', enonce: p('Calculer le volume d’une boule de rayon 3 cm (valeur exacte).'), suffixe: R`cm\(^3\)`, attendu: R`36\pi`, forme: 'libre',
+    { type: 'expr', enonce: p('Calculer le volume d’une boule de rayon 3 cm (valeur exacte).'), suffixe: R`cm\(^3\)`, attendu: R`36\pi`, forme: 'pi',
       correction: p(R`\(V=\dfrac43\pi r^3=\dfrac43\pi\times27=\boxed{36\pi}\) cm\(^3\).`) },
     { type: 'expr', enonce: p('Calculer le volume d’une pyramide de hauteur 5 cm dont la base est un carré de côté 6 cm.'), suffixe: R`cm\(^3\)`, attendu: '60', forme: 'nombre',
       pieges: [{ si: '180', msg: 'Pour une pyramide, ne pas oublier le facteur 1/3.' }],

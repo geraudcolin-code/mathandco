@@ -290,6 +290,15 @@
     fraction: function (n) { return estEntier(n) || estFractionIrred(n); },   // entier ou fraction irréductible
     nombre: function (n) { return estDecimal(n) || estFractionIrred(n); },    // décimal ou fraction irréductible
     reduit: function (n) { return estDecimal(n) || estFractionIrred(n) || estRadical(n); },  // + racines simplifiées
+    pi: function (n) {                        // k π avec k écrit comme un nombre (aire, volume : calcul effectué)
+      n = sansSigne(n);
+      function estPi(m) { m = sansParentheses(m); return m.t === 'num' && m.cst === 'pi'; }
+      function coef(m) { return estDecimal(m) || estFractionIrred(m); }
+      if (estPi(n)) return true;
+      if (n.t === '*') return (coef(n.a) && estPi(n.b)) || (estPi(n.a) && coef(n.b));
+      if (n.t === '/') return n.a && FORMES.pi(n.a) && estEntier(n.b);
+      return false;
+    },
     scientifique: function (n) {              // a × 10^n, 1 ≤ a < 10
       n = sansSigne(n);
       if (estPuissanceDe10(n)) return true;
@@ -309,7 +318,8 @@
     fraction: 'C’est égal, mais il faut l’écrire sous forme d’une fraction irréductible (ou d’un entier).',
     nombre: 'C’est égal, mais il faut effectuer le calcul : un nombre décimal ou une fraction irréductible.',
     reduit: 'C’est égal, mais l’écriture peut encore être simplifiée.',
-    scientifique: 'C’est égal, mais ce n’est pas une écriture scientifique a × 10ⁿ avec 1 ≤ a < 10.'
+    scientifique: 'C’est égal, mais ce n’est pas une écriture scientifique a × 10ⁿ avec 1 ≤ a < 10.',
+    pi: 'C’est égal, mais il faut effectuer le calcul : écris le résultat sous la forme k π (par exemple 12π).'
   };
 
   /* ======================= 2. Vérification d'une réponse ======================= */
@@ -332,6 +342,7 @@
   function nettoyer(q, latex) {               // retire un « % » ou une unité tapés en trop en fin de réponse
     latex = String(latex || '').trim();
     if (q.suffixe && /%/.test(q.suffixe)) latex = latex.replace(/\\%\s*$/, '');
+    if (q.suffixe && /circ|°/.test(q.suffixe)) latex = latex.replace(/\^\{?\\circ\}?\s*$|°\s*$|\\degree\s*$/, '');
     return latex;
   }
 
@@ -676,12 +687,14 @@
     var s = this.source;
     if (!s.tirage) { this.def = s; return; }
     var toutes = [];
-    s.tirage.depuis.forEach(function (id) {
-      var d = (window.QUIZ || {})[id];
-      if (d) d.questions.forEach(function (q) { toutes.push(q); });
+    (s.tirage.depuis || [null]).forEach(function (id) {             // sans « depuis » : tirage dans la banque du quiz lui-même
+      var d = id ? (window.QUIZ || {})[id] : s;
+      if (d) d.questions.forEach(function (q, i) { toutes.push({ q: q, i: toutes.length }); });
     });
+    var tirees = melanger(toutes).slice(0, s.tirage.n || 20);
+    if (s.tirage.ordre === 'banque') tirees.sort(function (a, b) { return a.i - b.i; });   // garde la progression de la banque
     var d2 = {}; for (var c in s) d2[c] = s[c];
-    d2.questions = melanger(toutes).slice(0, s.tirage.n || 20);
+    d2.questions = tirees.map(function (t) { return t.q; });
     this.def = d2;
   };
   Quiz.prototype.construire = function () {
@@ -1069,7 +1082,21 @@
   };
 
   /* ======================= 6. Démarrage ======================= */
+  function compter(def) {                     // taille de la banque d'un quiz (avec tirage : toutes les questions possibles)
+    if (!def.tirage || !def.tirage.depuis) return def.questions.length;
+    return def.tirage.depuis.reduce(function (n, id) { var d = (window.QUIZ || {})[id]; return n + (d ? d.questions.length : 0); }, 0);
+  }
+  function majTuiles() {                       // « 20 questions au hasard parmi 73 » : calculé, jamais écrit à la main
+    Array.prototype.forEach.call(document.querySelectorAll('.ch-tuile[data-ouvre]'), function (t) {
+      var bloc = document.getElementById(t.dataset.ouvre), r = bloc && bloc.querySelector('.quiz[data-quiz]');
+      var def = r && (window.QUIZ || {})[r.dataset.quiz], c = t.querySelector('.ch-tuile-compte');
+      if (!def || !c) return;
+      var n = compter(def);
+      c.textContent = def.tirage ? Math.min(def.tirage.n || 20, n) + ' questions au hasard parmi ' + n : n + ' questions';
+    });
+  }
   function demarrer() {
+    majTuiles();
     var quiz = document.querySelectorAll('.quiz[data-quiz]');
     if (!quiz.length) return;
     preparerMathLive().then(function () {

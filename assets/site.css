@@ -676,7 +676,10 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qr-lancer { min-width: 200px; }
 
 /* ===== Correction animée : volet sur le côté (téléphone : feuille par le bas) ===== */
-:root { --volet-l: min(460px, 42vw); }
+:root { --volet-l: min(580px, 46vw); }
+/* police des corrections du site (Lexend), plus grande (M. Colin, 12 nov. 2026 : « écrit en trop petit ») */
+@font-face { font-family: 'Lexend'; src: url(polices/lexend-400.woff2) format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Lexend'; src: url(polices/lexend-700.woff2) format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
 .quiz-volet { position: fixed; z-index: 60; top: 0; right: 0; bottom: 0; width: var(--volet-l); display: flex; flex-direction: column;
   background: var(--papier); border-left: 1px solid var(--filet); box-shadow: -18px 0 50px rgba(30, 40, 70, .14);
   transform: translateX(104%); visibility: hidden; transition: transform .42s var(--courbe), visibility 0s .42s; }
@@ -691,11 +694,11 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-fermer:hover { background: var(--bleu-fond); color: var(--bleu); }
 .qv-barre { height: 3px; margin: 0 22px; border-radius: 3px; background: var(--fond-2); overflow: hidden; flex: none; }
 .qv-barre span { display: block; height: 100%; width: 0; background: var(--bleu); transition: width .45s var(--courbe); }
-.qv-corps { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 18px 22px 28px; font-size: 1.12rem; line-height: 1.55; }
+.qv-corps { flex: 1; overflow: auto; overscroll-behavior: contain; padding: 20px 24px 30px; font-family: 'Lexend', var(--f-texte); font-size: 1.32rem; line-height: 1.6; }
 .qv-pied { display: flex; align-items: center; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--filet); flex-wrap: wrap; }
 .qv-compte { font-size: .8rem; color: var(--gris); font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap; }
 .qv-vide { flex: 1; }
-.qv-corps .ML__latex { font-size: 1.14em; }
+.qv-corps .ML__latex { font-size: 1.2em; }
 .qv-rond { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--filet); background: var(--papier); color: var(--encre); cursor: pointer;
   font: 600 1rem/1 var(--f-texte); display: grid; place-items: center; padding: 0; flex: none; }
 .qv-rond:hover:not(:disabled) { border-color: var(--bleu); color: var(--bleu); }
@@ -744,7 +747,10 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   @keyframes qv-languette { from { transform: translateX(100%); } to { transform: none; } }
 }
 @media (max-width: 720px) {
-  .qv-corps { padding: 14px 16px 22px; font-size: 1.05rem; }
+  .qv-corps { padding: 14px 12px 22px; font-size: 1.12rem; }
+  .qv-corps .ML__latex { font-size: 1.1em; }
+  .qv-al.avec-just { padding-right: 3.4em; }
+  .qv-just { font-size: .78em; }
   .qv-pied { padding-left: 12px; padding-right: 12px; gap: 6px; }
   .qv-pied .bouton.petit { padding: 0 12px; }
   .qv-titre { font-size: 1rem; }
@@ -784,3 +790,16 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-tab .tcell.tval { padding: 0 4px; }
 .qv-tab .trait-choix { cursor: default; }
 .qv-tab .trait-choix::before { display: none; }
+
+/* chaînes d'équivalences : « ⟺ » dans sa colonne ; justification dans la marge, entre deux lignes, avec une flèche courbe */
+.qv-al { position: relative; }
+.qv-al.avec-pre { grid-template-columns: max-content max-content minmax(0, max-content); }
+.qv-pre { padding-right: .45em; }
+.qv-al.avec-just { padding-right: 7.5em; }
+.qv-fl { position: absolute; color: #ED7D31; pointer-events: none; }
+.qv-fl svg { display: block; overflow: visible; }
+.qv-fl svg path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.qv-just { position: absolute; transform: translateY(-50%); color: #ED7D31; font-size: .82em; font-weight: 700; width: max-content; max-width: 8.2em; white-space: normal; line-height: 1.35; }
+.qv-just .ML__latex { font-size: 1.08em; }
+.qv-sens { color: #D62828; }
+.qv-just [data-latex] { padding: .32em 0; }       /* une fraction ne déborde pas sur la ligne voisine */

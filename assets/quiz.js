@@ -1274,32 +1274,94 @@
     });
     return p;
   }
+  /* Bloc aligné \[\begin{aligned} … \end{aligned}\] : une ligne par « \\ », colonnes « membre & =suite ».
+     - « \iff membre &= … » : le « ⟺ » va dans sa propre colonne, à gauche (chaînes d'équivalences de Seconde, CH03) ;
+     - « … && justification » : ce qu'on fait pour passer de la ligne précédente à celle-ci (« \times3 », « -5 »,
+       « \div2 », « \text{on échange les membres} ») : écrit en ORANGE dans la marge de droite, ENTRE les deux lignes, avec
+       une flèche courbe qui va de l'une à l'autre (charte § 4 et § 9, M. Colin 5 et 12 nov. 2026) ; elle apparaît à son
+       propre clic, AVANT la ligne qu'elle justifie (l'élève cherche le résultat). */
+  var PRE = /^\s*(\\iff|\\Leftrightarrow|\\Longleftrightarrow)(?![a-zA-Z])\s*/;
   function etapesAligne(tex, ajouter, trans) {
     var g = el('div', 'qv-al'), ch = new Chaine(ajouter, trans), D = '\\displaystyle ';
-    couper(tex, function (u) { return u === '\\\\'; }).forEach(function (ligne) {
+    var lignes = couper(tex, function (u) { return u === '\\\\'; }).map(function (ligne) {
       ligne = ligne.replace(/^\s*\[[^\]]*\]/, '');
-      if (!ligne.trim()) return;
-      var cols = couper(ligne, function (u) { return u === '&'; });
-      var gauche = el('span', 'qv-g'), droite = el('span', 'qv-d' + (cols.length > 1 ? '' : ' plein'));
-      if (cols.length > 1) g.appendChild(gauche);
+      if (!ligne.trim()) return null;
+      var cols = couper(ligne, function (u) { return u === '&'; }), just = null;
+      if (cols.length >= 4 && !cols[2].trim()) { just = cols.slice(3).join(' ').trim(); cols = cols.slice(0, 2); }
+      var lhs = cols.length > 1 ? cols[0] : '', pre = '';
+      var mp = PRE.exec(lhs); if (mp) { pre = mp[1]; lhs = lhs.slice(mp[0].length); }
+      return { cols: cols, lhs: lhs, pre: pre, just: just, rhs: cols.length > 1 ? cols.slice(1).join('\\quad ') : cols[0] };
+    }).filter(Boolean);
+    var avecPre = lignes.some(function (l) { return l.pre; }), justifs = [], prec = null;
+    if (avecPre) g.classList.add('avec-pre');
+    lignes.forEach(function (l) {
+      var cellP = avecPre ? el('span', 'qv-pre') : null;
+      var gauche = el('span', 'qv-g'), droite = el('span', 'qv-d' + (l.cols.length > 1 ? '' : ' plein'));
+      if (cellP) g.appendChild(cellP);
+      if (l.cols.length > 1) g.appendChild(gauche);
       g.appendChild(droite);
-      var lhs = cols.length > 1 ? cols[0] : '', rhs = cols.length > 1 ? cols.slice(1).join('\\quad ') : cols[0];
-      var m = rhs.match(REL), rel = m ? m[1] : '', reste = m ? rhs.slice(m[0].length) : rhs, k = null, sp;
-      if (lhs.trim() || rel !== '=') ch.rompre();       // nouvelle expression, ou relation qui n'est pas une égalité
-      if (lhs.trim()) { ch.preparer(lhs); k = ajouter(); sp = morceau(gauche, '', k); ch.poser(sp, '', '', k); }
+      if (l.just && prec) {                         // la justification d'abord, à son clic, puis la ligne
+        var kj = ajouter(), lab = el('span', 'qv-just qv-e', justifHTML(l.just)), fl = el('span', 'qv-fl qv-e');
+        lab.dataset.e = kj; fl.dataset.e = kj;
+        fl.innerHTML = '<svg aria-hidden="true" focusable="false"><path/><path class="pointe"/></svg>';
+        g.appendChild(fl); g.appendChild(lab);
+        justifs.push({ lab: lab, fl: fl, de: prec, vers: droite });
+      }
+      var m = l.rhs.match(REL), rel = m ? m[1] : '', reste = m ? l.rhs.slice(m[0].length) : l.rhs, k = null, sp, sens = false;
+      var ms = /^\s*\\sens\{([^{}]*)\}/.exec(l.rhs);   // \sens{<} : le symbole a changé de sens (en rouge)
+      if (ms) { rel = ms[1]; reste = l.rhs.slice(ms[0].length); sens = true; }
+      if (l.lhs.trim() || rel !== '=') ch.rompre();       // nouvelle expression, ou relation qui n'est pas une égalité
+      if (l.lhs.trim()) {
+        ch.preparer(l.lhs); k = ajouter(); sp = morceau(gauche, '', k); ch.poser(sp, '', '', k);
+        if (l.pre) morceau(cellP, '\\(\\Leftrightarrow\\)', k);
+      }
       var membres = membresEgalite(reste).filter(function (x) { return x.tex.trim(); });
       if (rel) {
-        if (k == null) { if (membres.length) ch.preparer(membres[0].tex); k = ajouter(); }
-        morceau(droite, '\\(' + D + '\\;' + rel + '\\;\\)', k, 'qv-rel');
+        if (k == null) { if (membres.length) ch.preparer(membres[0].tex); k = ajouter(); if (l.pre) morceau(cellP, '\\(\\Leftrightarrow\\)', k); }
+        morceau(droite, '\\(' + D + '\\;' + rel + '\\;\\)', k, 'qv-rel' + (sens ? ' qv-sens' : ''));
       }
-      var suite = !lhs.trim() && k != null;           // « &= … » : le « = » vient avec ce qui le suit
+      var suite = !l.lhs.trim() && k != null;           // « &= … » : le « = » vient avec ce qui le suit
       membres.forEach(function (x, i) {
         if (!(suite && i === 0)) { ch.preparer(x.tex); k = ajouter(); }
         sp = morceau(droite, '', k); ch.poser(sp, x.avant, x.apres, k);
       });
+      prec = droite;
     });
     ch.ecrire(D);
+    if (justifs.length) { g.classList.add('avec-just'); g._justifs = justifs; g._droites = Array.prototype.slice.call(g.querySelectorAll('.qv-d')); }
     return g;
+  }
+  function justifHTML(j) {                      // « \\div2\\text{ : le sens change} » : le texte peut aller à la ligne
+    var out = '', re = /\\text\{([^{}]*)\}/g, m, d = 0;
+    function maths(x) { x = x.trim().replace(/\\dfrac/g, '\\frac'); if (x) out += '\\(' + x + '\\)'; }   // fractions petites dans la marge
+    while ((m = re.exec(j))) { maths(j.slice(d, m.index)); out += m[1].replace(/&/g, '&amp;').replace(/</g, '&lt;'); d = re.lastIndex; }
+    maths(j.slice(d));
+    return out;
+  }
+  function placerJustifs(racine) {              // flèches de la marge : après mise en page (positions réelles)
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-al.avec-just'), function (g) {
+      var R = g.getBoundingClientRect(); if (!R.width) return;
+      function bord(d) {                          // bord droit d'un membre de droite (la cellule s'étire sur la colonne)
+        var r = d.lastChild ? d.lastChild.getBoundingClientRect() : d.getBoundingClientRect();
+        return r.right - R.left + g.scrollLeft;
+      }
+      var bas = -Infinity;                       // une justification ne chevauche jamais la précédente
+      g._justifs.forEach(function (j) {
+        var x = Math.max(bord(j.de), bord(j.vers)) + 12;   // la flèche longe les deux lignes qu'elle relie
+        var a = j.de.getBoundingClientRect(), b = j.vers.getBoundingClientRect();
+        var y1 = (a.top + a.bottom) / 2 - R.top + 3, y2 = (b.top + b.bottom) / 2 - R.top - 3, h = Math.max(14, y2 - y1), bo = 20;
+        var svg = j.fl.firstChild;
+        j.fl.style.left = x + 'px'; j.fl.style.top = y1 + 'px'; j.fl.style.width = (bo + 6) + 'px'; j.fl.style.height = h + 'px';
+        svg.setAttribute('width', bo + 6); svg.setAttribute('height', h); svg.setAttribute('viewBox', '0 0 ' + (bo + 6) + ' ' + h);
+        svg.firstChild.setAttribute('d', 'M2 0 C ' + (bo + 2) + ' 2, ' + (bo + 2) + ' ' + (h - 2) + ', 4 ' + h);
+        svg.lastChild.setAttribute('d', 'M4 ' + h + ' l 7 -6.5 M4 ' + h + ' l 9.5 1.5');
+        j.lab.style.left = (x + bo + 10) + 'px';
+        j.lab.style.maxWidth = Math.max(44, g.clientWidth + g.scrollLeft - (x + bo + 10) - 4) + 'px';   // reste dans la largeur visible
+        var hl = j.lab.offsetHeight, c = y1 + h / 2;
+        if (c - hl / 2 < bas + 4) c = bas + 4 + hl / 2;
+        j.lab.style.top = c + 'px'; bas = c + hl / 2;
+      });
+    });
   }
   function tableauCorrection(q, ajouter) {      // le tableau attendu, tracé pas à pas (ligne des x, puis chaque intervalle)
     var vari = q.type === 'variations', b = q.bornes || [-Infinity, Infinity], xs = [b[0]].concat(q.valeurs, [b[1]]), n = q.valeurs.length;
@@ -1405,6 +1467,7 @@
       else if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown' || (ev.key === ' ' && tag !== 'BUTTON')) { ev.preventDefault(); arreterAuto(v); avancer(v, false); }
       else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') { ev.preventDefault(); arreterAuto(v); montrer(v, v.e.k - 1, false); }
     });
+    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) placerJustifs(v.e.racine); });
     // quitter le quiz (« ‹ Première », changement d'onglet) ferme le volet et range l'onglet
     document.addEventListener('click', function (ev) {
       if (ev.target.closest && ev.target.closest('[data-retour], [role=tab]')) { fermerVolet(); v.languette.hidden = true; }
@@ -1474,6 +1537,8 @@
     document.body.classList.add('volet-ouvert');
     v.languette.hidden = true;
     if (window.mathVirtualKeyboard) try { window.mathVirtualKeyboard.hide(); } catch (e) {}
+    placerJustifs(v.e.racine);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (v.e && v.e.racine.isConnected) placerJustifs(v.e.racine); });
     if (v.e.k === 0) montrer(v, 1, true); else montrer(v, v.e.k, false);
     if (window.matchMedia && window.matchMedia('(max-width: 999px)').matches) {
       // téléphone : la feuille monte par le bas ; on remonte la question juste sous les barres collées en haut

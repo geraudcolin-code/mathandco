@@ -558,7 +558,7 @@
   /* ===================================================================== */
   Q['1ere-auto-melange'] = {
     etiquette: 'Automatismes · 2nde et 1re', titre: 'Entraînement mixte', sousTitre: '20 questions tirées au hasard dans tous les thèmes, nouveau tirage à chaque essai.',
-    tirage: { depuis: ['1ere-automatismes-1', '1ere-auto-nombres', '1ere-auto-proportions', '1ere-auto-evolutions', '1ere-auto-litteral', '1ere-auto-equations', '1ere-auto-fonctions', '1ere-auto-droites', '1ere-auto-geometrie', '1ere-auto-stats', '1ere-auto-probas'], n: 20 },
+    tirage: { depuis: ['1ere-auto-nombres', '1ere-auto-proportions', '1ere-auto-evolutions', '1ere-auto-litteral', '1ere-auto-equations', '1ere-auto-fonctions', '1ere-auto-droites', '1ere-auto-geometrie', '1ere-auto-stats', '1ere-auto-probas'], n: 20 },
     questions: []
   };
 })();

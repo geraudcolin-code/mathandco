@@ -216,3 +216,7 @@
 .cyber .tab-suppr { background: #0b0d1a; border-color: rgba(234, 246, 255, .45); color: var(--encre); }
 .cyber .trait-choix[data-touche="1"]::before, .cyber .signe.sint::before { border-color: rgba(234, 246, 255, .35); }
 .cyber .signe.sint[data-v=""]::before { border-color: var(--cp-cyan); }
+
+/* volet de correction animée : boutons du pied resserrés (le style cyber les élargit) */
+.cyber .qv-pied .bouton { letter-spacing: .04em; padding: 0 12px; font-size: .78rem; }
+.cyber .quiz-volet { border-left-color: rgba(0, 240, 255, .35); }

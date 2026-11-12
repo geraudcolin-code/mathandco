@@ -679,8 +679,8 @@
   function rendre(elm) { if (window.MathLive && window.MathLive.renderMathInElement) try { window.MathLive.renderMathInElement(elm); } catch (e) {} }
   function melanger(t) { t = t.slice(); for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = t[i]; t[i] = t[j]; t[j] = x; } return t; }
 
-  function Quiz(racine, def) {
-    this.racine = racine; this.source = def; this.i = 0;
+  function Quiz(racine, def, opts) {
+    this.racine = racine; this.source = def; this.i = 0; this.opts = opts || {};
     this.construire();
   }
   Quiz.prototype.preparerQuestions = function () {
@@ -699,12 +699,19 @@
   };
   Quiz.prototype.construire = function () {
     var self = this;
+    fermerVolet();
     this.preparerQuestions();
     var d = this.def;
     this.etat = d.questions.map(function () { return { essais: 0, juste: false, premier: false, vue: false }; });
     this.racine.innerHTML = '';
     var tete = el('div', 'quiz-tete');
-    tete.appendChild(el('div', 'quiz-titres', '<span class="quiz-etiquette">' + d.etiquette + '</span><h2>' + d.titre + '</h2>' + (d.sousTitre ? '<p class="quiz-sous-titre">' + d.sousTitre + '</p>' : '')));
+    var titres = el('div', 'quiz-titres', '<span class="quiz-etiquette">' + d.etiquette + '</span><h2>' + d.titre + '</h2>' + (d.sousTitre ? '<p class="quiz-sous-titre">' + d.sousTitre + '</p>' : ''));
+    if (this.opts.reglages) {                      // retour à l'écran des réglages (nombre de questions, thèmes)
+      var br = el('button', 'quiz-vers-reglages', '<span aria-hidden="true">‹</span> Réglages'); br.type = 'button';
+      br.addEventListener('click', function () { fermerVolet(); self.opts.reglages(); });
+      titres.insertBefore(br, titres.firstChild);
+    }
+    tete.appendChild(titres);
     this.points = el('div', 'quiz-points'); this.points.setAttribute('role', 'group'); this.points.setAttribute('aria-label', 'Questions');
     d.questions.forEach(function (q, n) {
       var b = el('button', 'quiz-point', String(n + 1)); b.type = 'button'; b.setAttribute('aria-label', 'Question ' + (n + 1));
@@ -763,26 +770,22 @@
     var msg = el('p', 'quiz-message'); msg.setAttribute('role', 'status'); msg.setAttribute('aria-live', 'polite'); c.appendChild(msg); c._msg = msg;
     var actions = el('div', 'quiz-actions');
     var bv = el('button', 'bouton', 'Valider'); bv.type = 'button'; bv.addEventListener('click', function () { self.valider(n); });
-    var bs = el('button', 'bouton secondaire', 'Voir la correction'); bs.type = 'button'; bs.hidden = true; bs.addEventListener('click', function () { self.correction(n); });
+    var bs = el('button', 'bouton discret', 'Voir la correction <span aria-hidden="true">›</span>'); bs.type = 'button'; bs.hidden = true; bs.addEventListener('click', function () { self.correction(n); });
     var bn = el('button', 'bouton', n + 1 < total ? 'Question suivante' : 'Voir le bilan'); bn.type = 'button'; bn.hidden = true;
-    bn.addEventListener('click', function () { if (n + 1 < total) self.aller(n + 1); else self.bilan(); });
+    bn.addEventListener('click', function () { fermerVolet(); self.suivante(n); });
     actions.appendChild(bv); actions.appendChild(bs); actions.appendChild(bn); c.appendChild(actions);
-    c._bv = bv; c._bs = bs; c._bn = bn;
-    var corr = el('div', 'quiz-correction', q.correction);
-    if (q.figureCorrection) {                     // la lecture montrée sur la figure (charte : un résultat lu se montre sur la figure)
-      var fc = el('figure', 'quiz-figure'), ic = el('img'); ic.src = q.figureCorrection; ic.alt = 'Figure de la correction'; ic.loading = 'lazy';
-      fc.appendChild(ic); corr.appendChild(fc);
-    }
-    corr.hidden = true; c.appendChild(corr); rendre(corr); c._corr = corr;
+    c._bv = bv; c._bs = bs; c._bn = bn; c._q = q;
     return c;
   };
   Quiz.prototype.aller = function (n) {
+    if (volet && volet.quiz === this && volet.n !== n) fermerVolet();
     this.i = n;
     this.fin.hidden = true;
     this.cartes.forEach(function (c, j) { c.hidden = j !== n; });
     this.majPoints();
     var c = this.cartes[n];
-    if (c._champ && !this.etat[n].juste) setTimeout(function () { try { c._champ.focus(); } catch (e) {} }, 50);
+    majLanguette(this);
+    if (c._champ && !this.etat[n].juste) setTimeout(function () { if (voletOuvert()) return; try { c._champ.focus(); } catch (e) {} }, 50);
     else if (window.mathVirtualKeyboard) try { window.mathVirtualKeyboard.hide(); } catch (e) {}
   };
   Quiz.prototype.majPoints = function () {
@@ -806,7 +809,8 @@
       e.juste = true; e.premier = e.essais === 1 && !e.vue;
       c.classList.add('reussie'); c.classList.remove('ratee');
       c._msg.textContent = 'Bonne réponse !'; c._msg.classList.add('ok');
-      c._bv.hidden = true; c._bs.hidden = true; c._bn.hidden = false;
+      c._bv.hidden = true; c._bs.hidden = !e.vue; c._bn.hidden = false;
+      c._bn.className = 'bouton';
       c.querySelectorAll('.quiz-zone math-field').forEach(function (s) { s.readOnly = true; s.blur(); });
       c.querySelectorAll('.quiz-zone button').forEach(function (s) { s.disabled = true; });
       window.mathVirtualKeyboard && window.mathVirtualKeyboard.hide();
@@ -816,7 +820,8 @@
       c.classList.add('ratee');
       c._msg.textContent = r.msg ? r.msg : 'Ce n’est pas la bonne réponse. Cherche encore !';
       c._msg.classList.add('ko');
-      if (e.essais >= 2) c._bs.hidden = false;
+      // dès la première erreur : la correction animée est proposée (volet sur le côté), et l'on peut passer à la suite
+      c._bs.hidden = false; c._bn.hidden = false; c._bn.className = 'bouton secondaire';
       signalerFaux();
     }
     this.majPoints();
@@ -824,24 +829,31 @@
   Quiz.prototype.correction = function (n) {
     var c = this.cartes[n];
     this.etat[n].vue = true;
-    c._corr.hidden = false; c._bs.hidden = true; c._bn.hidden = false;
+    c._bn.hidden = false;
     this.majPoints();
-    c._corr.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    ouvrirVolet(this, n);
   };
+  Quiz.prototype.suivante = function (n) { if (n + 1 < this.cartes.length) this.aller(n + 1); else this.bilan(); };
   Quiz.prototype.bilan = function () {
     var self = this, total = this.etat.length;
     var premier = this.etat.filter(function (e) { return e.premier; }).length;
     var justes = this.etat.filter(function (e) { return e.juste; }).length;
-    this.cartes.forEach(function (c) { c.hidden = true; });
+    fermerVolet(); this.cartes.forEach(function (c) { c.hidden = true; });
     this.fin.innerHTML = '';
     this.fin.appendChild(el('p', 'quiz-num', 'Bilan'));
     this.fin.appendChild(el('p', 'quiz-score', '<strong>' + justes + ' / ' + total + '</strong> questions réussies'));
     this.fin.appendChild(el('p', 'quiz-detail', premier + ' du premier coup' + (justes < total ? ' · ' + (total - justes) + ' à retravailler' : '')));
     var r = el('button', 'bouton', this.source.tirage ? 'Nouveau tirage' : 'Recommencer le quiz'); r.type = 'button';
     r.addEventListener('click', function () { self.construire(); self.racine.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
-    var a = el('div', 'quiz-actions'); a.appendChild(r); this.fin.appendChild(a);
+    var a = el('div', 'quiz-actions'); a.appendChild(r);
+    if (this.opts.reglages) {
+      var g = el('button', 'bouton secondaire', 'Changer les réglages'); g.type = 'button';
+      g.addEventListener('click', function () { self.opts.reglages(); });
+      a.appendChild(g);
+    }
+    this.fin.appendChild(a);
     this.fin.hidden = false;
-    this.majPoints();
+    this.majPoints(); majLanguette(this);
     this.fin.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   };
 
@@ -1081,6 +1093,326 @@
     return function () { return verifierRepere(q, pts.map(function (P) { return P.slice(); })); };
   };
 
+  /* ======================= 5 bis. Correction animée dans un volet ======================= */
+  /* La correction d'une question (HTML : des <p> et des blocs \[\begin{aligned}…\end{aligned}\]) est découpée en ÉTAPES
+     qui apparaissent une à une, comme dans les animations des corrections (charte § 3) : « A = » d'abord, l'expression
+     au clic suivant ; chaque ligne d'un calcul aligné à son tour, les « = » restant alignés ; ce qui est du texte
+     (l'énoncé, une phrase de raisonnement) s'affiche d'un coup. La figure de lecture, s'il y en a une, vient d'abord. */
+  var REL = /^\s*(=|&lt;|&gt;|<|>|(?:\\leq?(?:slant)?|\\geq?(?:slant)?|\\approx|\\iff|\\Leftrightarrow|\\Longleftrightarrow|\\neq?)(?![a-zA-Z]))/;
+  var MOTS = /c-à-d|[A-Za-zÀ-ÿ]{3,}|[,;:]\s*[A-Za-zÀ-ÿ]/;          // un morceau de texte qui ouvre une nouvelle étape (pas une unité « cm »)
+  function couper(s, sep) {                     // découpe au niveau 0 des accolades ; « \{ », « \\ »… comptent pour une unité
+    var morceaux = [], cur = '', d = 0;
+    for (var i = 0; i < s.length; i++) {
+      var u = s[i];
+      if (u === '\\') {
+        var cmd = /^\\(left|right|begin|end)(?![a-zA-Z])/.exec(s.substr(i, 7));
+        if (cmd) { d += cmd[1] === 'left' || cmd[1] === 'begin' ? 1 : -1; cur += cmd[0]; i += cmd[0].length - 1; continue; }   // \left( … \right) : un seul bloc
+        u = s.substr(i, 2); i++;
+      }
+      else if (u === '{') d++; else if (u === '}') d--;
+      if (d === 0 && sep(u)) { morceaux.push(cur); cur = ''; } else cur += u;
+    }
+    morceaux.push(cur); return morceaux;
+  }
+  function egalites(m) {                        // « A=B=C » → ['A=\;', 'B=\;', 'C'] : chaque membre à son propre clic
+    var t = couper(m, function (u) { return u === '='; }), r = [], report = '';
+    t.forEach(function (x, i) {
+      var der = i === t.length - 1;
+      if (!x.trim() && !der) { report += '=\\;'; return; }           // l'espace après « = » : une formule coupée la perdrait
+      r.push(report + x + (der ? '' : '=\\;')); report = '';
+    });
+    return r;
+  }
+  function morceau(parent, html, k, classe) {
+    var s = el('span', 'qv-e' + (classe ? ' ' + classe : ''), html); s.dataset.e = k; parent.appendChild(s); return s;
+  }
+  function etapesParagraphe(html, ajouter) {
+    var p = el('p', 'qv-p'), re = /\\\(([\s\S]*?)\\\)/g, m, dernier = 0, jetons = [];
+    while ((m = re.exec(html))) { if (m.index > dernier) jetons.push({ t: html.slice(dernier, m.index) }); jetons.push({ m: m[1] }); dernier = re.lastIndex; }
+    if (dernier < html.length) jetons.push({ t: html.slice(dernier) });
+    var cur = null, avecMaths = false;
+    function nouvelle() { cur = morceau(p, '', ajouter()); avecMaths = false; }
+    jetons.forEach(function (j) {
+      if (j.t != null) {
+        var cad = cur && /^\s*c-à-d/.test(j.t);
+        if (cad) p.appendChild(el('br'));            // une ligne « c-à-d » à la fois (charte § 3)
+        if (!cur || cad || (avecMaths && MOTS.test(j.t))) nouvelle();
+        cur.insertAdjacentHTML('beforeend', cad ? j.t.replace(/^\s+/, '') : j.t);
+      } else {
+        var membres = egalites(j.m);
+        membres.forEach(function (x, i) {
+          if (!cur || i > 0) nouvelle();
+          cur.insertAdjacentHTML('beforeend', '\\(' + x + '\\)');
+        });
+        // seul un CALCUL (égalité, résultat encadré) clôt l'étape ; un nom (« ABC », « B », « 5x ») reste dans la phrase
+        if (membres.length > 1 || /\\boxed/.test(j.m)) avecMaths = true;
+      }
+    });
+    return p;
+  }
+  function etapesAligne(tex, ajouter) {
+    var g = el('div', 'qv-al');
+    couper(tex, function (u) { return u === '\\\\'; }).forEach(function (ligne) {
+      ligne = ligne.replace(/^\s*\[[^\]]*\]/, '');
+      if (!ligne.trim()) return;
+      var cols = couper(ligne, function (u) { return u === '&'; });
+      var gauche = el('span', 'qv-g'), droite = el('span', 'qv-d' + (cols.length > 1 ? '' : ' plein'));
+      if (cols.length > 1) g.appendChild(gauche);
+      g.appendChild(droite);
+      var lhs = cols.length > 1 ? cols[0] : '', rhs = cols.length > 1 ? cols.slice(1).join('\\quad ') : cols[0];
+      var m = rhs.match(REL), rel = m ? m[1] : '', reste = m ? rhs.slice(m[0].length) : rhs, k = null;
+      var D = '\\(\\displaystyle ';
+      if (lhs.trim()) { k = ajouter(); morceau(gauche, D + lhs + '\\)', k); }
+      if (rel) { if (k == null) k = ajouter(); morceau(droite, D + '\\;' + rel + '\\;\\)', k, 'qv-rel'); }
+      var suite = !lhs.trim() && k != null;           // « &= … » : le « = » vient avec ce qui le suit
+      egalites(reste).forEach(function (x, i) {
+        if (!x.trim()) return;
+        if (!(suite && i === 0)) k = ajouter();
+        morceau(droite, D + x + '\\)', k);
+      });
+    });
+    return g;
+  }
+  function construireEtapes(q) {
+    var racine = el('div', 'qv-etapes'), n = 0;
+    function ajouter() { return ++n; }
+    if (q.figureCorrection) {                     // la lecture se montre sur la figure (charte § 5)
+      var f = el('figure', 'qv-fig qv-e'), im = el('img'); im.src = q.figureCorrection; im.alt = 'Figure de la correction'; im.decoding = 'async';
+      f.appendChild(im); f.dataset.e = ajouter(); racine.appendChild(f);
+    }
+    var html = q.correction || '', re = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]/g, m, dernier = 0;
+    function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ajouter()); racine.appendChild(b); } }
+    while ((m = re.exec(html))) {
+      libre(html.slice(dernier, m.index));
+      if (m[1] != null) racine.appendChild(etapesParagraphe(m[1], ajouter));
+      else {
+        var a = m[2].match(/^\s*\\begin\{aligned\}([\s\S]*)\\end\{aligned\}\s*$/);
+        if (a) racine.appendChild(etapesAligne(a[1], ajouter));
+        else { var b = el('div', 'qv-disp'); morceau(b, '\\[' + m[2] + '\\]', ajouter()); racine.appendChild(b); }
+      }
+      dernier = re.lastIndex;
+    }
+    libre(html.slice(dernier));
+    rendre(racine);
+    return { racine: racine, n: n, k: 0 };
+  }
+
+  var volet = null;
+  function voletOuvert() { return !!(volet && volet.el.classList.contains('ouvert')); }
+  function bouton(classe, html, aria) { var b = el('button', classe, html); b.type = 'button'; if (aria) b.setAttribute('aria-label', aria); return b; }
+  function creerVolet() {
+    if (volet) return volet;
+    var v = volet = { quiz: null, n: -1, e: null, minuteur: null };
+    v.el = el('aside', 'quiz-volet'); v.el.setAttribute('aria-label', 'Correction animée'); v.el.setAttribute('aria-hidden', 'true'); v.el.inert = true;
+    var tete = el('div', 'qv-tete');
+    v.titre = el('p', 'qv-titre', 'Correction');
+    var fermer = bouton('qv-fermer', '<span aria-hidden="true">×</span>', 'Fermer la correction');
+    fermer.addEventListener('click', fermerVolet);
+    v.compte = el('span', 'qv-compte');
+    tete.appendChild(v.titre); tete.appendChild(v.compte); tete.appendChild(fermer);
+    v.barre = el('div', 'qv-barre', '<span></span>');
+    v.corps = el('div', 'qv-corps');
+    var pied = el('div', 'qv-pied');
+    v.prec = bouton('qv-rond', '<span aria-hidden="true">‹</span>', 'Étape précédente');
+    v.lecture = bouton('qv-rond', '<span aria-hidden="true">▶</span>', 'Lecture automatique');
+    var vide = el('span', 'qv-vide');
+    v.tout = bouton('bouton secondaire petit', 'Tout afficher');
+    v.suiv = bouton('bouton petit qv-suivant', 'Étape suivante <span aria-hidden="true">›</span>');
+    v.prec.addEventListener('click', function () { arreterAuto(v); montrer(v, v.e.k - 1, false); });
+    v.lecture.addEventListener('click', function () { if (v.minuteur) arreterAuto(v); else lancerAuto(v); });
+    v.tout.addEventListener('click', function () { arreterAuto(v); montrer(v, v.e.n, true); });
+    v.suiv.addEventListener('click', function () { arreterAuto(v); avancer(v, true); });
+    [v.prec, v.lecture, vide, v.tout, v.suiv].forEach(function (x) { pied.appendChild(x); });
+    v.el.appendChild(tete); v.el.appendChild(v.barre); v.el.appendChild(v.corps); v.el.appendChild(pied);
+    document.body.appendChild(v.el);
+    // l'onglet sur le côté : rouvre la correction de la question en cours une fois le volet fermé
+    v.languette = bouton('quiz-languette', '<span>Correction</span>', 'Rouvrir la correction'); v.languette.hidden = true;
+    v.languette.addEventListener('click', function () { var q = v.languetteQuiz; if (q) ouvrirVolet(q, q.i); });
+    document.body.appendChild(v.languette);
+    document.addEventListener('keydown', function (ev) {
+      if (!v.el.classList.contains('ouvert')) return;
+      var t = ev.target, tag = t && t.tagName;
+      if (tag === 'MATH-FIELD' || tag === 'INPUT' || tag === 'TEXTAREA' || ev.altKey || ev.ctrlKey || ev.metaKey) return;
+      if (ev.key === 'Escape') { ev.preventDefault(); fermerVolet(); }
+      else if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown' || (ev.key === ' ' && tag !== 'BUTTON')) { ev.preventDefault(); arreterAuto(v); avancer(v, false); }
+      else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') { ev.preventDefault(); arreterAuto(v); montrer(v, v.e.k - 1, false); }
+    });
+    // quitter le quiz (« ‹ Première », changement d'onglet) ferme le volet et range l'onglet
+    document.addEventListener('click', function (ev) {
+      if (ev.target.closest && ev.target.closest('[data-retour], [role=tab]')) { fermerVolet(); v.languette.hidden = true; }
+    });
+    return v;
+  }
+  function montrer(v, k, anime) {               // affiche les étapes 1…k (jamais moins d'une)
+    var et = v.e; et.k = Math.max(Math.min(1, et.n), Math.min(et.n, k));
+    var neufs = [];
+    Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-e'), function (x) {
+      var i = +x.dataset.e;
+      x.classList.toggle('vu', i <= et.k);
+      x.classList.remove('neuf');
+      if (anime && i === et.k) neufs.push(x);
+    });
+    neufs.forEach(function (x) { void x.offsetWidth; x.classList.add('neuf'); });
+    var der = neufs[neufs.length - 1];
+    if (der) {                                    // garder la dernière étape à l'écran, sans faire défiler la page
+      var r = der.getBoundingClientRect(), c = v.corps.getBoundingClientRect();
+      if (r.bottom > c.bottom - 12) v.corps.scrollBy({ top: r.bottom - c.bottom + 28, behavior: 'smooth' });
+      else if (r.top < c.top) v.corps.scrollBy({ top: r.top - c.top - 16, behavior: 'smooth' });
+    }
+    majPied(v);
+  }
+  function majPied(v) {
+    var et = v.e, fini = et.k >= et.n, total = v.quiz.cartes.length;
+    v.barre.firstChild.style.width = (et.n ? 100 * et.k / et.n : 100) + '%';
+    v.compte.textContent = 'Étape ' + et.k + ' / ' + et.n;
+    v.prec.disabled = et.k <= 1;
+    v.tout.hidden = fini; v.lecture.hidden = fini;
+    v.suiv.innerHTML = fini ? (v.n + 1 < total ? 'Question suivante' : 'Voir le bilan') + ' <span aria-hidden="true">›</span>' : 'Étape suivante <span aria-hidden="true">›</span>';
+    v.suiv.classList.toggle('fin', fini);
+    v.lecture.innerHTML = v.minuteur ? '<span aria-hidden="true">❚❚</span>' : '<span aria-hidden="true">▶</span>';
+    v.lecture.setAttribute('aria-label', v.minuteur ? 'Mettre en pause' : 'Lecture automatique');
+  }
+  function avancer(v, auBout) {
+    if (v.e.k < v.e.n) { montrer(v, v.e.k + 1, true); return; }
+    if (!auBout) return;                          // le bouton seul passe à la question suivante
+    var q = v.quiz, n = v.n; fermerVolet(); q.suivante(n);
+  }
+  function lancerAuto(v) {
+    if (v.e.k >= v.e.n) return;
+    v.minuteur = setInterval(function () { if (v.e.k < v.e.n) montrer(v, v.e.k + 1, true); if (v.e.k >= v.e.n) arreterAuto(v); }, 1700);
+    montrer(v, v.e.k + 1, true);
+    if (v.e.k >= v.e.n) arreterAuto(v);
+  }
+  function arreterAuto(v) { if (v.minuteur) { clearInterval(v.minuteur); v.minuteur = null; if (v.e) majPied(v); } }
+  function ouvrirVolet(quiz, n) {
+    var v = creerVolet(), c = quiz.cartes[n], q = c._q;
+    arreterAuto(v);
+    if (!c._etapes) c._etapes = construireEtapes(q);
+    if (!c._rappel) {                             // rappel de la question (affiché sur téléphone, où le volet la recouvre)
+      var d = el('details', 'qv-rappel'), s = el('summary', '', 'Rappel de la question'), z = el('div', 'qv-rappel-texte', q.enonce + (q.enonceApres || ''));
+      if (q.figure) { var fi = el('figure', 'quiz-figure'), im = el('img'); im.src = q.figure; im.alt = q.figureAlt || 'Figure de la question'; fi.appendChild(im); z.appendChild(fi); }
+      d.appendChild(s); d.appendChild(z); rendre(z); c._rappel = d;
+    }
+    v.quiz = quiz; v.n = n; v.e = c._etapes;
+    v.titre.innerHTML = 'Correction <span class="qv-num">· question ' + (n + 1) + '</span>';
+    v.corps.innerHTML = ''; v.corps.appendChild(c._rappel); v.corps.appendChild(v.e.racine); v.corps.scrollTop = 0;
+    v.el.classList.add('ouvert'); v.el.setAttribute('aria-hidden', 'false'); v.el.inert = false;
+    document.body.classList.add('volet-ouvert');
+    v.languette.hidden = true;
+    if (window.mathVirtualKeyboard) try { window.mathVirtualKeyboard.hide(); } catch (e) {}
+    if (v.e.k === 0) montrer(v, 1, true); else montrer(v, v.e.k, false);
+    if (window.matchMedia && window.matchMedia('(max-width: 999px)').matches) {
+      // téléphone : la feuille monte par le bas ; on remonte la question juste sous les barres collées en haut
+      var haut = 0;
+      Array.prototype.forEach.call(document.querySelectorAll('#nav, .outils'), function (b) {
+        var st = getComputedStyle(b).position; if (st === 'sticky' || st === 'fixed') haut = Math.max(haut, b.getBoundingClientRect().bottom);
+      });
+      var cible = c.querySelector('.quiz-num') || c;
+      setTimeout(function () { window.scrollTo({ top: window.scrollY + cible.getBoundingClientRect().top - haut - 10, behavior: 'smooth' }); }, 30);
+    }
+    setTimeout(function () { try { v.suiv.focus({ preventScroll: true }); } catch (e) {} }, 60);
+  }
+  function fermerVolet() {
+    if (!volet || !volet.el.classList.contains('ouvert')) return;
+    arreterAuto(volet);
+    var dedans = volet.el.contains(document.activeElement);
+    volet.el.classList.remove('ouvert'); volet.el.setAttribute('aria-hidden', 'true'); volet.el.inert = true;
+    document.body.classList.remove('volet-ouvert');
+    if (volet.quiz) {
+      majLanguette(volet.quiz);
+      var c = volet.quiz.cartes[volet.n];
+      if (dedans && c && !c.hidden) try { (c._bn.hidden ? c._bv : c._bn).focus({ preventScroll: true }); } catch (e) {}
+    }
+  }
+  function majLanguette(quiz) {
+    if (!volet) return;                           // l'onglet n'existe qu'après une première correction
+    var c = quiz.cartes[quiz.i];
+    var ok = quiz.fin.hidden && c && !c.hidden && quiz.etat[quiz.i].vue && !volet.el.classList.contains('ouvert') && quiz.racine.getClientRects().length > 0;
+    volet.languette.hidden = !ok; volet.languetteQuiz = quiz;
+  }
+
+  /* ======================= 5 ter. Réglages d'un quiz à thèmes ======================= */
+  /* window.QUIZ_CONFIG[id] = { etiquette, titre, sousTitre, themes: [id de QUIZ…], choix: [10, 20…], defaut: 20 }.
+     Écran de départ : nombre de questions, thèmes (tous cochés par défaut), bouton « Lancer le quiz ». */
+  function Reglages(racine, cfg) {
+    this.racine = racine; this.cfg = cfg;
+    this.n = cfg.defaut || 20;
+    this.coches = {}; var self = this;
+    cfg.themes.forEach(function (id) { self.coches[id] = true; });
+    this.afficher();
+  }
+  Reglages.prototype.banque = function (id) { var d = (window.QUIZ || {})[id]; return d ? d.questions.length : 0; };
+  Reglages.prototype.afficher = function () {
+    var self = this, cfg = this.cfg, r = this.racine;
+    fermerVolet(); if (volet) volet.languette.hidden = true;
+    r.innerHTML = '';
+    var tete = el('div', 'quiz-tete');
+    tete.appendChild(el('div', 'quiz-titres', '<span class="quiz-etiquette">' + cfg.etiquette + '</span><h2>' + cfg.titre + '</h2>' +
+      '<p class="quiz-sous-titre">' + (cfg.sousTitre || 'Choisis le nombre de questions et les thèmes, puis lance le quiz.') + '</p>'));
+    r.appendChild(tete);
+    var carte = el('section', 'quiz-carte quiz-reglages');
+    // nombre de questions
+    var f1 = el('fieldset', 'qr-bloc'); f1.appendChild(el('legend', '', 'Nombre de questions'));
+    var nb = el('div', 'qr-nombres');
+    (cfg.choix || [10, 20, 30, 40]).forEach(function (k) {
+      var l = el('label', 'qr-nombre'), i = el('input'); i.type = 'radio'; i.name = 'qr-n-' + (cfg.id || 'quiz'); i.value = k; i.checked = k === self.n;
+      i.addEventListener('change', function () { self.n = k; self.maj(); });
+      l.appendChild(i); l.appendChild(el('span', '', String(k))); nb.appendChild(l);
+    });
+    f1.appendChild(nb); carte.appendChild(f1);
+    // thèmes
+    var f2 = el('fieldset', 'qr-bloc'); var lg = el('legend', 'qr-legende', '<span>Thèmes abordés</span>'); f2.appendChild(lg);
+    this.bTout = bouton('qr-tout', 'Tout décocher');
+    this.bTout.addEventListener('click', function () {
+      var tous = cfg.themes.every(function (id) { return self.coches[id]; });
+      cfg.themes.forEach(function (id) { self.coches[id] = !tous; });
+      self.cases.forEach(function (x) { x.checked = !tous; });
+      self.maj();
+    });
+    lg.appendChild(this.bTout);
+    var liste = el('div', 'qr-themes'); this.cases = [];
+    cfg.themes.forEach(function (id) {
+      var d = (window.QUIZ || {})[id]; if (!d) return;
+      var l = el('label', 'qr-theme'), i = el('input'); i.type = 'checkbox'; i.checked = !!self.coches[id]; i.value = id;
+      i.addEventListener('change', function () { self.coches[id] = i.checked; self.maj(); });
+      l.appendChild(i);
+      l.appendChild(el('span', 'qr-case', '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>'));
+      l.appendChild(el('span', 'qr-nom', (cfg.noms && cfg.noms[id]) || d.titre));
+      l.appendChild(el('span', 'qr-taille', self.banque(id) + ' questions'));
+      liste.appendChild(l); self.cases.push(i);
+    });
+    f2.appendChild(liste); carte.appendChild(f2);
+    this.resume = el('p', 'qr-resume'); this.resume.setAttribute('aria-live', 'polite'); carte.appendChild(this.resume);
+    var a = el('div', 'quiz-actions');
+    this.bLancer = bouton('bouton qr-lancer', 'Lancer le quiz <span aria-hidden="true">›</span>');
+    this.bLancer.addEventListener('click', function () { self.lancer(); });
+    a.appendChild(this.bLancer); carte.appendChild(a);
+    r.appendChild(carte);
+    this.maj();
+  };
+  Reglages.prototype.choisis = function () { var self = this; return this.cfg.themes.filter(function (id) { return self.coches[id] && (window.QUIZ || {})[id]; }); };
+  Reglages.prototype.maj = function () {
+    var self = this, ch = this.choisis(), dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0);
+    var tous = ch.length === this.cfg.themes.length;
+    this.bTout.textContent = tous ? 'Tout décocher' : 'Tout cocher';
+    this.bLancer.disabled = !ch.length;
+    this.resume.classList.toggle('alerte', !ch.length);
+    this.resume.innerHTML = !ch.length ? 'Coche au moins un thème.'
+      : '<strong>' + Math.min(this.n, dispo) + ' questions</strong> tirées au hasard parmi ' + dispo +
+        (tous ? ', dans tous les thèmes.' : ', dans ' + (ch.length === 1 ? 'le thème choisi.' : 'les ' + ch.length + ' thèmes choisis.')) +
+        (this.n > dispo ? ' (Il n’y en a pas davantage.)' : '');
+  };
+  Reglages.prototype.lancer = function () {
+    var self = this, ch = this.choisis(); if (!ch.length) return;
+    var dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0), n = Math.min(this.n, dispo);
+    var tous = ch.length === this.cfg.themes.length;
+    var def = { etiquette: this.cfg.etiquette, titre: this.cfg.titre,
+      sousTitre: n + ' questions tirées au hasard' + (tous ? ' dans tous les thèmes' : ch.length === 1 ? ' : ' + ((this.cfg.noms && this.cfg.noms[ch[0]]) || window.QUIZ[ch[0]].titre).toLowerCase() : ' dans ' + ch.length + ' thèmes') + ', nouveau tirage à chaque essai.',
+      tirage: { depuis: ch, n: n, ordre: 'banque' }, questions: [] };
+    this.quiz = new Quiz(this.racine, def, { reglages: function () { self.afficher(); self.racine.scrollIntoView({ block: 'start', behavior: 'smooth' }); } });
+    this.racine.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+
   /* ======================= 6. Démarrage ======================= */
   function compter(def) {                     // taille de la banque d'un quiz (avec tirage : toutes les questions possibles)
     if (!def.tirage || !def.tirage.depuis) return def.questions.length;
@@ -1088,8 +1420,15 @@
   }
   function majTuiles() {                       // « 20 questions au hasard parmi 73 » : calculé, jamais écrit à la main
     Array.prototype.forEach.call(document.querySelectorAll('.ch-tuile[data-ouvre]'), function (t) {
-      var bloc = document.getElementById(t.dataset.ouvre), r = bloc && bloc.querySelector('.quiz[data-quiz]');
-      var def = r && (window.QUIZ || {})[r.dataset.quiz], c = t.querySelector('.ch-tuile-compte');
+      var bloc = document.getElementById(t.dataset.ouvre), c = t.querySelector('.ch-tuile-compte');
+      var rc = bloc && bloc.querySelector('.quiz[data-quiz-config]'), cfg = rc && (window.QUIZ_CONFIG || {})[rc.dataset.quizConfig];
+      if (cfg && c) {                            // quiz à thèmes : taille totale de la banque
+        var tot = cfg.themes.reduce(function (s, id) { var d = (window.QUIZ || {})[id]; return s + (d ? d.questions.length : 0); }, 0);
+        c.textContent = tot + ' questions · ' + cfg.themes.length + ' thèmes';
+        return;
+      }
+      var r = bloc && bloc.querySelector('.quiz[data-quiz]');
+      var def = r && (window.QUIZ || {})[r.dataset.quiz];
       if (!def || !c) return;
       var n = compter(def);
       c.textContent = def.tirage ? Math.min(def.tirage.n || 20, n) + ' questions au hasard parmi ' + n : n + ' questions';
@@ -1097,14 +1436,16 @@
   }
   function demarrer() {
     majTuiles();
-    var quiz = document.querySelectorAll('.quiz[data-quiz]');
+    var quiz = document.querySelectorAll('.quiz[data-quiz], .quiz[data-quiz-config]');
     if (!quiz.length) return;
     preparerMathLive().then(function () {
       // un champ MathLive créé dans un bloc masqué ne prend pas le focus : on construit le quiz quand il devient visible
       Array.prototype.forEach.call(quiz, function (r) {
-        var def = (window.QUIZ || {})[r.dataset.quiz];
-        if (!def) return;
-        function lancer() { if (r._quiz) return; r._quiz = new Quiz(r, def); }
+        var cfg = r.dataset.quizConfig && (window.QUIZ_CONFIG || {})[r.dataset.quizConfig];
+        var def = !cfg && (window.QUIZ || {})[r.dataset.quiz];
+        if (!def && !cfg) return;
+        if (cfg) cfg.id = r.dataset.quizConfig;
+        function lancer() { if (r._quiz) return; r._quiz = cfg ? new Reglages(r, cfg) : new Quiz(r, def); }
         if (r.getClientRects().length) { lancer(); return; }
         if (!window.ResizeObserver) { lancer(); return; }
         var ro = new ResizeObserver(function () { if (r.getClientRects().length) { ro.disconnect(); lancer(); } });
@@ -1115,7 +1456,9 @@
   window.ColineaireQuiz = {
     analyser: analyser, evaluer: evaluer, verifierExpr: verifierExpr, verifierCases: verifierCases, verifierEnsemble: verifierEnsemble,
     verifierIntervalles: verifierIntervalles, verifierComparer: verifierComparer, verifierTableau: verifierTableau, verifierRepere: verifierRepere,
-    lireIntervalles: lireIntervalles, FORMES: FORMES
+    lireIntervalles: lireIntervalles, FORMES: FORMES,
+    // pour les tests : monter un quiz sans tuile, découper une correction en étapes
+    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

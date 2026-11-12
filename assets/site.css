@@ -708,7 +708,9 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-e.neuf { animation: qv-neuf 1.6s var(--courbe); }
 @keyframes qv-neuf { 0% { background: color-mix(in srgb, var(--bleu) 22%, transparent); } 100% { background: transparent; } }
 .qv-p { margin: 0 0 10px; }
-.qv-al { display: grid; grid-template-columns: max-content minmax(0, max-content); align-items: baseline; row-gap: 6px; margin: 4px 0 14px; overflow-x: auto; padding-bottom: 2px; }
+.qv-al { display: grid; grid-template-columns: max-content minmax(0, max-content); align-items: baseline; row-gap: 12px; margin: 6px 0 16px; overflow-x: auto; padding-bottom: 2px; }
+.qv-g, .qv-d { padding: 3px 0; }                 /* fractions empilées : de l'air entre les lignes (M. Colin, 12 nov.) */
+.qv-p { line-height: 1.75; }
 .qv-g { text-align: right; white-space: nowrap; }
 .qv-d { white-space: nowrap; }
 .qv-d.plein { grid-column: 1 / -1; }
@@ -751,3 +753,5 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   .quiz-volet, .quiz-volet.ouvert, .qv-e, .qv-e.vu { transition: none; }
   .qv-e.neuf, .quiz-languette { animation: none; }
 }
+/* résultat encadré (\boxed) : MathLive trace le cadre en noir, invisible sur fond sombre → couleur du texte */
+.quiz .ML__box, .quiz-volet .ML__box { border-color: currentColor !important; }

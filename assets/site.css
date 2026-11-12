@@ -513,7 +513,11 @@ math-field.quiz-champ.petit { min-height: 40px; min-width: 2.4em; font-size: 1.1
 .signe { border: 0; background: none; color: var(--encre); font: 600 1.35rem var(--f-maths); cursor: pointer; width: 100%; align-self: stretch; min-height: 46px; border-radius: 8px; }
 @media (hover: hover) { .signe:hover:not(:disabled) { background: var(--bleu-fond); } }
 .signe:disabled { cursor: default; }
-.signe.sint[data-v=""]::after { content: "·"; color: var(--filet); }
+.signe.sint { position: relative; display: grid; place-items: center; }
+.signe.sint::before { content: ""; position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; border-radius: 50%;
+  border: 2px solid var(--filet); pointer-events: none; transition: border-color .2s, background-color .2s; }
+.signe.sint[data-v=""]::before { border-style: dashed; border-color: var(--bleu); background: var(--bleu-fond); }   /* rond vide : signe à placer */
+.quiz-carte.reussie .signe.sint::before { border-color: transparent; background: none; }
 .signe.sval { width: 34px; height: 34px; min-height: 0; align-self: center; border-radius: 50%; }
 math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
 .signe.sval[data-v="0"] { background: var(--papier); }
@@ -562,6 +566,7 @@ math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
   .tval.gauche, .tval.droite, .tval.interieur { padding: 3px 1px; }
   math-field.quiz-champ.petit { font-size: .9rem; min-width: 1.8em; padding: 2px; }
   .signe { font-size: 1.1rem; padding: 0; }
+  .signe.sint::before { width: 26px; height: 26px; margin: -13px 0 0 -13px; }
   .signe.sval { width: 28px; height: 28px; }
   .tcell.tint { padding: 0 1px; }
   .tab-plus { width: 23px; height: 23px; font-size: .95rem; }

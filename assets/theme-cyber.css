@@ -205,3 +205,14 @@
   --keycap-secondary-text: var(--cp-cyan); --keyboard-accent-color: var(--cp-jaune); --keyboard-toolbar-text: #e8f7ff;
   --keyboard-toolbar-background-hover: #1d2036; --placeholder-color: var(--cp-jaune); }
 .cyber math-field.quiz-champ { border-radius: 0; }
+
+/* quiz : cadres et cases bien visibles sur fond sombre */
+.cyber { --quiz-afaire: var(--cp-cyan); --quiz-afaire-fond: rgba(0, 240, 255, .12); }
+.cyber math-field.quiz-champ { border-color: rgba(0, 240, 255, .45); background: #0b0d1a; color: var(--encre); }
+.cyber math-field.quiz-champ:focus-within { border-color: var(--cp-cyan); box-shadow: 0 0 0 3px rgba(0, 240, 255, .18), 0 0 16px rgba(0, 240, 255, .35); }
+.cyber math-field.quiz-champ.petit.vide { box-shadow: 0 0 10px rgba(0, 240, 255, .25); }
+.cyber .quiz-tab { border-color: rgba(234, 246, 255, .7); }
+.cyber .tab-plus { border-color: rgba(234, 246, 255, .55); color: var(--encre); background: #0b0d1a; }
+.cyber .tab-suppr { background: #0b0d1a; border-color: rgba(234, 246, 255, .45); color: var(--encre); }
+.cyber .trait-choix[data-touche="1"]::before, .cyber .signe.sint::before { border-color: rgba(234, 246, 255, .35); }
+.cyber .signe.sint[data-v=""]::before { border-color: var(--cp-cyan); }

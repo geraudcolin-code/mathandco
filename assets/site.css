@@ -516,7 +516,7 @@ math-field.quiz-champ.petit { min-height: 40px; min-width: 2.4em; font-size: 1.1
 .signe.sint { position: relative; display: grid; place-items: center; }
 .signe.sint::before { content: ""; position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; border-radius: 50%;
   border: 2px solid var(--filet); pointer-events: none; transition: border-color .2s, background-color .2s; }
-.signe.sint[data-v=""]::before { border-style: dashed; border-color: var(--bleu); background: var(--bleu-fond); }   /* rond vide : signe à placer */
+.signe.sint[data-v=""]::before { border-style: dashed; border-color: var(--quiz-afaire, var(--bleu)); background: var(--quiz-afaire-fond, var(--bleu-fond)); }   /* rond vide : signe à placer */
 .quiz-carte.reussie .signe.sint::before { border-color: transparent; background: none; }
 .signe.sval { width: 34px; height: 34px; min-height: 0; align-self: center; border-radius: 50%; }
 math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
@@ -533,7 +533,7 @@ math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
 .trait-choix { position: relative; align-self: stretch; width: 40px; min-height: 58px; border: 0; padding: 0; background: none; cursor: pointer;
   display: grid; place-items: center; color: var(--encre); font: 700 1.25rem var(--f-maths); }
 /* pastille cliquable derrière le trait : bleue en pointillés tant qu'on n'y a pas touché */
-.trait-choix::before { content: ""; position: absolute; inset: 4px 10px; border-radius: 999px; border: 2px dashed var(--bleu); background: var(--bleu-fond);
+.trait-choix::before { content: ""; position: absolute; inset: 4px 10px; border-radius: 999px; border: 2px dashed var(--quiz-afaire, var(--bleu)); background: var(--quiz-afaire-fond, var(--bleu-fond));
   transition: border-color .2s, background-color .2s; }
 .trait-choix[data-touche="1"]::before { border-style: solid; border-width: 1.5px; border-color: var(--filet); background: transparent; }
 .trait-choix::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
@@ -551,6 +551,8 @@ math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
 .coords-col { display: flex; flex-direction: column; gap: 6px; padding: 6px 12px; border-left: 2.5px solid var(--encre); border-right: 2.5px solid var(--encre);
   border-radius: 22px / 50%; }
 .coords-col math-field.quiz-champ.petit { width: 5.5em; font-size: 1.3rem; min-height: 46px; }
+/* case de saisie encore vide dans le tableau ou les coordonnées : « à remplir », comme les ronds et les pastilles */
+math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; border-color: var(--quiz-afaire, var(--bleu)); background: var(--quiz-afaire-fond, var(--bleu-fond)); }
 .quiz-aide-tab { font-size: var(--t-petit); color: var(--gris); margin: 10px 0 0; }
 /* retours : écran rouge qui tremble, coche verte */
 .quiz-voile { position: fixed; inset: 0; z-index: 900; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 50%, rgba(220, 38, 38, .25), rgba(200, 20, 20, .6)); }

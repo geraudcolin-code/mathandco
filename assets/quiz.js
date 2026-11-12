@@ -340,7 +340,12 @@
         if (!a || a.tagName !== 'MATH-FIELD') window.mathVirtualKeyboard && window.mathVirtualKeyboard.hide();
       }, 120);
     });
-    customElements.whenDefined('math-field').then(function () { try { mf.menuItems = []; mf.smartSuperscript = false; } catch (e) {} });
+    function majVide() { mf.classList.toggle('vide', !mf.value); }      // case vide : signalée « à remplir »
+    mf.addEventListener('input', majVide);
+    mf.addEventListener('focusout', majVide);
+    mf.classList.add('vide');
+    customElements.whenDefined('math-field').then(function () { try { mf.menuItems = []; mf.smartSuperscript = false; } catch (e) {} majVide(); });
+    mf._majVide = majVide;
     return mf;
   }
 

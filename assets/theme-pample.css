@@ -228,3 +228,6 @@
 #pp-fruit .pp-sph::before { animation-duration: 1.8s; }
 @media (max-width: 640px) { #pp-decor .pp-hors-mobile { display: none; } }
 @media (prefers-reduced-motion: reduce) { .pp-bal, .pp-sph::before { animation: none; } #pp-decor { animation: none; } }
+
+/* quiz : « à remplir » en orange (le rouge du thème est réservé aux erreurs) */
+.pample { --quiz-afaire: #e8792b; --quiz-afaire-fond: #fff0e2; }

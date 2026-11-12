@@ -12,8 +12,7 @@
   var PC = R`\(\%\)`;
   function quiz(id, titre, theme, questions) {
     questions.forEach(function (q) { q.theme = theme; });
-    Q[id] = { etiquette: 'Automatismes · 2nde et 1re', titre: titre, questions: questions,
-      sousTitre: '20 questions tirées au hasard dans la banque du thème, nouveau tirage à chaque essai.', tirage: { n: 20, ordre: 'banque' } };
+    Q[id] = { etiquette: 'Automatismes · 2nde et 1re', titre: titre, questions: questions };   // une BANQUE par thème
   }
 
   /* ===================================================================== */
@@ -557,9 +556,12 @@
   ]);
 
   /* ===================================================================== */
-  Q['1ere-auto-melange'] = {
-    etiquette: 'Automatismes · 2nde et 1re', titre: 'Entraînement mixte', sousTitre: '20 questions tirées au hasard dans tous les thèmes, nouveau tirage à chaque essai.',
-    tirage: { depuis: ['1ere-auto-nombres', '1ere-auto-proportions', '1ere-auto-evolutions', '1ere-auto-litteral', '1ere-auto-equations', '1ere-auto-fonctions', '1ere-auto-droites', '1ere-auto-geometrie', '1ere-auto-stats', '1ere-auto-probas'], n: 20 },
-    questions: []
+  // Une seule tuile « Automatismes » : écran de réglages (nombre de questions, thèmes cochés), puis tirage au hasard
+  (window.QUIZ_CONFIG = window.QUIZ_CONFIG || {}).automatismes = {
+    etiquette: 'Automatismes · 2nde et 1re', titre: 'Automatismes',
+    sousTitre: 'Tout le programme des automatismes de Seconde et de Première. Choisis le nombre de questions et les thèmes, puis lance le quiz.',
+    themes: ['1ere-auto-nombres', '1ere-auto-proportions', '1ere-auto-evolutions', '1ere-auto-litteral', '1ere-auto-equations', '1ere-auto-fonctions', '1ere-auto-droites', '1ere-auto-geometrie', '1ere-auto-stats', '1ere-auto-probas'],
+    choix: [5, 10, 20, 30, 40], defaut: 20
   };
+
 })();

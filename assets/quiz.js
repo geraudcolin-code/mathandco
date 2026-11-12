@@ -580,10 +580,10 @@
           (function (m) {
             var r = racines[m];
             var t = bouton('trait-choix', '', '', function () {
-              r.trait = TRAITS[(TRAITS.indexOf(r.trait) + 1) % 3];
-              t.dataset.t = r.trait; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
+              r.trait = TRAITS[(TRAITS.indexOf(r.trait) + 1) % 3]; r.touche = true;
+              t.dataset.t = r.trait; t.dataset.touche = '1'; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
             });
-            t.dataset.t = r.trait; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
+            t.dataset.t = r.trait; if (r.touche) t.dataset.touche = '1'; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
             t.innerHTML = '<span>0</span>';
             cellule('tval ttrait', t);
           })(m);

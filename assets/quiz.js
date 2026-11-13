@@ -11,7 +11,8 @@
      - 'signes'      : tableau de signes à construire
      - 'variations'  : tableau de variations à construire
      - 'repere'      : placer un point / tracer une droite dans un repère, placer un point sur une droite graduée
-   Option d'un quiz : tirage { depuis: [identifiants], n } → n questions tirées au hasard à chaque essai.
+   Option d'un quiz : tirage { depuis: [identifiants], n } → n questions tirées au hasard à chaque essai, posées dans un
+   ordre au hasard (thèmes mélangés) ; avec ordre: 'banque', elles sont remises dans l'ordre des banques.
 */
 (function () {
   'use strict';
@@ -1694,7 +1695,7 @@
     var tous = ch.length === this.cfg.themes.length;
     var def = { etiquette: this.cfg.etiquette, titre: this.cfg.titre,
       sousTitre: n + ' questions tirées au hasard' + (tous ? ' dans tous les thèmes' : ch.length === 1 ? ' : ' + ((this.cfg.noms && this.cfg.noms[ch[0]]) || window.QUIZ[ch[0]].titre).toLowerCase() : ' dans ' + ch.length + ' thèmes') + ', nouveau tirage à chaque essai.',
-      tirage: { depuis: ch, n: n, ordre: 'banque' }, questions: [] };
+      tirage: { depuis: ch, n: n }, questions: [] };   // ordre au hasard, thèmes mélangés (M. Colin, 13 nov. 2026 : le calcul ne vient plus toujours en premier)
     this.quiz = new Quiz(this.racine, def, { reglages: function () { self.afficher(); self.racine.scrollIntoView({ block: 'start', behavior: 'smooth' }); } });
     this.racine.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };

@@ -1371,6 +1371,90 @@
       });
     });
   }
+  /* ---- Développement pas à pas (q.dev, écrit par l'atelier : generer.py) — M. Colin, 14 nov. 2026 ----
+     Comme dans les corrections du site (charte § 3 et § 4) : l'expression de l'énoncé seule ; le post-it jaune « On
+     utilise » de chaque identité remarquable à son propre clic, puis « avec a = … » et « et b = … » à leurs clics (a et b
+     surlignés dans l'expression) ; le développement terme par terme ; un « − » (ou un facteur) distribué avec une flèche
+     rouge par terme, le produit au clic suivant ; les termes semblables surlignés par groupe (x² violet, x vert,
+     constantes orange), ceux qui s'annulent barrés en rouge ; le résultat encadré. Chaque terme est un morceau à part :
+     une longue ligne passe à la ligne entre deux termes, rien ne déborde du volet.
+     d = { l: [[{i, t}, …], …]  lignes (la première : l'expression de l'énoncé ; les suivantes commencent par « = ») ;
+           n: [{i, apres, t, l: [html…]}]  post-it, posés sous la ligne « apres » ;
+           s: [[action, …], …]  une entrée par clic : ['v', morceau…] fait apparaître ; ['n', note] ; ['nl', note, rang] ;
+              ['h', marque, couleur] … ['hx', marque…] surlignage (c0 orange, c1 vert, c2 violet) ; ['f', de, vers, 'bas'?]
+              flèche, jusqu'à ['fx'] ; ['x', morceau…] barré en rouge ; ['c', ligne] cadre du résultat }
+     Une marque est posée dans le TeX d'un morceau : \class{qv-c qv-m-<id>}{…} (le cœur d'un terme, jamais son signe). */
+  function etapesDev(d, ajouter, trans, majs) {
+    var g = el('div', 'qv-dev'), P = {}, N = {}, C = [], ouverts = {}, fl = [], barres = [], cadres = [], ligneDe = {};
+    d.l.forEach(function (L, i) {
+      var row = el('div', 'qv-dl' + (i ? '' : ' qv-dl0')), eg = el('span', 'qv-deg' + (i ? ' qv-e' : ''), i ? '\\(=\\)' : ''), c = el('span', 'qv-dc');
+      row.appendChild(eg); row.appendChild(c); g.appendChild(row); C.push({ row: row, eg: eg, c: c });
+      L.forEach(function (p, j) {
+        var t = p.t, sg = j ? /^(\\class\{[^{}]*\}\{[+-]\}|[+-])/.exec(t) : null;   // un signe entre deux termes : espacé
+        if (sg) t = sg[1] + '\\:' + t.slice(sg[1].length);                              // comme une opération (morceaux séparés)
+        var s = el('span', 'qv-dp qv-e' + (sg ? ' qv-dps' : ''), '\\(' + t + '\\)'); s.dataset.ligne = i; P[p.i] = s; c.appendChild(s);
+        (p.t.match(/qv-m-[\w-]+/g) || []).forEach(function (m) { ligneDe[m.slice(5)] = i; });
+      });
+      var ns = (d.n || []).filter(function (x) { return x.apres === i; });
+      if (ns.length) {
+        var bloc = el('div', 'qv-notes');
+        ns.forEach(function (x) {
+          var o = el('div', 'qv-note qv-e', '<span class="qv-note-t">On utilise</span><span class="qv-note-id">\\(' + x.t + '\\)</span>'), lg = [];
+          (x.l || []).forEach(function (t) { var e = el('span', 'qv-note-l qv-e', t); o.appendChild(e); lg.push(e); });
+          N[x.i] = { el: o, l: lg }; bloc.appendChild(o);
+        });
+        g.appendChild(bloc);
+      }
+    });
+    d.s.forEach(function (acts) {
+      var k = ajouter();
+      acts.forEach(function (a) {
+        var t = a[0], r = a.slice(1);
+        if (t === 'v') r.forEach(function (id) { var p = P[id]; p.dataset.e = k; var L = C[+p.dataset.ligne]; if (L.eg.classList.contains('qv-e') && !L.eg.dataset.e) L.eg.dataset.e = k; });
+        else if (t === 'n') N[r[0]].el.dataset.e = k;
+        else if (t === 'nl') N[r[0]].l[r[1]].dataset.e = k;
+        else if (t === 'h') { var o = { id: trans.length, sel: 'qv-m-' + r[0], c: r[1], pre: k, show: Infinity }; trans.push(o); ouverts[r[0]] = o; }
+        else if (t === 'hx') r.forEach(function (id) { if (ouverts[id]) { ouverts[id].show = k - 1; delete ouverts[id]; } });
+        else if (t === 'f') {
+          fl.push({ de: r[0], vers: r[1], bas: r[2] === 'bas', k0: k, k1: Infinity });
+          C[ligneDe[r[1]]].row.classList.add(r[2] === 'bas' ? 'avec-fl-bas' : 'avec-fl');   // de la place pour la flèche
+        }
+        else if (t === 'fx') fl.forEach(function (f) { if (f.k1 === Infinity) f.k1 = k - 1; });
+        else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], k0: k }); });
+        else if (t === 'c') cadres.push({ c: C[r[0]].c, k0: k });
+      });
+    });
+    var svg = svgEl('svg', { class: 'qv-dev-fl', 'aria-hidden': 'true', focusable: 'false' }); g.appendChild(svg);
+    majs.push(function (k, anime) {
+      var H = g.getBoundingClientRect(); if (!H.width) return;
+      fl.forEach(function (f) {                   // flèches de distributivité : du cœur du facteur au cœur du terme
+        if (k < f.k0 || k > f.k1) { if (f.el) { f.el.remove(); f.el = null; } return; }
+        var a = g.querySelector('.qv-m-' + f.de), b = g.querySelector('.qv-m-' + f.vers), A = a && boiteEncre(a), B = b && boiteEncre(b);
+        if (!A || !B) return;
+        var x1 = (A.l + A.r) / 2 - H.left, x2 = (B.l + B.r) / 2 - H.left, s = f.bas ? 1 : -1;
+        var y1 = (f.bas ? A.b + 3 : A.t - 3) - H.top, y2 = (f.bas ? B.b + 3 : B.t - 3) - H.top;
+        var h = Math.min(30, 11 + Math.abs(x2 - x1) * 0.17), ym = (f.bas ? Math.max(y1, y2) : Math.min(y1, y2)) + s * h;
+        var neuve = !f.el;
+        if (neuve) {
+          f.el = svgEl('g', { class: 'qv-dfl' + (f.bas ? ' bas' : '') });
+          f.el.appendChild(svgEl('path', { class: 'tige' })); f.el.appendChild(svgEl('path', { class: 'pointe' })); svg.appendChild(f.el);
+        }
+        var tige = f.el.firstChild, pointe = f.el.lastChild;
+        tige.setAttribute('d', 'M' + x1 + ' ' + y1 + ' C' + x1 + ' ' + ym + ',' + x2 + ' ' + ym + ',' + x2 + ' ' + y2);
+        pointe.setAttribute('d', 'M' + (x2 - 5) + ' ' + (y2 + s * 7) + ' L' + x2 + ' ' + y2 + ' L' + (x2 + 5) + ' ' + (y2 + s * 7));
+        if (neuve && anime && k === f.k0) {        // la flèche se TRACE du facteur vers le terme, la pointe à l'arrivée
+          var L = tige.getTotalLength ? tige.getTotalLength() : 200;
+          f.el.style.setProperty('--L', L.toFixed(1)); f.el.classList.add('trace');
+        }
+      });
+      barres.forEach(function (b) {               // termes qui s'annulent : barrés en rouge
+        if (k < b.k0) { if (b.o) { b.o.remove(); b.o = null; } return; }
+        b.o = calque(b.p, g, 'qv-raye', 1, b.o);
+      });
+      cadres.forEach(function (c) { c.c.classList.toggle('qv-cadre', k >= c.k0); });
+    });
+    return g;
+  }
   function tableauCorrection(q, ajouter) {      // le tableau attendu, tracé pas à pas (ligne des x, puis chaque intervalle)
     var vari = q.type === 'variations', b = q.bornes || [-Infinity, Infinity], xs = [b[0]].concat(q.valeurs, [b[1]]), n = q.valeurs.length;
     var cadre = el('div', 'quiz-tab-cadre qv-tab-cadre'), t = el('div', 'quiz-tab qv-tab' + (vari ? ' quiz-var' : ''));
@@ -1409,13 +1493,13 @@
     cadre.appendChild(t); return cadre;
   }
   function construireEtapes(q) {
-    var racine = el('div', 'qv-etapes'), n = 0, trans = [];
+    var racine = el('div', 'qv-etapes'), n = 0, trans = [], majs = [];
     function ajouter() { return ++n; }
     if (q.figureCorrection) {                     // la lecture se montre sur la figure (charte § 5)
       var f = el('figure', 'qv-fig qv-e'), im = el('img'); im.src = q.figureCorrection; im.alt = 'Figure de la correction'; im.decoding = 'async';
       f.appendChild(im); f.dataset.e = ajouter(); racine.appendChild(f);
     }
-    var html = q.correction || '', re = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]/g, m, dernier = 0;
+    var html = q.dev ? '' : q.correction || '', re = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]/g, m, dernier = 0;
     function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ajouter()); racine.appendChild(b); } }
     while ((m = re.exec(html))) {
       libre(html.slice(dernier, m.index));
@@ -1428,11 +1512,12 @@
       dernier = re.lastIndex;
     }
     libre(html.slice(dernier));
+    if (q.dev) racine.appendChild(etapesDev(q.dev, ajouter, trans, majs));   // développement pas à pas (M. Colin, 14 nov. 2026)
     if ((q.type === 'variations' && q.fleches) || (q.type === 'signes' && q.ligne)) {   // « trace le tableau » (M. Colin, 12 nov. 2026)
       racine.appendChild(tableauCorrection(q, ajouter));
     }
     rendre(racine);
-    return { racine: racine, n: n, k: 0, trans: trans };
+    return { racine: racine, n: n, k: 0, trans: trans, majs: majs };
   }
 
   var volet = null;
@@ -1475,7 +1560,7 @@
       else if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown' || (ev.key === ' ' && tag !== 'BUTTON')) { ev.preventDefault(); arreterAuto(v); avancer(v, false); }
       else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') { ev.preventDefault(); arreterAuto(v); montrer(v, v.e.k - 1, false); }
     });
-    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) { placerJustifs(v.e.racine); surligner(v.e.racine); } });
+    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) { placerJustifs(v.e.racine); surligner(v.e.racine); (v.e.majs || []).forEach(function (f) { f(v.e.k, false); }); } });
     // quitter le quiz (« ‹ Première », changement d'onglet) ferme le volet et range l'onglet
     document.addEventListener('click', function (ev) {
       if (ev.target.closest && ev.target.closest('[data-retour], [role=tab]')) { fermerVolet(); v.languette.hidden = true; }
@@ -1497,7 +1582,7 @@
   }
   function calque(e, racine, classe, marge, o) {   // o : un calque déjà posé, qu'on recale seulement
     var b = boiteEncre(e); if (!b) return null;
-    var hote = e.closest('.qv-al') || racine, H = hote.getBoundingClientRect();
+    var hote = e.closest('.qv-al, .qv-dev') || racine, H = hote.getBoundingClientRect();
     o = o || el('span', classe);
     o.style.left = (b.l - H.left + hote.scrollLeft - marge) + 'px'; o.style.top = (b.t - H.top + hote.scrollTop - marge) + 'px';
     o.style.width = (b.r - b.l + 2 * marge) + 'px'; o.style.height = (b.b - b.t + 2 * marge) + 'px';
@@ -1528,16 +1613,18 @@
     });
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-eclair'), function (x) { x.remove(); });
     neufs.forEach(function (x) {
-      if (x.closest('.qv-al')) { var o = calque(x, et.racine, 'qv-eclair', 2); if (o) o.addEventListener('animationend', function () { o.remove(); }); }   // formule : l'éclair suit l'encre
+      if (x.closest('.qv-al, .qv-dev')) { var o = calque(x, et.racine, 'qv-eclair', 2); if (o) o.addEventListener('animationend', function () { o.remove(); }); }   // formule : l'éclair suit l'encre
       else { void x.offsetWidth; x.classList.add('neuf'); }                       // phrase : le fond suit les lignes du texte
     });
     // surlignages : allumés de l'étape « on surligne » jusqu'à l'apparition du résultat, éteints ensuite
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-c'), function (x) { x.classList.remove('allume', 'c0', 'c1', 'c2'); });
     (et.trans || []).forEach(function (t) {
       if (et.k < t.pre || et.k > t.show) return;
-      Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-t' + t.id), function (x) { x.classList.add('allume', 'c' + (t.id % 3)); });
+      var c = t.c || 'c' + (t.id % 3);             // t.sel, t.c : surlignages choisis par le développement pas à pas
+      Array.prototype.forEach.call(et.racine.querySelectorAll('.' + (t.sel || 'qv-t' + t.id)), function (x) { x.classList.add('allume', c); });
     });
     surligner(et.racine);
+    (et.majs || []).forEach(function (f) { f(et.k, anime); });   // flèches, barres, cadre du développement pas à pas
     var der = neufs[neufs.length - 1];
     if (der) {                                    // garder la dernière étape à l'écran, sans faire défiler la page
       var r = der.getBoundingClientRect(), c = v.corps.getBoundingClientRect();
@@ -1586,7 +1673,7 @@
     v.languette.hidden = true;
     if (window.mathVirtualKeyboard) try { window.mathVirtualKeyboard.hide(); } catch (e) {}
     placerJustifs(v.e.racine);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (v.e && v.e.racine.isConnected) placerJustifs(v.e.racine); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (v.e && v.e.racine.isConnected) { placerJustifs(v.e.racine); surligner(v.e.racine); (v.e.majs || []).forEach(function (f) { f(v.e.k, false); }); } });
     if (v.e.k === 0) montrer(v, 1, true); else montrer(v, v.e.k, false);
     if (window.matchMedia && window.matchMedia('(max-width: 999px)').matches) {
       // téléphone : la feuille monte par le bas ; on remonte la question juste sous les barres collées en haut

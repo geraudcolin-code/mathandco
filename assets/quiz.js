@@ -1474,12 +1474,46 @@
       else if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown' || (ev.key === ' ' && tag !== 'BUTTON')) { ev.preventDefault(); arreterAuto(v); avancer(v, false); }
       else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') { ev.preventDefault(); arreterAuto(v); montrer(v, v.e.k - 1, false); }
     });
-    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) placerJustifs(v.e.racine); });
+    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) { placerJustifs(v.e.racine); surligner(v.e.racine); } });
     // quitter le quiz (« ‹ Première », changement d'onglet) ferme le volet et range l'onglet
     document.addEventListener('click', function (ev) {
       if (ev.target.closest && ev.target.closest('[data-retour], [role=tab]')) { fermerVolet(); v.languette.hidden = true; }
     });
     return v;
+  }
+  /* Surlignage dessiné SOUS l'encre : MathLive donne à une fraction (surtout dans une fraction) une boîte plus petite que
+     ce qui est écrit, et un fond posé sur la boîte tombe à côté (M. Colin, 13 nov. 2026 : « surlignage mal ajusté »).
+     On mesure donc ce qui est réellement tracé (union des morceaux visibles) et on pose un calque derrière. */
+  function boiteEncre(e) {
+    var b = null;
+    [e].concat(Array.prototype.slice.call(e.querySelectorAll('span'))).forEach(function (s) {
+      if (s.closest('.ML__sr-only') || /ML__strut|ML__pstrut/.test(s.className)) return;
+      var r = s.getBoundingClientRect(); if (!r.width || !r.height) return;
+      if (!b) b = { l: r.left, t: r.top, r: r.right, b: r.bottom };
+      else { b.l = Math.min(b.l, r.left); b.t = Math.min(b.t, r.top); b.r = Math.max(b.r, r.right); b.b = Math.max(b.b, r.bottom); }
+    });
+    return b;
+  }
+  function calque(e, racine, classe, marge, o) {   // o : un calque déjà posé, qu'on recale seulement
+    var b = boiteEncre(e); if (!b) return null;
+    var hote = e.closest('.qv-al') || racine, H = hote.getBoundingClientRect();
+    o = o || el('span', classe);
+    o.style.left = (b.l - H.left + hote.scrollLeft - marge) + 'px'; o.style.top = (b.t - H.top + hote.scrollTop - marge) + 'px';
+    o.style.width = (b.r - b.l + 2 * marge) + 'px'; o.style.height = (b.b - b.t + 2 * marge) + 'px';
+    if (!o.parentNode) hote.appendChild(o);
+    return o;
+  }
+  function surligner(racine) {
+    var gardes = [];
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-c.allume'), function (e) {
+      if (e.parentElement && e.parentElement.closest('.qv-c.allume')) return;   // déjà couvert par un surlignage qui l'englobe
+      var pas = e.closest('.qv-e'); if (pas && !pas.classList.contains('vu')) return;   // ligne pas encore écrite : rien à surligner
+      var c = (e.className.match(/\bc[012]\b/) || ['c0'])[0];
+      var o = e._surl && e._surl.isConnected && e._surl.classList.contains(c) ? e._surl : null;   // reste allumé : on ne le refait pas clignoter
+      e._surl = calque(e, racine, 'qv-surl ' + c, 3, o);
+      if (e._surl) gardes.push(e._surl);
+    });
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-surl'), function (x) { if (gardes.indexOf(x) < 0) x.remove(); });
   }
   function montrer(v, k, anime) {               // affiche les étapes 1…k (jamais moins d'une)
     var et = v.e; et.k = Math.max(Math.min(1, et.n), Math.min(et.n, k));
@@ -1491,13 +1525,18 @@
       x.classList.remove('neuf');
       if (anime && i === et.k) neufs.push(x);
     });
-    neufs.forEach(function (x) { void x.offsetWidth; x.classList.add('neuf'); });
+    Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-eclair'), function (x) { x.remove(); });
+    neufs.forEach(function (x) {
+      if (x.closest('.qv-al')) { var o = calque(x, et.racine, 'qv-eclair', 2); if (o) o.addEventListener('animationend', function () { o.remove(); }); }   // formule : l'éclair suit l'encre
+      else { void x.offsetWidth; x.classList.add('neuf'); }                       // phrase : le fond suit les lignes du texte
+    });
     // surlignages : allumés de l'étape « on surligne » jusqu'à l'apparition du résultat, éteints ensuite
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-c'), function (x) { x.classList.remove('allume', 'c0', 'c1', 'c2'); });
     (et.trans || []).forEach(function (t) {
       if (et.k < t.pre || et.k > t.show) return;
       Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-t' + t.id), function (x) { x.classList.add('allume', 'c' + (t.id % 3)); });
     });
+    surligner(et.racine);
     var der = neufs[neufs.length - 1];
     if (der) {                                    // garder la dernière étape à l'écran, sans faire défiler la page
       var r = der.getBoundingClientRect(), c = v.corps.getBoundingClientRect();

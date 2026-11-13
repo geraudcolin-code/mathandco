@@ -764,10 +764,19 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .quiz-volet .ML__box { border-color: var(--rouge) !important; border-width: .07em !important; }
 /* surlignage doux de ce qui change d'une ligne à l'autre (charte § 3) : orange, vert, violet à tour de rôle */
 .quiz-volet { --qv-c0: #e8792b; --qv-c1: #1f9d55; --qv-c2: #8b5cf6; }
-.qv-corps .qv-c { border-radius: .3em; transition: background-color .35s var(--courbe), box-shadow .35s var(--courbe), color .35s; }
-.qv-corps .qv-c.allume.c0 { background: color-mix(in srgb, var(--qv-c0) 24%, transparent); box-shadow: 0 0 0 .12em color-mix(in srgb, var(--qv-c0) 24%, transparent); color: color-mix(in srgb, var(--qv-c0) 70%, var(--encre)); }
-.qv-corps .qv-c.allume.c1 { background: color-mix(in srgb, var(--qv-c1) 22%, transparent); box-shadow: 0 0 0 .12em color-mix(in srgb, var(--qv-c1) 22%, transparent); color: color-mix(in srgb, var(--qv-c1) 70%, var(--encre)); }
-.qv-corps .qv-c.allume.c2 { background: color-mix(in srgb, var(--qv-c2) 22%, transparent); box-shadow: 0 0 0 .12em color-mix(in srgb, var(--qv-c2) 22%, transparent); color: color-mix(in srgb, var(--qv-c2) 70%, var(--encre)); }
+.qv-corps .qv-c { transition: color .35s; }
+.qv-corps .qv-c.allume.c0 { color: color-mix(in srgb, var(--qv-c0) 70%, var(--encre)); }
+.qv-corps .qv-c.allume.c1 { color: color-mix(in srgb, var(--qv-c1) 70%, var(--encre)); }
+.qv-corps .qv-c.allume.c2 { color: color-mix(in srgb, var(--qv-c2) 70%, var(--encre)); }
+/* le surlignage est un calque posé SOUS l'encre, à la taille de ce qui est écrit (quiz.js : surligner) */
+.qv-etapes, .qv-al { position: relative; isolation: isolate; }
+.qv-surl, .qv-eclair { position: absolute; z-index: -1; border-radius: .35em; pointer-events: none; }
+.qv-surl { animation: qv-surl .3s var(--courbe); }
+.qv-surl.c0 { background: color-mix(in srgb, var(--qv-c0) 24%, transparent); }
+.qv-surl.c1 { background: color-mix(in srgb, var(--qv-c1) 22%, transparent); }
+.qv-surl.c2 { background: color-mix(in srgb, var(--qv-c2) 22%, transparent); }
+@keyframes qv-surl { from { opacity: 0; } to { opacity: 1; } }
+.qv-eclair { animation: qv-neuf 1.6s var(--courbe) forwards; }
 
 /* tableau de variations : flèche longue qui couvre tout l'intervalle (M. Colin, 12 nov. 2026) */
 .signe.fleche { position: relative; }

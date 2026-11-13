@@ -902,6 +902,18 @@
   var TRAITS = ['pointille', 'zero', 'double'];
   var NOM_TRAIT = { pointille: 'pointillés', zero: 'trait avec un 0', double: 'double trait (valeur interdite)' };
   var FLECHES = ['', '↗', '↘'];
+  var nFleche = 0;
+  function flecheLongue(v) {          // une flèche qui couvre tout l'intervalle (M. Colin, 12 nov. 2026), pas un petit symbole
+    if (v !== '↗' && v !== '↘') return '';
+    var id = 'qvf' + (++nFleche), y1 = v === '↗' ? '86%' : '14%', y2 = v === '↗' ? '14%' : '86%';
+    return '<svg class="fleche-longue" aria-hidden="true" focusable="false"><defs><marker id="' + id + '" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5.5" markerHeight="5.5" markerUnits="strokeWidth" orient="auto">' +
+      '<path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs><line x1="6%" y1="' + y1 + '" x2="94%" y2="' + y2 + '" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" marker-end="url(#' + id + ')"/></svg>';
+  }
+  function nombreTeX(v) {
+    if (v === Infinity) return '+\\infty';
+    if (v === -Infinity) return '-\\infty';
+    return String(Math.round(v * 1000) / 1000).replace('.', '{,}');
+  }
   Quiz.prototype.tableau = function (q, zone) {
     var vari = q.type === 'variations';
     var wrap = el('div', 'quiz-tab-cadre'), tab = el('div', 'quiz-tab' + (vari ? ' quiz-var' : ''));
@@ -964,10 +976,11 @@
       for (var m = 0; m <= n; m++) {
         (function (m) {
           var cyc = vari ? FLECHES : ['', '+', '−'];
-          var b = bouton(vari ? 'signe sint fleche' : 'signe sint', inter[m], (vari ? 'Sens de variation' : 'Signe') + ' sur l’intervalle ' + (m + 1), function () {
+          var b = bouton(vari ? 'signe sint fleche' : 'signe sint', vari ? flecheLongue(inter[m]) : inter[m], (vari ? 'Sens de variation' : 'Signe') + ' sur l’intervalle ' + (m + 1), function () {
             inter[m] = cyc[(cyc.indexOf(inter[m]) + 1) % cyc.length];
-            b.textContent = inter[m]; b.dataset.v = inter[m];
-            if (vari) majPositions();
+            if (vari) b.innerHTML = flecheLongue(inter[m]); else b.textContent = inter[m];
+            b.dataset.v = inter[m];
+            if (vari) { b.setAttribute('aria-label', 'Sens de variation sur l’intervalle ' + (m + 1) + (inter[m] ? ' : ' + (inter[m] === '↗' ? 'croissante' : 'décroissante') : '')); majPositions(); }
           });
           b.dataset.v = inter[m];
           cellule('tint', b);
@@ -992,7 +1005,7 @@
     dessiner();
     wrap.appendChild(tab); zone.appendChild(wrap);
     var aide = el('p', 'quiz-aide-tab', vari
-      ? 'Le bouton <b>+</b> ajoute une valeur de \\(x\\) (× la retire). Touche un rond pour choisir la flèche ↗ ou ↘, et écris les images au bout des flèches.'
+      ? 'Le bouton <b>+</b> ajoute une valeur de \\(x\\) (× la retire). Touche un rond pour tracer la flèche (montante, puis descendante), et écris les images au bout des flèches.'
       : 'Le bouton <b>+</b> ajoute une valeur de \\(x\\) (× la retire). Touche une case pour y mettre + ou −, et un trait pour choisir : pointillés, trait avec un 0, ou double trait (valeur interdite).');
     zone.appendChild(aide); rendre(aide);
 
@@ -1114,19 +1127,127 @@
     }
     morceaux.push(cur); return morceaux;
   }
-  function egalites(m) {                        // « A=B=C » → ['A=\;', 'B=\;', 'C'] : chaque membre à son propre clic
+  /* --- Couleurs : ce qui change d'un membre d'égalité au suivant (charte § 3 : surligner avant de transformer) ---
+     Chaque membre est lu comme un arbre (somme, produit, fraction, résultat encadré, atome). On compare deux membres
+     qui se suivent : la partie qui va changer est SURLIGNÉE à un clic à part (l'élève cherche), puis le membre suivant
+     apparaît avec sa partie nouvelle surlignée de la même couleur ; les deux s'éteignent au clic d'après. Le signe
+     devant un terme n'est jamais surligné. Si tout le membre change, rien n'est surligné (aucune information). */
+  function jetonsTeX(s) {                       // jetons de niveau 0 : {…}, \left…\right…, \commande, caractère
+    var r = [], i = 0;
+    function finGroupe(j) { var d = 0; for (; j < s.length; j++) { if (s[j] === '\\') { j++; continue; } if (s[j] === '{') d++; else if (s[j] === '}' && --d === 0) return j + 1; } return s.length; }
+    while (i < s.length) {
+      var c = s[i], j, m;
+      if (/\s/.test(c)) { i++; continue; }
+      if (c === '{') { j = finGroupe(i); r.push({ t: s.slice(i, j), a: i, b: j }); i = j; continue; }
+      if (c === '\\') {
+        m = /^\\([a-zA-Z]+|.)/.exec(s.slice(i));
+        if (m[0] === '\\left') {
+          var d = 0, re = /\\left|\\right/g, x; re.lastIndex = i; j = s.length;
+          while ((x = re.exec(s))) { d += x[0] === '\\left' ? 1 : -1; if (d === 0) { var dl = /^\\right(\\[a-zA-Z]+|\\.|.)/.exec(s.slice(x.index)); j = x.index + (dl ? dl[0].length : 6); break; } }
+          r.push({ t: s.slice(i, j), a: i, b: j }); i = j; continue;
+        }
+        r.push({ t: m[0], a: i, b: i + m[0].length }); i += m[0].length; continue;
+      }
+      r.push({ t: c, a: i, b: i + 1 }); i++;
+    }
+    return r;
+  }
+  var OPS = { '+': 1, '-': 1, '\\times': 1, '\\div': 1, '\\cdot': 1, '=': 1, '(': 1, '[': 1, '^': 1, '_': 1 };
+  function sansAccolades(t) { return t[0] === '{' ? t.slice(1, -1) : t; }
+  function arbreTeX(s) {
+    var tx = s.trim(), j = jetonsTeX(tx), n = { tex: tx, cle: tx.replace(/\s+/g, ''), cls: null };
+    if (!j.length) { n.k = 'atome'; return n; }
+    function morceauxA(test) {                  // découpe aux jetons test() de niveau 0 (parenthèses comprises)
+      var p = 0, parts = [], deb = 0, op = '', mal = false;
+      j.forEach(function (x, i) {
+        if (x.t === '(' || x.t === '[') p++; else if (x.t === ')' || x.t === ']') { p--; if (p < 0) mal = true; }
+        if (p === 0 && test(x, i)) { parts.push({ op: op, s: tx.slice(deb, x.a) }); op = x.t; deb = x.b; }
+      });
+      if (mal || p !== 0) return null;
+      parts.push({ op: op, s: tx.slice(deb) }); return parts;
+    }
+    var somme = morceauxA(function (x, i) { return (x.t === '+' || x.t === '-') && (i === 0 || !OPS[j[i - 1].t]); });
+    if (somme && somme.length > 1) {
+      if (!somme[0].s.trim()) somme.shift();    // signe en tête : il appartient au premier terme
+      if (somme.length > 1 || somme[0].op) {
+        n.k = 'somme'; n.items = somme.map(function (x) { return { signe: x.op, n: arbreTeX(x.s) }; });
+        if (n.items.some(function (x) { return !x.n.cle; })) { n.k = 'atome'; delete n.items; }
+        return n;
+      }
+    }
+    var prod = morceauxA(function (x) { return x.t === '\\times' || x.t === '\\div' || x.t === '\\cdot'; });
+    if (prod && prod.length > 1 && prod.every(function (x) { return x.s.trim(); })) { n.k = 'produit'; n.fac = prod.map(function (x) { return { op: x.op, n: arbreTeX(x.s) }; }); return n; }
+    if (j.length === 3 && /^\\[dt]?frac$/.test(j[0].t)) { n.k = 'frac'; n.cmd = j[0].t; n.num = arbreTeX(sansAccolades(j[1].t)); n.den = arbreTeX(sansAccolades(j[2].t)); return n; }
+    if (j.length === 2 && j[0].t === '\\boxed' && j[1].t[0] === '{') { n.k = 'boite'; n.c = arbreTeX(sansAccolades(j[1].t)); return n; }
+    n.k = 'atome'; return n;
+  }
+  function texArbre(n) {
+    var s;
+    if (n.k === 'somme') s = n.items.map(function (x, i) { return (i || x.signe === '-' ? x.signe : '') + texArbre(x.n); }).join('');
+    else if (n.k === 'produit') s = n.fac.map(function (x, i) { return (i ? x.op + ' ' : '') + texArbre(x.n); }).join('');
+    else if (n.k === 'frac') s = n.cmd + '{' + texArbre(n.num) + '}{' + texArbre(n.den) + '}';
+    else if (n.k === 'boite') s = '\\boxed{' + texArbre(n.c) + '}';
+    else s = n.tex;
+    return n.cls ? '\\class{' + n.cls.join(' ') + '}{' + s + '}' : s;
+  }
+  function difference(a, b, o) {                // o.a : parties de a qui changent, o.b : ce qu'elles deviennent dans b
+    if (a.cle === b.cle) return;
+    if (a.k === 'boite' || b.k === 'boite') return difference(a.k === 'boite' ? a.c : a, b.k === 'boite' ? b.c : b, o);
+    if (a.k === 'frac' && b.k === 'frac') { difference(a.num, b.num, o); difference(a.den, b.den, o); return; }
+    if (a.k === 'produit' && b.k === 'produit' && a.fac.length === b.fac.length &&
+        a.fac.every(function (x, i) { return x.op === b.fac[i].op; })) { a.fac.forEach(function (x, i) { difference(x.n, b.fac[i].n, o); }); return; }
+    if (a.k === 'somme' && b.k === 'somme') {
+      var cle = function (x) { return (x.signe === '-' ? '-' : '+') + x.n.cle; };
+      var restA = a.items.slice(), restB = [];
+      b.items.forEach(function (x) { var i = restA.map(cle).indexOf(cle(x)); if (i >= 0) restA.splice(i, 1); else restB.push(x); });
+      if (restA.length === 1 && restB.length === 1) difference(restA[0].n, restB[0].n, o);
+      else { restA.forEach(function (x) { o.a.push(x.n); }); restB.forEach(function (x) { o.b.push(x.n); }); }
+      return;
+    }
+    o.a.push(a); o.b.push(b);
+  }
+  function racineUtile(n) { return n.k === 'boite' ? n.c : n; }
+  function marquer(a, b, classe) {              // vrai si une partie seulement change : on la surligne
+    var o = { a: [], b: [] }; difference(a, b, o);
+    if (!o.a.length || !o.b.length) return false;
+    var ra = racineUtile(a), rb = racineUtile(b);
+    if (o.a.indexOf(ra) >= 0 || o.b.indexOf(rb) >= 0) return false;
+    if (ra.k === 'somme' && ra.items.every(function (x) { return o.a.indexOf(x.n) >= 0; })) return false;
+    o.a.concat(o.b).forEach(function (n) { (n.cls = n.cls || []).push('qv-c', classe); });
+    return true;
+  }
+  function Chaine(ajouter, trans) { this.aj = ajouter; this.trans = trans; this.prec = null; this.attente = null; this.membres = []; }
+  Chaine.prototype.preparer = function (tex) {  // AVANT de prendre l'étape du membre : l'étape « on surligne » vient d'abord
+    var n = arbreTeX(tex), t = null;
+    if (this.prec) {
+      var id = this.trans.length;
+      if (marquer(this.prec.n, n, 'qv-t' + id)) { t = { id: id, pre: this.aj(), show: null }; this.trans.push(t); }
+    }
+    this.attente = { n: n, t: t };
+  };
+  Chaine.prototype.poser = function (span, avant, apres, k) {
+    var a = this.attente; if (a.t) a.t.show = k;
+    var m = { n: a.n, span: span, avant: avant || '', apres: apres || '' };
+    this.membres.push(m); this.prec = m;
+  };
+  Chaine.prototype.rompre = function () { this.prec = null; };
+  Chaine.prototype.ecrire = function (D) {
+    this.membres.forEach(function (m) { m.span.innerHTML = '\\(' + (D || '') + m.avant + texArbre(m.n) + m.apres + '\\)'; });
+  };
+  function membresEgalite(m) {                  // « A=B=C » → [{tex:'A', apres:'=\;'}, …] ; un « = » en tête passe au membre suivant
     var t = couper(m, function (u) { return u === '='; }), r = [], report = '';
     t.forEach(function (x, i) {
       var der = i === t.length - 1;
-      if (!x.trim() && !der) { report += '=\\;'; return; }           // l'espace après « = » : une formule coupée la perdrait
-      r.push(report + x + (der ? '' : '=\\;')); report = '';
+      if (!x.trim() && !der) { report += '=\\;'; return; }
+      r.push({ tex: x, avant: report, apres: der ? '' : '=\\;' }); report = '';
     });
     return r;
   }
+
   function morceau(parent, html, k, classe) {
     var s = el('span', 'qv-e' + (classe ? ' ' + classe : ''), html); s.dataset.e = k; parent.appendChild(s); return s;
   }
-  function etapesParagraphe(html, ajouter) {
+  function etapesParagraphe(html, ajouter, trans) {
     var p = el('p', 'qv-p'), re = /\\\(([\s\S]*?)\\\)/g, m, dernier = 0, jetons = [];
     while ((m = re.exec(html))) { if (m.index > dernier) jetons.push({ t: html.slice(dernier, m.index) }); jetons.push({ m: m[1] }); dernier = re.lastIndex; }
     if (dernier < html.length) jetons.push({ t: html.slice(dernier) });
@@ -1139,42 +1260,155 @@
         if (!cur || cad || (avecMaths && MOTS.test(j.t))) nouvelle();
         cur.insertAdjacentHTML('beforeend', cad ? j.t.replace(/^\s+/, '') : j.t);
       } else {
-        var membres = egalites(j.m);
+        var membres = membresEgalite(j.m), ch = new Chaine(ajouter, trans);
         membres.forEach(function (x, i) {
+          if (!x.tex.trim()) return;
+          ch.preparer(x.tex);
           if (!cur || i > 0) nouvelle();
-          cur.insertAdjacentHTML('beforeend', '\\(' + x + '\\)');
+          var sm = el('span'); cur.appendChild(sm); ch.poser(sm, x.avant, x.apres, +cur.dataset.e);
         });
+        ch.ecrire();
         // seul un CALCUL (égalité, résultat encadré) clôt l'étape ; un nom (« ABC », « B », « 5x ») reste dans la phrase
         if (membres.length > 1 || /\\boxed/.test(j.m)) avecMaths = true;
       }
     });
     return p;
   }
-  function etapesAligne(tex, ajouter) {
-    var g = el('div', 'qv-al');
-    couper(tex, function (u) { return u === '\\\\'; }).forEach(function (ligne) {
+  /* Bloc aligné \[\begin{aligned} … \end{aligned}\] : une ligne par « \\ », colonnes « membre & =suite ».
+     - « \iff membre &= … » : le « ⟺ » va dans sa propre colonne, à gauche (chaînes d'équivalences de Seconde, CH03) ;
+     - « … && justification » : ce qu'on fait pour passer de la ligne précédente à celle-ci (« \times3 », « -5 »,
+       « \div2 », « \text{on échange les membres} ») : écrit en ORANGE dans la marge de droite, ENTRE les deux lignes, avec
+       une flèche courbe qui va de l'une à l'autre (charte § 4 et § 9, M. Colin 5 et 12 nov. 2026) ; elle apparaît à son
+       propre clic, AVANT la ligne qu'elle justifie (l'élève cherche le résultat). */
+  var PRE = /^\s*(\\iff|\\Leftrightarrow|\\Longleftrightarrow)(?![a-zA-Z])\s*/;
+  function etapesAligne(tex, ajouter, trans) {
+    var g = el('div', 'qv-al'), ch = new Chaine(ajouter, trans), D = '\\displaystyle ';
+    var lignes = couper(tex, function (u) { return u === '\\\\'; }).map(function (ligne) {
       ligne = ligne.replace(/^\s*\[[^\]]*\]/, '');
-      if (!ligne.trim()) return;
-      var cols = couper(ligne, function (u) { return u === '&'; });
-      var gauche = el('span', 'qv-g'), droite = el('span', 'qv-d' + (cols.length > 1 ? '' : ' plein'));
-      if (cols.length > 1) g.appendChild(gauche);
+      if (!ligne.trim()) return null;
+      var cols = couper(ligne, function (u) { return u === '&'; }), just = null;
+      if (cols.length >= 4 && !cols[2].trim()) { just = cols.slice(3).join(' ').trim(); cols = cols.slice(0, 2); }
+      var lhs = cols.length > 1 ? cols[0] : '', pre = '';
+      var mp = PRE.exec(lhs); if (mp) { pre = mp[1]; lhs = lhs.slice(mp[0].length); }
+      return { cols: cols, lhs: lhs, pre: pre, just: just, rhs: cols.length > 1 ? cols.slice(1).join('\\quad ') : cols[0] };
+    }).filter(Boolean);
+    var avecPre = lignes.some(function (l) { return l.pre; }), justifs = [], prec = null;
+    if (avecPre) g.classList.add('avec-pre');
+    lignes.forEach(function (l) {
+      var cellP = avecPre ? el('span', 'qv-pre') : null;
+      var gauche = el('span', 'qv-g'), droite = el('span', 'qv-d' + (l.cols.length > 1 ? '' : ' plein'));
+      if (cellP) g.appendChild(cellP);
+      if (l.cols.length > 1) g.appendChild(gauche);
       g.appendChild(droite);
-      var lhs = cols.length > 1 ? cols[0] : '', rhs = cols.length > 1 ? cols.slice(1).join('\\quad ') : cols[0];
-      var m = rhs.match(REL), rel = m ? m[1] : '', reste = m ? rhs.slice(m[0].length) : rhs, k = null;
-      var D = '\\(\\displaystyle ';
-      if (lhs.trim()) { k = ajouter(); morceau(gauche, D + lhs + '\\)', k); }
-      if (rel) { if (k == null) k = ajouter(); morceau(droite, D + '\\;' + rel + '\\;\\)', k, 'qv-rel'); }
-      var suite = !lhs.trim() && k != null;           // « &= … » : le « = » vient avec ce qui le suit
-      egalites(reste).forEach(function (x, i) {
-        if (!x.trim()) return;
-        if (!(suite && i === 0)) k = ajouter();
-        morceau(droite, D + x + '\\)', k);
+      if (l.just && prec) {                         // la justification d'abord, à son clic, puis la ligne
+        var kj = ajouter(), lab = el('span', 'qv-just qv-e', justifHTML(l.just)), fl = el('span', 'qv-fl qv-e');
+        lab.dataset.e = kj; fl.dataset.e = kj;
+        fl.innerHTML = '<svg aria-hidden="true" focusable="false"><path/><path class="pointe"/></svg>';
+        g.appendChild(fl); g.appendChild(lab);
+        justifs.push({ lab: lab, fl: fl, de: prec, vers: droite });
+      }
+      var m = l.rhs.match(REL), rel = m ? m[1] : '', reste = m ? l.rhs.slice(m[0].length) : l.rhs, k = null, sp, sens = false;
+      var ms = /^\s*\\sens\{([^{}]*)\}/.exec(l.rhs);   // \sens{<} : le symbole a changé de sens (en rouge)
+      if (ms) { rel = ms[1]; reste = l.rhs.slice(ms[0].length); sens = true; }
+      if (l.lhs.trim() || rel !== '=') ch.rompre();       // nouvelle expression, ou relation qui n'est pas une égalité
+      if (l.lhs.trim()) {
+        ch.preparer(l.lhs); k = ajouter(); sp = morceau(gauche, '', k); ch.poser(sp, '', '', k);
+        if (l.pre) morceau(cellP, '\\(\\Leftrightarrow\\)', k);
+      }
+      var membres = membresEgalite(reste).filter(function (x) { return x.tex.trim(); });
+      if (rel) {
+        if (k == null) { if (membres.length) ch.preparer(membres[0].tex); k = ajouter(); if (l.pre) morceau(cellP, '\\(\\Leftrightarrow\\)', k); }
+        morceau(droite, '\\(' + D + '\\;' + rel + '\\;\\)', k, 'qv-rel' + (sens ? ' qv-sens' : ''));
+      }
+      var suite = !l.lhs.trim() && k != null;           // « &= … » : le « = » vient avec ce qui le suit
+      membres.forEach(function (x, i) {
+        if (!(suite && i === 0)) { ch.preparer(x.tex); k = ajouter(); }
+        sp = morceau(droite, '', k); ch.poser(sp, x.avant, x.apres, k);
       });
+      prec = droite;
     });
+    ch.ecrire(D);
+    if (justifs.length) { g.classList.add('avec-just'); g._justifs = justifs; g._droites = Array.prototype.slice.call(g.querySelectorAll('.qv-d')); }
     return g;
   }
+  function justifHTML(j) {                      // « \\div2\\text{ : le sens change} » : le texte peut aller à la ligne
+    var out = '', re = /\\text\{([^{}]*)\}/g, m, d = 0;
+    function maths(x) { x = x.trim().replace(/\\dfrac/g, '\\frac'); if (x) out += '\\(' + x + '\\)'; }   // fractions petites dans la marge
+    while ((m = re.exec(j))) { maths(j.slice(d, m.index)); out += m[1].replace(/&/g, '&amp;').replace(/</g, '&lt;'); d = re.lastIndex; }
+    maths(j.slice(d));
+    return out;
+  }
+  function placerJustifs(racine) {              // flèches de la marge : après mise en page (positions réelles)
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-al.avec-just'), function (g) {
+      var R = g.getBoundingClientRect(); if (!R.width) return;
+      function bord(d) {                          // bord droit de ce qui est ÉCRIT dans un membre (la cellule s'étire sur la colonne ;
+        var mx = d.getBoundingClientRect().left;  // un radical ou un exposant peut dépasser la boîte de son morceau)
+        Array.prototype.forEach.call(d.querySelectorAll('span'), function (e) {
+          if (e.closest('.ML__sr-only')) return;
+          var r = e.getBoundingClientRect(); if (r.width && r.height) mx = Math.max(mx, r.right);
+        });
+        return mx - R.left + g.scrollLeft;
+      }
+      var bas = -Infinity;                       // une justification ne chevauche jamais la précédente
+      g._justifs.forEach(function (j) {
+        var x = Math.max(bord(j.de), bord(j.vers)) + 12;   // la flèche longe les deux lignes qu'elle relie
+        var a = j.de.getBoundingClientRect(), b = j.vers.getBoundingClientRect();
+        var y1 = (a.top + a.bottom) / 2 - R.top + 3, y2 = (b.top + b.bottom) / 2 - R.top - 3, h = Math.max(14, y2 - y1), bo = 20;
+        var svg = j.fl.firstChild;
+        j.fl.style.left = x + 'px'; j.fl.style.top = y1 + 'px'; j.fl.style.width = (bo + 6) + 'px'; j.fl.style.height = h + 'px';
+        svg.setAttribute('width', bo + 6); svg.setAttribute('height', h); svg.setAttribute('viewBox', '0 0 ' + (bo + 6) + ' ' + h);
+        svg.firstChild.setAttribute('d', 'M2 0 C ' + (bo + 2) + ' 2, ' + (bo + 2) + ' ' + (h - 2) + ', 4 ' + h);
+        svg.lastChild.setAttribute('d', 'M4 ' + h + ' l 7 -6.5 M4 ' + h + ' l 9.5 1.5');
+        j.lab.style.left = (x + bo + 10) + 'px';
+        var place = Math.max(44, g.clientWidth + g.scrollLeft - (x + bo + 10) - 4);   // reste dans la largeur visible
+        j.lab.style.maxWidth = place + 'px'; j.lab.style.fontSize = '';
+        if (j.lab.scrollWidth > place + 1)          // une formule qui ne se coupe pas (« 100 > 0 ») : on la rétrécit un peu
+          j.lab.style.fontSize = (Math.max(0.6, place / j.lab.scrollWidth) * 0.82).toFixed(3) + 'em';
+        var hl = j.lab.offsetHeight, c = y1 + h / 2;
+        if (c - hl / 2 < bas + 4) c = bas + 4 + hl / 2;
+        j.lab.style.top = c + 'px'; bas = c + hl / 2;
+      });
+    });
+  }
+  function tableauCorrection(q, ajouter) {      // le tableau attendu, tracé pas à pas (ligne des x, puis chaque intervalle)
+    var vari = q.type === 'variations', b = q.bornes || [-Infinity, Infinity], xs = [b[0]].concat(q.valeurs, [b[1]]), n = q.valeurs.length;
+    var cadre = el('div', 'quiz-tab-cadre qv-tab-cadre'), t = el('div', 'quiz-tab qv-tab' + (vari ? ' quiz-var' : ''));
+    var cols = ['max-content'];
+    for (var c = 0; c < 2 * n + 3; c++) cols.push(c % 2 === 0 ? 'auto' : 'minmax(1.8em, 1fr)');
+    t.style.gridTemplateColumns = cols.join(' ');
+    function cellule(cls, html, k, clsE) {
+      var c = el('div', 'tcell ' + cls);
+      if (html != null) { var e = el('span', 'qv-e' + (clsE ? ' ' + clsE : ''), html); e.dataset.e = k; c.appendChild(e); }
+      t.appendChild(c); return c;
+    }
+    var k1 = ajouter(), i, k;
+    cellule('tlab tx', '\\(x\\)', k1);
+    xs.forEach(function (x, j) { cellule('tx tval', '\\(' + nombreTeX(x) + '\\)', k1); if (j < xs.length - 1) cellule('tx tint', null); });
+    cellule('tlab', vari ? (q.label || 'variation de \\(f\\)') : q.ligne.label, k1);
+    if (vari) {
+      var pos = function (j) { var L = q.fleches[j - 1], R = q.fleches[j]; return L === '↗' || R === '↘' ? 'haut' : L === '↘' || R === '↗' ? 'bas' : 'milieu'; };
+      k = ajouter();                                // l'image de la première valeur, puis une flèche et son image par clic
+      for (i = 0; i < xs.length; i++) {
+        var im = q.images[i];
+        cellule('tval timg', im == null ? null : '\\(' + nombreTeX(im) + '\\)', k).dataset.pos = pos(i);
+        if (i < xs.length - 1) { k = ajouter(); cellule('tint', flecheLongue(q.fleches[i]), k, 'qv-fleche'); }
+      }
+    } else {
+      var kt = ajouter();                           // les traits (0, double barre) d'abord, puis un signe par clic
+      cellule('tval tvide', null);
+      for (i = 0; i <= n; i++) {
+        cellule('tint', '\\(' + (q.ligne.signes[i] === '−' ? '-' : '+') + '\\)', ajouter(), 'qv-signe');
+        if (i < n) {
+          var tc = cellule('tval ttrait', null), tr = el('div', 'trait-choix qv-e', '<span>0</span>');
+          tr.dataset.t = q.ligne.traits[i]; tr.dataset.touche = '1'; tr.dataset.e = kt; tc.appendChild(tr);
+        }
+      }
+      cellule('tval tvide', null);
+    }
+    cadre.appendChild(t); return cadre;
+  }
   function construireEtapes(q) {
-    var racine = el('div', 'qv-etapes'), n = 0;
+    var racine = el('div', 'qv-etapes'), n = 0, trans = [];
     function ajouter() { return ++n; }
     if (q.figureCorrection) {                     // la lecture se montre sur la figure (charte § 5)
       var f = el('figure', 'qv-fig qv-e'), im = el('img'); im.src = q.figureCorrection; im.alt = 'Figure de la correction'; im.decoding = 'async';
@@ -1184,17 +1418,20 @@
     function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ajouter()); racine.appendChild(b); } }
     while ((m = re.exec(html))) {
       libre(html.slice(dernier, m.index));
-      if (m[1] != null) racine.appendChild(etapesParagraphe(m[1], ajouter));
+      if (m[1] != null) racine.appendChild(etapesParagraphe(m[1], ajouter, trans));
       else {
         var a = m[2].match(/^\s*\\begin\{aligned\}([\s\S]*)\\end\{aligned\}\s*$/);
-        if (a) racine.appendChild(etapesAligne(a[1], ajouter));
+        if (a) racine.appendChild(etapesAligne(a[1], ajouter, trans));
         else { var b = el('div', 'qv-disp'); morceau(b, '\\[' + m[2] + '\\]', ajouter()); racine.appendChild(b); }
       }
       dernier = re.lastIndex;
     }
     libre(html.slice(dernier));
+    if ((q.type === 'variations' && q.fleches) || (q.type === 'signes' && q.ligne)) {   // « trace le tableau » (M. Colin, 12 nov. 2026)
+      racine.appendChild(tableauCorrection(q, ajouter));
+    }
     rendre(racine);
-    return { racine: racine, n: n, k: 0 };
+    return { racine: racine, n: n, k: 0, trans: trans };
   }
 
   var volet = null;
@@ -1237,6 +1474,7 @@
       else if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown' || (ev.key === ' ' && tag !== 'BUTTON')) { ev.preventDefault(); arreterAuto(v); avancer(v, false); }
       else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') { ev.preventDefault(); arreterAuto(v); montrer(v, v.e.k - 1, false); }
     });
+    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) placerJustifs(v.e.racine); });
     // quitter le quiz (« ‹ Première », changement d'onglet) ferme le volet et range l'onglet
     document.addEventListener('click', function (ev) {
       if (ev.target.closest && ev.target.closest('[data-retour], [role=tab]')) { fermerVolet(); v.languette.hidden = true; }
@@ -1245,6 +1483,7 @@
   }
   function montrer(v, k, anime) {               // affiche les étapes 1…k (jamais moins d'une)
     var et = v.e; et.k = Math.max(Math.min(1, et.n), Math.min(et.n, k));
+    placerJustifs(et.racine);                      // les polices des formules ont pu finir de charger : on recale les flèches
     var neufs = [];
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-e'), function (x) {
       var i = +x.dataset.e;
@@ -1253,6 +1492,12 @@
       if (anime && i === et.k) neufs.push(x);
     });
     neufs.forEach(function (x) { void x.offsetWidth; x.classList.add('neuf'); });
+    // surlignages : allumés de l'étape « on surligne » jusqu'à l'apparition du résultat, éteints ensuite
+    Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-c'), function (x) { x.classList.remove('allume', 'c0', 'c1', 'c2'); });
+    (et.trans || []).forEach(function (t) {
+      if (et.k < t.pre || et.k > t.show) return;
+      Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-t' + t.id), function (x) { x.classList.add('allume', 'c' + (t.id % 3)); });
+    });
     var der = neufs[neufs.length - 1];
     if (der) {                                    // garder la dernière étape à l'écran, sans faire défiler la page
       var r = der.getBoundingClientRect(), c = v.corps.getBoundingClientRect();
@@ -1300,6 +1545,8 @@
     document.body.classList.add('volet-ouvert');
     v.languette.hidden = true;
     if (window.mathVirtualKeyboard) try { window.mathVirtualKeyboard.hide(); } catch (e) {}
+    placerJustifs(v.e.racine);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (v.e && v.e.racine.isConnected) placerJustifs(v.e.racine); });
     if (v.e.k === 0) montrer(v, 1, true); else montrer(v, v.e.k, false);
     if (window.matchMedia && window.matchMedia('(max-width: 999px)').matches) {
       // téléphone : la feuille monte par le bas ; on remonte la question juste sous les barres collées en haut

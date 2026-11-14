@@ -862,3 +862,187 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-note-t { font-size: .6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7D6A12; }
 .qv-note .ML__latex { font-size: 1.05em; }
 @media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe { animation: none; stroke-dasharray: none; opacity: 1; } }
+
+/* ===== Quiz de chapitre : QCM, vrai / faux, associer, tableau à double entrée, arbre pondéré, exercice (1ère CH03, 14 nov. 2026) =====
+   Classes préfixées « qz- » ; mêmes jetons que le reste des quiz : --quiz-afaire (à remplir), --rouge (erreur), --vert (réussite). */
+.qz-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.quiz-enonce .quiz-affirmation { margin: 12px 0 6px; padding: 12px 16px; border-radius: 14px; background: var(--fond-2); border-left: 4px solid var(--bleu); font-weight: 500; }
+.qz-marque { display: grid; place-items: center; width: 24px; height: 24px; flex: none; font: 700 1.05rem/1 var(--f-texte); }
+.qz-faux > .qz-marque::before { content: "✗"; color: var(--rouge); }
+.qz-juste > .qz-marque::before { content: "✓"; color: var(--vert); }
+
+/* QCM : cartes à toucher */
+.qz-consigne { margin: 0 0 10px; font-size: var(--t-petit); color: var(--gris); font-weight: 600; }
+.qz-props { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr)); gap: 10px; }
+.qz-prop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 58px; padding: 10px 12px 10px 12px;
+  border: 2px solid var(--filet); border-radius: 16px; background: var(--papier); color: var(--encre); font: inherit; font-size: 1.12rem; line-height: 1.35;
+  text-align: left; cursor: pointer; transition: border-color .2s, background-color .2s, box-shadow .2s, transform .15s, opacity .2s; }
+@media (hover: hover) { .qz-prop:hover:not(:disabled), .qz-vf-b:hover:not(:disabled), .qz-pastille:hover:not(:disabled) { border-color: var(--bleu); } }
+.qz-prop:active:not(:disabled), .qz-vf-b:active:not(:disabled), .qz-pastille:active:not(:disabled) { transform: scale(.985); }
+.qz-lettre { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--filet); color: var(--gris);
+  font: 700 .92rem/1 var(--f-texte); transition: background-color .2s, border-color .2s, color .2s; }
+.qz-multi .qz-lettre { border-radius: 9px; }
+.qz-prop-txt { min-width: 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+.qz-prop.choisie { border-color: var(--bleu); background: var(--bleu-fond); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bleu) 14%, transparent); }
+.qz-prop.choisie .qz-lettre { background: var(--bleu); border-color: var(--bleu); color: var(--papier); }
+.qz-prop.qz-faux { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 8%, var(--papier)); box-shadow: none; cursor: not-allowed; }
+.qz-prop.qz-faux .qz-lettre { background: var(--rouge); border-color: var(--rouge); color: var(--papier); }
+.qz-prop.qz-faux .qz-prop-txt { opacity: .78; }
+.qz-prop.qz-juste { border-color: var(--vert); background: color-mix(in srgb, var(--vert) 11%, var(--papier)); box-shadow: none; }
+.qz-prop.qz-juste .qz-lettre { background: var(--vert); border-color: var(--vert); color: var(--papier); }
+.qz-prop:disabled, .qz-vf-b:disabled, .qz-pastille:disabled { cursor: default; }
+.quiz-carte.reussie .qz-prop:not(.qz-juste):not(.qz-faux), .qz-partie.reussie .qz-prop:not(.qz-juste):not(.qz-faux) { opacity: .5; }
+
+/* vrai / faux : deux grands boutons */
+.qz-vf { display: flex; flex-wrap: wrap; gap: 12px; }
+.qz-vf-b { flex: 1 1 140px; max-width: 230px; min-height: 58px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 18px;
+  border: 2px solid var(--filet); border-radius: 16px; background: var(--papier); color: var(--encre); font: 600 1.2rem var(--f-texte); cursor: pointer;
+  transition: border-color .2s, background-color .2s, box-shadow .2s, transform .15s, opacity .2s; }
+.qz-vf-b .qz-marque { width: 0; overflow: hidden; transition: width .2s; }
+.qz-vf-b.qz-faux .qz-marque, .qz-vf-b.qz-juste .qz-marque { width: 22px; }
+.qz-vf-b.choisie { border-color: var(--bleu); background: var(--bleu-fond); color: var(--bleu); box-shadow: 0 0 0 3px color-mix(in srgb, var(--bleu) 14%, transparent); }
+.qz-vf-b.qz-faux { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 9%, var(--papier)); color: var(--rouge); box-shadow: none; }
+.qz-vf-b.qz-juste { border-color: var(--vert); background: color-mix(in srgb, var(--vert) 11%, var(--papier)); color: var(--vert); box-shadow: none; }
+.qz-vf-b:disabled:not(.qz-faux):not(.qz-juste) { opacity: .5; }
+
+/* associer : une ligne par élément, les choix en pastilles */
+.qz-assoc { display: grid; grid-template-columns: fit-content(46%) minmax(0, 1fr); row-gap: 10px; }   /* une colonne de gauche commune à toutes les lignes */
+.qz-assoc-ligne { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; gap: 10px 16px; padding: 10px 12px;
+  border: 2px solid var(--filet); border-radius: 16px; transition: border-color .2s, background-color .2s; }
+.qz-assoc-g { min-width: 5.5rem; }
+.qz-assoc-g { min-width: 0; overflow-x: auto; font-size: 1.15rem; }
+.qz-assoc-g p { margin: 0; }
+.qz-assoc-d { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.qz-pastille { min-height: 44px; min-width: 56px; max-width: 100%; padding: 5px 15px; border: 2px solid var(--filet); border-radius: 999px; background: var(--papier);
+  color: var(--encre); font: 500 1.05rem var(--f-texte); cursor: pointer; overflow-x: auto; transition: border-color .2s, background-color .2s, color .2s, transform .15s; }
+.qz-pastille.choisie { border-color: var(--bleu); background: var(--bleu); color: var(--papier); }
+.qz-assoc-ligne.qz-faux { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 6%, transparent); }
+.qz-assoc-ligne.qz-faux .qz-pastille.choisie { border-color: var(--rouge); background: var(--rouge); }
+.qz-assoc-ligne.qz-juste { border-color: color-mix(in srgb, var(--vert) 70%, var(--filet)); }
+.qz-assoc-ligne.qz-juste .qz-pastille.choisie { border-color: var(--vert); background: var(--vert); }
+.quiz-carte.reussie .qz-pastille:not(.choisie), .qz-partie.reussie .qz-pastille:not(.choisie) { opacity: .45; }
+.qz-assoc-vf .qz-pastille { min-width: 84px; }
+
+/* cases MathLive compactes (tableau, arbre) ; case fausse en rouge */
+math-field.quiz-champ.petit.qz-champ { display: inline-block; vertical-align: middle; width: auto; min-width: 3.4em; min-height: 44px; font-size: 1.12rem; padding: 4px 8px; border-radius: 10px; }
+math-field.quiz-champ.qz-faux { border-color: var(--rouge); border-style: solid; background: color-mix(in srgb, var(--rouge) 9%, var(--papier));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rouge) 16%, transparent); }
+math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: dashed; }
+
+/* tableau à double entrée : en-têtes grisés ; trop large, il défile dans son cadre (jamais la page) */
+.qz-tab-cadre { max-width: 100%; overflow-x: auto; overflow-y: hidden; margin: 12px 0 4px; padding: 2px; }
+.qz-tab { border-collapse: collapse; margin: 0 auto; font-size: 1.08rem; line-height: 1.25; }
+.qz-tab th, .qz-tab td { border: 1.5px solid var(--encre); padding: 6px 12px; height: 50px; min-width: 4.2em; text-align: center; vertical-align: middle; }
+.qz-tab th { background: var(--fond-2); font-weight: 600; }
+.qz-tab th.qz-coin { background: transparent; border-top-style: hidden; border-left-style: hidden; }
+.qz-tab .qz-total { font-weight: 600; }
+.qz-tab td.qz-case { padding: 4px 6px; }
+
+/* arbre pondéré (horizontal, racine à gauche) : traits en SVG, étiquettes posées par quiz.js */
+.qz-arbre-cadre { max-width: 100%; overflow-x: auto; overflow-y: hidden; margin: 12px 0 4px; }
+.qz-arbre { position: relative; margin: 0 auto; color: var(--encre); font-size: 1.08rem; line-height: 1.2; transition: opacity .25s; }
+.qz-arbre:not(.place) { opacity: 0; min-height: 60px; overflow: hidden; }   /* pas encore posé : rien ne dépasse */
+.qz-arbre > * { position: absolute; }
+.qz-arbre-traits { left: 0; top: 0; overflow: visible; pointer-events: none; }
+.qz-trait { stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; opacity: .8; }
+.qz-trait-chemin { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; opacity: .45; }
+.qz-racine { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.qz-noeud { display: grid; place-items: center; box-sizing: border-box; border-radius: 50%; background: var(--papier);
+  border: 1.4px solid color-mix(in srgb, currentColor 70%, transparent); box-shadow: 2px 3px 6px rgba(0, 0, 0, .16); }
+.qz-noeud-t, .qz-proba, .qz-chemin { white-space: nowrap; }
+.qz-noeud-t { line-height: 1; }
+.qz-chemin { display: inline-flex; align-items: center; gap: 4px; }
+.qz-chemin.qz-chemin-empile { flex-direction: column; align-items: flex-start; gap: 2px; }
+.qz-vide-slot { display: inline-block; width: 2.7em; height: 1.6em; vertical-align: middle; border: 1.6px dashed var(--quiz-afaire, var(--bleu)); border-radius: 7px;
+  background: var(--quiz-afaire-fond, var(--bleu-fond)); }
+
+/* exercice : parties numérotées, une coche verte par partie réussie */
+.qz-exo { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 14px; }
+.qz-partie { padding: 14px 16px 14px 14px; border: 1.5px solid var(--filet); border-radius: 18px; transition: border-color .3s, background-color .3s; min-width: 0; }
+.qz-partie-tete { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; align-items: start; }
+.qz-partie-num { min-width: 1.5em; padding-top: .1em; font: 700 1.12rem var(--f-texte); color: var(--bleu); }
+.qz-partie-enonce { min-width: 0; font-size: 1.12rem; line-height: 1.5; overflow-x: auto; }
+.qz-partie-enonce p { margin: 0 0 6px; }
+.qz-partie-coche { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--vert); transform: scale(0); opacity: 0;
+  transition: transform .4s var(--courbe), opacity .2s; }
+.qz-partie-coche svg { width: 19px; height: 19px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.qz-partie.reussie { border-color: color-mix(in srgb, var(--vert) 60%, var(--filet)); background: color-mix(in srgb, var(--vert) 5%, transparent); }
+.qz-partie.reussie .qz-partie-coche { transform: scale(1); opacity: 1; }
+.qz-partie.ratee { border-color: color-mix(in srgb, var(--rouge) 55%, var(--filet)); }
+.qz-partie-zone { margin-top: 10px; }
+.qz-partie-zone > .quiz-ligne { flex-wrap: wrap; row-gap: 8px; }
+.qz-partie-msg { margin: 10px 0 0; font-weight: 500; }
+.qz-partie-msg:empty { display: none; }
+.qz-partie-msg.ko { color: var(--rouge); }
+.qz-partie-msg.info { color: var(--gris); }
+
+/* rappel de la question (volet, téléphone) */
+.qz-rappel-props { margin: 6px 0 8px; padding-left: 1.1em; }
+.qz-rappel-props li { margin: 2px 0; }
+.qz-rappel-choix { margin: 4px 0 8px; color: var(--gris); }
+.qz-rappel-parties { margin: 8px 0 4px; padding-left: 1.3em; }
+.qz-rappel-parties > li { margin: 0 0 8px; }
+.qz-rappel-parties > li p { margin: 0 0 4px; }
+
+/* correction : la figure à compléter en tête (collée en haut du volet si la hauteur le permet), les valeurs en rouge */
+.qz-fig-corr { position: relative; z-index: 2; margin: 0 0 14px; padding: 2px 0 6px; background: var(--papier); }
+.qz-fig-corr.colle { position: sticky; top: 0; box-shadow: 0 12px 12px -14px rgba(0, 0, 0, .45); }
+.qz-fig-corr.colle::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 24px; background: inherit; }   /* la marge du haut du volet : rien ne passe au-dessus */
+.qz-fig-corr .qz-arbre-cadre, .qz-fig-corr .qz-tab-cadre { margin: 0; }
+.qv-corps .qz-arbre, .qv-corps .qz-tab { font-family: var(--f-texte); font-size: 1rem; }
+.qv-corps .qz-fig-corr .ML__latex, .qv-rappel .ML__latex { font-size: 1.06em; }
+.qv-corps .qz-tab th, .qv-corps .qz-tab td { height: 42px; padding: 4px 10px; min-width: 3.4em; }
+.qz-slot { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 2.8em; min-height: 1.75em; padding: 1px 5px; vertical-align: middle; }
+.qz-slot-vide { position: absolute; inset: 0; border: 1.6px dashed color-mix(in srgb, currentColor 42%, transparent); border-radius: 7px; transition: opacity .35s; }
+.qz-slot:has(> .qz-val.vu) > .qz-slot-vide { opacity: 0; }
+.qz-val { color: var(--rouge); font-weight: 600; padding: 0 2px; border-radius: 6px; }
+.qz-val.neuf { animation: qz-val-neuf 1.8s var(--courbe); }
+@keyframes qz-val-neuf { 0% { background: color-mix(in srgb, #f5c400 55%, transparent); } 100% { background: transparent; } }
+/* capture du cours : en PLEINE largeur du volet (le corps a 24 px de marge, 12 px sur téléphone), ombre portée vers le bas ;
+   l'invitation à l'agrandir est SOUS la capture (rien par-dessus le texte du cours) */
+.qz-cours { margin: 6px -24px 18px; }
+.qz-cours-b { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 0; color: var(--gris); }
+.qz-cours img { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 6px 14px rgba(0, 0, 0, .24); }
+.qz-cours-loupe { display: flex; align-items: center; justify-content: flex-end; gap: 5px; padding: 8px 24px 0; font: 600 .74rem/1.2 var(--f-texte); color: var(--gris); }
+.qz-cours-loupe svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.qz-cours-b:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }
+@media (max-width: 720px) { .qz-cours { margin-left: -12px; margin-right: -12px; } .qz-cours-loupe { padding-right: 12px; } }
+/* la capture en grand, plein écran, à la plus grande taille qui tient ; téléphone tenu droit : tournée d'un quart de tour */
+.qz-loupe { position: fixed; inset: 0; z-index: 950; display: grid; place-items: center; overflow: hidden; background: rgba(12, 14, 22, .94);
+  cursor: zoom-out; animation: qz-loupe .25s var(--courbe); }
+.qz-loupe-cadre { position: relative; }
+.qz-loupe img { display: block; max-width: none; background: #fff; box-shadow: 6px 10px 30px rgba(0, 0, 0, .5); }
+.qz-loupe.tourne img { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(90deg); box-shadow: -10px 6px 30px rgba(0, 0, 0, .5); }
+.qz-loupe-tete { position: fixed; top: max(14px, env(safe-area-inset-top, 0px)); left: 16px; right: 68px; color: #fff; pointer-events: none; }
+.qz-loupe-titre { margin: 0; font: 600 1rem/1.3 var(--f-texte); }
+.qz-loupe-aide { margin: 3px 0 0; color: rgba(255, 255, 255, .8); font: 500 .82rem/1.35 var(--f-texte); }
+.qz-loupe-fermer { position: fixed; top: max(12px, env(safe-area-inset-top, 0px)); right: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: #fff; color: #1d1d1f; font: 400 1.6rem/1 var(--f-texte); cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, .3); }
+@keyframes qz-loupe { from { opacity: 0; } to { opacity: 1; } }
+.qz-corr-partie { position: relative; }
+.qz-fig-corr > .qz-corr-titre { margin: 4px 0 8px; }
+.qv-insec { white-space: nowrap; }                       /* une ponctuation reste avec sa formule */
+.qv-frac { display: inline-block; }                     /* formule à fraction dans une phrase : sa ligne lui fait toute la place */
+.qv-al.avec-just.qv-dessous { padding-right: 0; }        /* justifications sous la ligne : la marge de droite n'est plus réservée */
+.qv-al.qv-dessous .qv-just { transform: none; }
+.qz-corr-titre { display: flex; align-items: center; gap: 10px; margin: 20px 0 12px; font: 700 .82em var(--f-texte); letter-spacing: .06em; text-transform: uppercase; color: var(--bleu); }
+.qz-corr-titre::after { content: ""; flex: 1; height: 1.5px; background: var(--filet); }
+.qz-corr-partie:first-child .qz-corr-titre, .qv-etapes > .qz-corr-partie:first-of-type .qz-corr-titre { margin-top: 4px; }
+
+@media (max-width: 720px) {
+  .qz-prop { min-height: 52px; padding: 8px 10px; gap: 10px; font-size: 1.04rem; border-radius: 14px; }
+  .qz-lettre { width: 28px; height: 28px; font-size: .85rem; }
+  .qz-vf-b { min-height: 54px; font-size: 1.1rem; }
+  .qz-assoc { grid-template-columns: minmax(0, 1fr); }
+  .qz-assoc-ligne { grid-template-columns: minmax(0, 1fr); padding: 8px 10px; gap: 8px; }
+  .qz-pastille { font-size: 1rem; padding: 4px 13px; }
+  .qz-tab { font-size: .98rem; }
+  .qz-tab th, .qz-tab td { padding: 4px 6px; height: 46px; min-width: 3.1em; }
+  math-field.quiz-champ.petit.qz-champ { font-size: 1.02rem; min-width: 3em; padding: 2px 5px; }
+  .qz-arbre { font-size: .97rem; }
+  .qz-arbre math-field.quiz-champ.petit.qz-champ { font-size: .96rem; min-width: 2.8em; }
+  .qz-partie { padding: 12px 10px; border-radius: 16px; }
+  .qz-partie-enonce { font-size: 1.04rem; }
+  .qv-corps .qz-arbre, .qv-corps .qz-tab { font-size: .92rem; }
+}
+@media (prefers-reduced-motion: reduce) { .qz-partie-coche, .qz-prop, .qz-vf-b, .qz-pastille { transition: none; } .qz-val.neuf { animation: none; } }

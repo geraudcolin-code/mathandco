@@ -222,3 +222,21 @@
 /* volet de correction animée : boutons du pied resserrés (le style cyber les élargit) */
 .cyber .qv-pied .bouton { letter-spacing: .04em; padding: 0 12px; font-size: .78rem; }
 .cyber .quiz-volet { border-left-color: rgba(0, 240, 255, .35); }
+
+/* quiz de chapitre (14 nov. 2026) : cartes, boutons, lignes et parties à coins vifs ; choix en cours en cyan lumineux ;
+   arbre aux nœuds sombres cerclés de clair ; capture du cours détourée de cyan */
+.cyber .qz-prop, .cyber .qz-vf-b, .cyber .qz-assoc-ligne, .cyber .qz-partie, .cyber .qz-pastille, .cyber .quiz-enonce .quiz-affirmation { border-radius: 0; }
+.cyber .qz-prop, .cyber .qz-vf-b, .cyber .qz-pastille { background: #0b0d1a; border-color: #2f3354; }
+.cyber .qz-prop.choisie, .cyber .qz-vf-b.choisie { background: rgba(0, 240, 255, .08); box-shadow: 0 0 0 1px var(--cp-cyan), 0 0 16px rgba(0, 240, 255, .28); }
+.cyber .qz-lettre { border-radius: 0; font-family: var(--f-mono); }
+.cyber .qz-pastille.choisie { background: var(--cp-cyan); border-color: var(--cp-cyan); color: #0a0b14; box-shadow: 0 0 12px rgba(0, 240, 255, .35); }
+.cyber .qz-prop.qz-faux, .cyber .qz-vf-b.qz-faux { background: rgba(255, 0, 60, .1); }
+.cyber .qz-prop.qz-juste, .cyber .qz-vf-b.qz-juste { background: rgba(0, 255, 156, .08); }
+.cyber .qz-assoc-ligne.qz-faux .qz-pastille.choisie { background: var(--cp-rouge); border-color: var(--cp-rouge); color: #fff; }
+.cyber .qz-assoc-ligne.qz-juste .qz-pastille.choisie { background: var(--cp-teal); border-color: var(--cp-teal); }
+.cyber .quiz-enonce .quiz-affirmation { background: rgba(0, 240, 255, .06); border-left-color: var(--cp-cyan); }
+.cyber .qz-tab th { background: #151830; }
+.cyber .qz-noeud { background: #0d0e19; border-color: rgba(234, 246, 255, .72); box-shadow: 0 0 10px rgba(0, 240, 255, .2); }
+.cyber .qz-partie-num { color: var(--cp-cyan); font-family: var(--f-mono); }
+.cyber .qz-cours img { box-shadow: 0 0 0 1px rgba(0, 240, 255, .35), 0 8px 18px rgba(0, 0, 0, .6); }
+.cyber .qz-fig-corr.colle { box-shadow: 0 12px 14px -14px rgba(0, 240, 255, .55); }

@@ -11,6 +11,16 @@
      - 'signes'      : tableau de signes à construire
      - 'variations'  : tableau de variations à construire
      - 'repere'      : placer un point / tracer une droite dans un repère, placer un point sur une droite graduée
+   Types des quiz de chapitre (1ère CH03, 14 nov. 2026 ; format : docs/quiz/1ere-ch03/CONTRAT.md de l'atelier) :
+     - 'qcm'         : propositions en cartes (une bonne réponse, ou plusieurs avec « bonnes »), mélangées
+     - 'vf'          : vrai / faux, une seule tentative
+     - 'associer'    : une ligne par élément de gauche, les choix de droite en pastilles
+     - 'tableau'     : tableau à double entrée à remplir (option « totaux »)
+     - 'arbre'       : arbre pondéré à compléter, dessiné par le moteur
+     - 'exercice'    : plusieurs questions (« parties ») sur un même énoncé, un seul bouton Valider
+   Toute question peut montrer un arbre ou un tableau en lecture seule (champs « arbre », « tableau ») ; dans une
+   correction, <!--cours:clé--> montre une capture du cours (window.QUIZ_COURS) et <!--v:k--> écrit la valeur de la
+   case k dans l'arbre / le tableau dessiné en tête de la correction.
    Option d'un quiz : tirage { depuis: [identifiants], n } → n questions tirées au hasard à chaque essai, posées dans un
    ordre au hasard (thèmes mélangés) ; avec ordre: 'banque', elles sont remises dans l'ordre des banques.
 */
@@ -657,6 +667,205 @@
     return { etat: 'faux', msg: q.indiceFaux || '' };
   }
 
+  /* ======================= 2 bis. Types des quiz de chapitre : vérification (1ère CH03, 14 nov. 2026) ======================= */
+  /* qcm, vf (vrai / faux), associer, tableau (double entrée à remplir), arbre (pondéré, à compléter), exercice (plusieurs
+     questions sur un même énoncé). Format des questions : docs/quiz/1ere-ch03/CONTRAT.md de l'atelier.
+     verifierReponse(q, rep) vérifie TOUS les types, sans toucher à la page ; rep a le format de reponseAttendue(q) :
+     expr, intervalles, comparer : LaTeX ; cases, tableau, arbre : liste de LaTeX (une par case) ; ensemble : « a;b » ;
+     coords : [x, y] ; signes, variations : état du tableau ; repere : points ; qcm : indice (ou liste avec bonnes) ;
+     vf : true / false ; associer : un indice de « droite » par ligne ; exercice : la liste des réponses des parties.
+     Résultat : { etat: 'juste' | 'faux' | 'lecture', msg, … } (+ faux : cases ou lignes fausses, fige : plus d'essai). */
+  var CASE_SEULE = /^\{(\d+)\}$/;              // une cellule, une étiquette de branche, un chemin : « {k} » = case n° k
+  function caseDe(s) { var m = CASE_SEULE.exec(String(s == null ? '' : s).trim()); return m ? +m[1] : -1; }
+  function valeurTeX(s) {                       // nombre écrit (LaTeX, ou HTML avec \( \)) ; NaN si ce n'en est pas un
+    s = String(s == null ? '' : s).replace(/<[^>]*>/g, ' ').replace(/\\\(|\\\)/g, ' ').replace(/&nbsp;/g, ' ').trim();
+    if (!s) return NaN;
+    try { var v = evaluer(analyser(s), {}); return isFinite(v) ? v : NaN; } catch (e) { return NaN; }
+  }
+  function sansReponse(x) { return x == null || x === '' || (typeof x === 'string' && !x.trim()) || (typeof x === 'number' && x < 0); }
+  function caseVerif(c) {                       // une case (tableau, arbre) vérifiée comme une question « expr »
+    return { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, positifs: c.positifs };
+  }
+  function estVraiFaux(q) { return q.droite && q.droite.length === 2 && /^vrai$/i.test(String(q.droite[0]).trim()) && /^faux$/i.test(String(q.droite[1]).trim()); }
+
+  /* ----- QCM : une bonne réponse (bonne), ou plusieurs (bonnes) ----- */
+  function verifierQcm(q, rep) {
+    if (q.bonnes) {
+      var ch = (Array.isArray(rep) ? rep : sansReponse(rep) ? [] : [rep]).map(Number);
+      if (!ch.length) return { etat: 'lecture', msg: 'Coche au moins une réponse.' };
+      var fausses = ch.filter(function (i) { return q.bonnes.indexOf(i) < 0; }).length;
+      if (fausses) return { etat: 'faux', msg: fausses > 1 ? 'Des réponses cochées sont fausses.' : 'Une des réponses cochées est fausse.' };
+      if (q.bonnes.some(function (i) { return ch.indexOf(i) < 0; })) return { etat: 'faux', msg: 'Il manque au moins une bonne réponse.' };
+      return { etat: 'juste' };
+    }
+    var i = Array.isArray(rep) ? rep[0] : rep;
+    if (sansReponse(i)) return { etat: 'lecture', msg: 'Choisis une réponse.' };
+    i = +i;
+    if (i === q.bonne) return { etat: 'juste' };
+    var m = q.messages ? q.messages[i] : '';
+    return { etat: 'faux', msg: m || 'Ce n’est pas la bonne réponse.', choix: i };
+  }
+
+  /* ----- vrai / faux : une seule tentative (avec deux choix, la seconde serait devinée) ----- */
+  function verifierVf(q, rep) {
+    if (typeof rep === 'string') rep = /^\s*v/i.test(rep) ? true : /^\s*f/i.test(rep) ? false : null;
+    if (rep !== true && rep !== false) return { etat: 'lecture', msg: 'Choisis « Vrai » ou « Faux ».' };
+    return rep === !!q.attendu ? { etat: 'juste' } : { etat: 'faux', msg: 'Ce n’est pas la bonne réponse.', fige: true };
+  }
+
+  /* ----- associer : un choix de « droite » par ligne de « gauche » ----- */
+  function verifierAssocier(q, rep) {
+    var n = q.gauche.length, vides = 0, faux = [], i;
+    for (i = 0; i < n; i++) if (sansReponse(rep[i])) vides++;
+    if (vides) return { etat: 'lecture', msg: vides === n ? 'Associe chaque ligne à une réponse.' : 'Il reste ' + (vides > 1 ? vides + ' lignes' : 'une ligne') + ' sans réponse.' };
+    for (i = 0; i < n; i++) if (+rep[i] !== q.attendu[i]) faux.push(i);
+    if (!faux.length) return { etat: 'juste' };
+    var msg = '';
+    (q.messages || []).some(function (m) { if (faux.indexOf(m.g) >= 0 && +rep[m.g] === m.d) { msg = m.msg; return true; } return false; });
+    if (!msg) {
+      var mot = estVraiFaux(q) ? 'réponse' : 'association';
+      msg = faux.length === 1 ? 'Une ' + mot + ' sur ' + n + ' n’est pas juste (en rouge).' : faux.length + ' ' + mot + 's sur ' + n + ' ne sont pas justes (en rouge).';
+    }
+    return { etat: 'faux', msg: msg, faux: faux };
+  }
+
+  /* ----- tableau à double entrée, arbre pondéré : une case par {k} ----- */
+  function verifierGrille(q, rep, genre) {
+    var vides = [], illisibles = [], faux = [], msgCase = '';
+    q.cases.forEach(function (c, k) {
+      var l = rep[k];
+      if (sansReponse(l)) { vides.push(k); return; }
+      var r = verifierExpr(caseVerif(c), l);
+      if (r.etat === 'lecture') illisibles.push(k);
+      else if (r.etat !== 'juste') { faux.push(k); if (!msgCase && r.msg) msgCase = r.msg; }
+    });
+    if (vides.length) return { etat: 'lecture', msg: 'Remplis toutes les cases.', vides: vides };
+    if (illisibles.length) return { etat: 'lecture', msg: 'Je n’arrive pas à lire ' + (illisibles.length > 1 ? 'certaines cases' : 'une des cases') + ' : vérifie l’écriture.', illisibles: illisibles };
+    if (!faux.length) return { etat: 'juste' };
+    // ordre des messages : piège ou forme d'une case, puis la cohérence (totaux, somme 1, produit le long d'un chemin), puis le compte
+    var msg = msgCase || (genre === 'arbre' ? incoherenceArbre(q.arbre, rep, faux) : incoherenceTableau(q.tableau, rep));
+    if (!msg) msg = faux.length === 1 ? 'Une valeur n’est pas juste (en rouge).' : faux.length + ' valeurs ne sont pas justes (en rouge).';
+    return { etat: 'faux', msg: msg, faux: faux };
+  }
+  function valeurCellule(c, rep) { var k = caseDe(c); return k >= 0 ? valeurTeX(rep[k]) : valeurTeX(c); }
+  function incoherenceTableau(t, rep) {         // totaux : dernière ligne et dernière colonne
+    if (!t || !t.totaux || t.lignes.length < 3) return '';
+    var V = t.lignes.map(function (l) { return l.map(function (c) { return valeurCellule(c, rep); }); });
+    var R = V.length, C = V[0].length, ko = false, i, j;
+    function pres(a, b) { return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b)); }
+    function compare(cells, tot) {
+      if (!isFinite(tot) || !cells.length || !cells.every(isFinite)) return;
+      if (!pres(cells.reduce(function (s, x) { return s + x; }, 0), tot)) ko = true;
+    }
+    if (C < 3) return '';
+    for (i = 1; i < R - 1; i++) compare(V[i].slice(1, C - 1), V[i][C - 1]);           // chaque ligne
+    for (j = 1; j < C; j++) { var col = []; for (i = 1; i < R - 1; i++) col.push(V[i][j]); compare(col, V[R - 1][j]); }   // chaque colonne (et la colonne des totaux)
+    compare(V[R - 1].slice(1, C - 1), V[R - 1][C - 1]);                                  // total général
+    return ko ? 'Vérifie les totaux : chaque total est la somme de sa ligne ou de sa colonne.' : '';
+  }
+  function cheminsArbre(a) {                    // les feuilles de haut en bas : branches de la racine à la feuille
+    var out = [];
+    (function tour(bs, pref) { (bs || []).forEach(function (b) { var ch = pref.concat([b]); if (b.branches && b.branches.length) tour(b.branches, ch); else out.push(ch); }); })(a.branches, []);
+    return out;
+  }
+  function incoherenceArbre(a, rep, faux) {
+    var msg = '';
+    function val(p) { return valeurCellule(p, rep); }
+    (function noeud(bs) {                         // la somme des branches issues d'un même nœud vaut 1
+      if (!bs || !bs.length || msg) return;
+      var vs = bs.map(function (b) { return val(b.p); });
+      if (bs.some(function (b) { return caseDe(b.p) >= 0; }) && vs.every(isFinite) && Math.abs(vs.reduce(function (s, x) { return s + x; }, 0) - 1) > 1e-9)
+        msg = 'La somme des probabilités des branches issues d’un même nœud est égale à 1.';
+      bs.forEach(function (b) { noeud(b.branches); });
+    })(a.branches);
+    if (msg || !a.chemins) return msg;
+    var ch = cheminsArbre(a);                     // la probabilité d'un chemin est le produit des probabilités de ses branches
+    for (var i = 0; i < ch.length; i++) {
+      var k = caseDe(a.chemins[i]); if (k < 0 || faux.indexOf(k) < 0) continue;
+      var prod = ch[i].reduce(function (x, b) { return x * val(b.p); }, 1), v = valeurTeX(rep[k]);
+      if (isFinite(prod) && isFinite(v) && Math.abs(prod - v) > 1e-9) return 'La probabilité d’un chemin est le produit des probabilités des branches qui le composent.';
+    }
+    return '';
+  }
+
+  /* ----- exercice : plusieurs questions sur un même énoncé, un seul bouton Valider ----- */
+  function estVide(q, rep) {
+    switch (q.type) {
+      case 'qcm': return Array.isArray(rep) ? !rep.length : sansReponse(rep);
+      case 'vf': return rep !== true && rep !== false && sansReponse(rep);
+      case 'cases': case 'tableau': case 'arbre': case 'associer': case 'coords': return !rep || !rep.length || rep.every(sansReponse);
+      default: return sansReponse(rep);
+    }
+  }
+  function numeros(ks) {                        // [1, 2, 3] → « 2, 3 et 4 »
+    ks = ks.map(function (k) { return k + 1; });
+    return ks.length > 1 ? ks.slice(0, -1).join(', ') + ' et ' + ks[ks.length - 1] : String(ks[0]);
+  }
+  function bilanExercice(res) {                 // res : un résultat par partie ('vide' : pas encore de réponse ; 'rate' : vrai / faux raté)
+    var faux = [], reste = [];
+    res.forEach(function (r, i) { if (r.etat === 'faux' || r.etat === 'rate') faux.push(i); else if (r.etat !== 'juste') reste.push(i); });
+    var msgR = reste.length ? 'Il reste à répondre ' + (reste.length > 1 ? 'aux questions ' : 'à la question ') + numeros(reste) + '.' : '';
+    if (faux.length) return { etat: 'faux', parties: res, reste: reste, msg: (faux.length > 1 ? 'Les questions ' + numeros(faux) + ' ne sont pas justes.' : 'La question ' + numeros(faux) + ' n’est pas juste.') + (msgR ? ' ' + msgR : '') };
+    if (reste.length) return { etat: 'lecture', parties: res, reste: reste, msg: msgR };
+    return { etat: 'juste', parties: res, reste: reste };
+  }
+  function verifierExercice(q, rep) {
+    return bilanExercice(q.parties.map(function (pa, i) { return estVide(pa, rep[i]) ? { etat: 'vide' } : verifierReponse(pa, rep[i]); }));
+  }
+
+  /* ----- coordonnées d'un vecteur (deux cases en colonne) ----- */
+  function verifierCoords(q, vals) {
+    var v = [];
+    try { q.valeurs.forEach(function (_, i) { var x = vals[i]; v.push(typeof x === 'number' ? x : evaluer(analyser(x == null ? '' : x), {})); }); }
+    catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? 'Remplis les deux cases (abscisse en haut, ordonnée en bas).' : 'Une des coordonnées est illisible.' }; }
+    function pres(a, b) { return isFinite(a) && Math.abs(a - b) < 1e-9; }
+    var att = q.valeurs;
+    if (v.every(function (x, i) { return pres(x, att[i]); })) return { etat: 'juste' };
+    if (v.length === 2 && pres(v[0], att[1]) && pres(v[1], att[0])) return { etat: 'faux', msg: 'Attention à l’ordre : l’abscisse en haut, l’ordonnée en bas.' };
+    if (v.every(function (x, i) { return pres(x, -att[i]); })) return { etat: 'faux', msg: q.indiceSigne || 'Attention au sens : on calcule « arrivée − départ ».' };
+    return { etat: 'faux', msg: q.indiceFaux || '' };
+  }
+
+  /* ----- pour TOUS les types ----- */
+  function verifierReponse(q, rep) {
+    switch (q.type) {
+      case 'cases': return verifierCases(q, rep || []);
+      case 'ensemble': return verifierEnsemble(q, rep);
+      case 'intervalles': return verifierIntervalles(q, rep);
+      case 'comparer': return verifierComparer(q, rep);
+      case 'coords': return verifierCoords(q, rep || []);
+      case 'signes': case 'variations': return rep ? verifierTableau(q, rep) : { etat: 'lecture', msg: 'Construis le tableau.' };
+      case 'repere': return verifierRepere(q, rep || []);
+      case 'qcm': return verifierQcm(q, rep);
+      case 'vf': return verifierVf(q, rep);
+      case 'associer': return verifierAssocier(q, rep || []);
+      case 'tableau': case 'arbre': return verifierGrille(q, rep || [], q.type);
+      case 'exercice': return verifierExercice(q, rep || []);
+      default: return verifierExpr(q, rep);
+    }
+  }
+  function reponseAttendue(q) {
+    function num(v) { return typeof v === 'number' ? String(v).replace('.', '{,}') : v; }
+    switch (q.type) {
+      case 'cases': case 'tableau': case 'arbre': return q.cases.map(function (c) { return c.attendu; });
+      case 'ensemble': return q.valeurs.map(num).join(';');
+      case 'coords': return q.valeurs.slice();
+      case 'signes': case 'variations': {
+        var b = q.bornes || [-Infinity, Infinity];
+        return { gauche: b[0], droite: b[1], valeurs: q.valeurs.slice(), traits: q.ligne ? q.ligne.traits.slice() : [], signes: q.ligne ? q.ligne.signes.slice() : [],
+          fleches: (q.fleches || []).slice(), images: (q.images || []).slice() };
+      }
+      case 'repere':
+        return q.mode === 'droite' ? (q.droite.x != null ? [[q.droite.x, 0], [q.droite.x, 1]] : [[0, q.droite.p], [3, 3 * q.droite.m + q.droite.p]])
+          : q.mode === 'graduee' ? [[q.point, 0]] : [q.point.slice()];
+      case 'qcm': return q.bonnes ? q.bonnes.slice() : q.bonne;
+      case 'vf': return !!q.attendu;
+      case 'associer': return q.attendu.slice();
+      case 'exercice': return q.parties.map(reponseAttendue);
+      default: return (q.gaucheObligatoire ? q.gauche + '=' : '') + q.attendu;      // expr, intervalles, comparer
+    }
+  }
+
   /* ======================= 3. Clavier mathématique ======================= */
   function k(latex, extra) { var o = { latex: latex }; if (extra) for (var c in extra) o[c] = extra[c]; return o; }
   var CLAVIERS = [
@@ -766,7 +975,16 @@
 
   /* ======================= 5. Le quiz ======================= */
   function el(tag, classe, html) { var e = document.createElement(tag); if (classe) e.className = classe; if (html != null) e.innerHTML = html; return e; }
-  function rendre(elm) { if (window.MathLive && window.MathLive.renderMathInElement) try { window.MathLive.renderMathInElement(elm); } catch (e) {} }
+  function rendre(elm) { if (window.MathLive && window.MathLive.renderMathInElement) try { window.MathLive.renderMathInElement(elm); insecables(elm); } catch (e) {} }
+  var PONCT = /^(\s?)([.,;:!?…)\]»]+)/;
+  function insecables(racine) {                  // « \(P(A)=0{,}4\). » : le point ne passe pas seul à la ligne (14 nov. 2026)
+    Array.prototype.forEach.call(racine.querySelectorAll('.ML__sr-only'), function (sr) {
+      var f = sr.parentNode, t = f && f.nextSibling, m;
+      if (!f || !t || t.nodeType !== 3 || !(m = PONCT.exec(t.nodeValue)) || (f.parentNode && f.parentNode.classList && f.parentNode.classList.contains('qv-insec'))) return;
+      var w = el('span', 'qv-insec'); f.parentNode.insertBefore(w, f); w.appendChild(f);
+      w.appendChild(document.createTextNode((m[1] ? '\u00a0' : '') + m[2])); t.nodeValue = t.nodeValue.slice(m[0].length);
+    });
+  }
   function melanger(t) { t = t.slice(); for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = t[i]; t[i] = t[j]; t[j] = x; } return t; }
 
   /* Tirage ÉQUILIBRÉ (option equilibre d'un quiz à réglages, 15 nov. 2026) : chaque sous-banque (même banque, même
@@ -844,12 +1062,21 @@
       var img = el('img'); img.src = q.figure; img.alt = q.figureAlt || 'Figure de la question'; img.loading = 'lazy'; img.decoding = 'async';
       fig.appendChild(img); enonce.appendChild(fig);
     }
-    if (q.enonceApres) enonce.appendChild(el('div', 'quiz-enonce-apres', q.enonceApres));
+    figuresLecture(q, enonce);                     // arbre / tableau en lecture seule (quiz de chapitre, 14 nov. 2026)
+    var apresFigure = q.enonceApres && (q.type === 'arbre' || q.type === 'tableau');   // la suite de l'énoncé vient après la figure à compléter
+    if (q.enonceApres && !apresFigure) enonce.appendChild(el('div', 'quiz-enonce-apres', q.enonceApres));
     c.appendChild(enonce); rendre(enonce);
     var zone = el('div', 'quiz-zone'); c.appendChild(zone);
     function entree(mf) { mf.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); self.valider(n); } }); return mf; }
     var lire;
-    if (q.type === 'signes' || q.type === 'variations') lire = this.tableau(q, zone);
+    if (NOUVEAUX[q.type]) {                        // qcm, vf, associer, tableau, arbre, exercice (quiz de chapitre, 14 nov. 2026)
+      var s = saisiePour(q, { label: 'question ' + (n + 1), valider: function () { self.valider(n); },
+        champ: function (classe, aria) { return nouveauChamp(classe, aria); } });
+      zone.appendChild(s.el); c._saisie = s;
+      if (apresFigure) { var ea = el('div', 'quiz-enonce-apres', q.enonceApres); zone.appendChild(ea); rendre(ea); }
+      lire = s.verifier || function () { var r = verifierReponse(q, s.lire()); s.marquer(r); return r; };
+    }
+    else if (q.type === 'signes' || q.type === 'variations') lire = this.tableau(q, zone);
     else if (q.type === 'coords') lire = this.coords(q, zone, n);
     else if (q.type === 'repere') lire = this.repere(q, zone);
     else if (q.type === 'cases') lire = this.cases(q, zone, n, entree);
@@ -875,7 +1102,10 @@
         : q.type === 'intervalles' ? function () { return verifierIntervalles(q, mf.value); }
         : function () { return verifierExpr(q, mf.value); };
     }
-    c._champ = zone.querySelector('math-field');
+    // exercice, arbre, tableau, énoncé avec une figure : pas de mise au point automatique, le clavier virtuel cacherait
+    // le haut de la figure ; il s'ouvre quand l'élève touche une case (14 nov. 2026)
+    var aFigure = q.type === 'exercice' || q.type === 'arbre' || q.type === 'tableau' || !!(q.figure || q.arbre || q.tableau);
+    c._champ = aFigure ? null : zone.querySelector('math-field');
     c._lire = lire;
     var msg = el('p', 'quiz-message'); msg.setAttribute('role', 'status'); msg.setAttribute('aria-live', 'polite'); c.appendChild(msg); c._msg = msg;
     var actions = el('div', 'quiz-actions');
@@ -895,7 +1125,9 @@
     this.majPoints();
     var c = this.cartes[n];
     majLanguette(this);
-    if (c._champ && !this.etat[n].juste) setTimeout(function () { if (voletOuvert()) return; try { c._champ.focus(); } catch (e) {} }, 50);
+    espacerCarte(c);                               // fractions de l'énoncé : leur ligne leur fait la place
+    if (document.fonts && document.fonts.status !== 'loaded' && document.fonts.ready) document.fonts.ready.then(function () { if (!c.hidden) espacerCarte(c, true); });
+    if (c._champ && !this.etat[n].juste && !c._fini) setTimeout(function () { if (voletOuvert()) return; try { c._champ.focus(); } catch (e) {} }, 50);
     else if (window.mathVirtualKeyboard) try { window.mathVirtualKeyboard.hide(); } catch (e) {}
   };
   Quiz.prototype.majPoints = function () {
@@ -910,10 +1142,10 @@
   };
   Quiz.prototype.valider = function (n) {
     var c = this.cartes[n], e = this.etat[n];
-    if (e.juste) return;
+    if (e.juste || c._fini) return;
     var r = c._lire();
     c._msg.className = 'quiz-message';
-    if (r.etat === 'lecture') { c._msg.textContent = r.msg; c._msg.classList.add('info'); return; }
+    if (r.etat === 'lecture') { ecrireMsg(c._msg, r.msg); c._msg.classList.add('info'); return; }
     e.essais++;
     if (r.etat === 'juste') {
       e.juste = true; e.premier = e.essais === 1 && !e.vue;
@@ -923,16 +1155,23 @@
       c._bn.className = 'bouton';
       c.querySelectorAll('.quiz-zone math-field').forEach(function (s) { s.readOnly = true; s.blur(); });
       c.querySelectorAll('.quiz-zone button').forEach(function (s) { s.disabled = true; });
+      if (c._saisie) c._saisie.figer();
       window.mathVirtualKeyboard && window.mathVirtualKeyboard.hide();
       signalerJuste();
       setTimeout(function () { c._bn.focus(); }, 50);
     } else {
       c.classList.add('ratee');
-      c._msg.textContent = r.msg ? r.msg : 'Ce n’est pas la bonne réponse. Cherche encore !';
+      ecrireMsg(c._msg, r.msg ? r.msg : 'Ce n’est pas la bonne réponse. Cherche encore !');
       c._msg.classList.add('ko');
       // dès la première erreur : la correction animée est proposée (volet sur le côté), et l'on peut passer à la suite
       c._bs.hidden = false; c._bn.hidden = false; c._bn.className = 'bouton secondaire';
-      signalerFaux();
+      if (!r.calme) signalerFaux();                // calme : rien de nouveau de faux (exercice dont un vrai / faux était raté)
+      if (r.fige) {                                // plus d'essai possible (vrai / faux) : la correction, ou la question suivante
+        c._fini = true; c._bv.hidden = true;
+        if (c._saisie) c._saisie.figer();
+        window.mathVirtualKeyboard && window.mathVirtualKeyboard.hide();
+        setTimeout(function () { try { c._bs.focus({ preventScroll: true }); } catch (x) {} }, 60);
+      }
     }
     this.majPoints();
   };
@@ -970,7 +1209,7 @@
   /* ----- plusieurs cadres dans une phrase : modele 'texte {0} texte {1}' ----- */
   Quiz.prototype.cases = function (q, zone, n, entree) {
     var ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
-    String(q.modele).split(/(\{\d+\})/).forEach(function (morceau) {
+    morceauxModele(String(q.modele)).forEach(function (morceau) {
       var m = /^\{(\d+)\}$/.exec(morceau);
       if (m) {
         var i = +m[1], cd = q.cases[i] || {};
@@ -995,17 +1234,7 @@
       col.appendChild(mf); return mf;
     });
     ligne.appendChild(col); zone.appendChild(ligne);
-    return function () {
-      var v = [];
-      try { champs.forEach(function (mf) { v.push(evaluer(analyser(mf.value), {})); }); }
-      catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? 'Remplis les deux cases (abscisse en haut, ordonnée en bas).' : 'Une des coordonnées est illisible.' }; }
-      function pres(a, b) { return isFinite(a) && Math.abs(a - b) < 1e-9; }
-      var att = q.valeurs;
-      if (v.every(function (x, i) { return pres(x, att[i]); })) return { etat: 'juste' };
-      if (v.length === 2 && pres(v[0], att[1]) && pres(v[1], att[0])) return { etat: 'faux', msg: 'Attention à l’ordre : l’abscisse en haut, l’ordonnée en bas.' };
-      if (v.every(function (x, i) { return pres(x, -att[i]); })) return { etat: 'faux', msg: q.indiceSigne || 'Attention au sens : on calcule « arrivée − départ ».' };
-      return { etat: 'faux', msg: q.indiceFaux || '' };
-    };
+    return function () { return verifierCoords(q, champs.map(function (mf) { return mf.value; })); };
   };
 
   /* ----- tableau de signes / de variations : valeurs de x ajoutées par l'élève ----- */
@@ -1216,6 +1445,494 @@
     return function () { return verifierRepere(q, pts.map(function (P) { return P.slice(); })); };
   };
 
+  /* ======================= 5 quater. Types des quiz de chapitre : saisie et figures (1ère CH03, 14 nov. 2026) ======================= */
+  /* Chaque saisie rend { el, lire() → réponse (format de reponseAttendue), marquer(résultat), figer() } ; la vérification
+     est celle de verifierReponse. Classes préfixées « qz- » (site.css, « Quiz de chapitre »). */
+  var LETTRES = 'ABCDEFGH';
+  var NOUVEAUX = { qcm: 1, vf: 1, associer: 1, tableau: 1, arbre: 1, exercice: 1 };
+  function texteJoli(t) {                        // texte brut d'un message : « P_A(B) », « P_C₁(S) » avec un vrai indice
+    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/_\{([^{}]+)\}|_([A-Za-zÀ-ÿ][\u0304\u0305]?[₀-₉0-9]*)/g, function (x, a, b) { return '<sub>' + (a || b) + '</sub>'; });
+  }
+  function ecrireMsg(m, txt) {                  // texte simple ; avec des formules \( … \), elles sont rendues
+    if (txt && /\\\(/.test(txt)) { m.innerHTML = txt; rendre(m); }
+    else if (txt && /_/.test(txt)) m.innerHTML = texteJoli(txt);
+    else m.textContent = txt || '';
+  }
+  function texteSimple(tex) {                   // « \overline{A} » → « A barre » (étiquettes pour les lecteurs d'écran)
+    return String(tex == null ? '' : tex).replace(/<[^>]*>/g, ' ').replace(/\\\(|\\\)/g, ' ').replace(/\\overline\{([^{}]*)\}/g, '$1 barre')
+      .replace(/\\cap/g, ' inter ').replace(/\\cup/g, ' union ').replace(/\{,\}/g, ',').replace(/\\[a-zA-Z]+/g, ' ').replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function celluleHTML(c) {                     // une cellule : HTML ; un nombre LaTeX écrit sans \( \) (« 0{,}3 ») y est mis
+    c = String(c == null ? '' : c);
+    return !/\\\(/.test(c) && !/</.test(c) && /\\|\{,\}|\^|_/.test(c) ? '\\(' + c + '\\)' : c;
+  }
+  function morceauxModele(s) {                  // « texte {0} texte {1} » ; un {k} DANS une formule \( … \) n'est pas une case
+    var out = [], re = /\\\([\s\S]*?\\\)|\{(\d+)\}/g, m, d = 0;
+    while ((m = re.exec(s))) { if (m[1] == null) continue; out.push(s.slice(d, m.index), m[0]); d = re.lastIndex; }
+    out.push(s.slice(d));
+    return out;
+  }
+  function boutonChoix(classe, html) { var b = el('button', classe, html); b.type = 'button'; b.setAttribute('aria-pressed', 'false'); return b; }
+  function entreeSuivante(champs, valider) {    // Entrée : la case vide suivante, sinon on valide
+    champs.forEach(function (mf, i) {
+      mf.addEventListener('keydown', function (ev) {
+        if (ev.key !== 'Enter') return;
+        ev.preventDefault();
+        for (var j = 1; j < champs.length; j++) {
+          var m = champs[(i + j) % champs.length];
+          if (m && !m.readOnly && !String(m.value || '').trim()) { try { m.focus(); } catch (e) {} return; }
+        }
+        valider();
+      });
+    });
+  }
+  function figerChamps(mfs) { mfs.forEach(function (mf) { if (mf) { mf.readOnly = true; mf.classList.remove('vide'); } }); }
+
+  /* ----- QCM : cartes à toucher (lettres A, B, C… après mélange) ----- */
+  function saisieQcm(q) {
+    var multi = !!q.bonnes, ordre = q.propositions.map(function (_, i) { return i; });
+    if (q.melanger !== false) ordre = melanger(ordre);
+    var box = el('div', 'qz-qcm' + (multi ? ' qz-multi' : '')), grille = el('div', 'qz-props'), choix = multi ? [] : null, cartes = {};
+    grille.setAttribute('role', 'group'); grille.setAttribute('aria-label', multi ? 'Propositions (plusieurs réponses possibles)' : 'Propositions');
+    if (multi) box.appendChild(el('p', 'qz-consigne', 'Plusieurs réponses possibles.'));
+    ordre.forEach(function (i, rang) {
+      var b = boutonChoix('qz-prop', '<span class="qz-lettre" aria-hidden="true">' + LETTRES[rang] + '</span><span class="qz-prop-txt">' + q.propositions[i] +
+        '</span><span class="qz-marque" aria-hidden="true"></span>');
+      b.dataset.i = i; cartes[i] = b;
+      b.addEventListener('click', function () {
+        if (b.disabled) return;
+        if (multi) { var j = choix.indexOf(i); if (j >= 0) choix.splice(j, 1); else choix.push(i); } else choix = i;
+        maj();
+      });
+      grille.appendChild(b);
+    });
+    box.appendChild(grille); rendre(box);
+    function maj() {
+      ordre.forEach(function (i) { var on = multi ? choix.indexOf(i) >= 0 : choix === i; cartes[i].classList.toggle('choisie', on); cartes[i].setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    }
+    return {
+      el: box, ordre: ordre,
+      lire: function () { return multi ? choix.slice().sort(function (a, b) { return a - b; }) : choix; },
+      marquer: function (r) {
+        if (r.etat === 'faux' && !multi && choix != null) {           // la carte fausse passe en rouge, on ne peut plus la choisir
+          var b = cartes[choix]; b.classList.add('qz-faux'); b.disabled = true;
+          b.appendChild(el('span', 'qz-sr', ' (réponse fausse)'));
+          choix = null; maj();
+        }
+        if (r.etat === 'juste') (multi ? choix : [choix]).forEach(function (i) { cartes[i].classList.add('qz-juste'); });
+      },
+      figer: function () { ordre.forEach(function (i) { cartes[i].disabled = true; }); }
+    };
+  }
+
+  /* ----- vrai / faux : deux grands boutons, une seule tentative ----- */
+  function saisieVf() {
+    var box = el('div', 'qz-vf'), choix = null, bs = [];
+    box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Vrai ou faux');
+    [['Vrai', true], ['Faux', false]].forEach(function (x) {
+      var b = boutonChoix('qz-vf-b', '<span class="qz-marque" aria-hidden="true"></span><span>' + x[0] + '</span>'); b.dataset.v = x[1] ? 'vrai' : 'faux';
+      b.addEventListener('click', function () { if (b.disabled) return; choix = x[1]; maj(); });
+      box.appendChild(b); bs.push([b, x[1]]);
+    });
+    function maj() { bs.forEach(function (x) { x[0].classList.toggle('choisie', choix === x[1]); x[0].setAttribute('aria-pressed', choix === x[1] ? 'true' : 'false'); }); }
+    return {
+      el: box,
+      lire: function () { return choix; },
+      marquer: function (r) {
+        bs.forEach(function (x) { if (x[1] !== choix) return; if (r.etat === 'faux') x[0].classList.add('qz-faux'); if (r.etat === 'juste') x[0].classList.add('qz-juste'); });
+      },
+      figer: function () { bs.forEach(function (x) { x[0].disabled = true; }); }
+    };
+  }
+
+  /* ----- associer : une ligne par élément de gauche, les choix de droite en pastilles ----- */
+  function saisieAssocier(q) {
+    var vf = estVraiFaux(q), box = el('div', 'qz-assoc' + (vf ? ' qz-assoc-vf' : '')), rep = q.gauche.map(function () { return null; }), lignes = [];
+    var ordreD = q.droite.map(function (_, j) { return j; });
+    if (q.melanger === true && !vf) ordreD = melanger(ordreD);      // option : choix de droite dans un ordre au hasard
+    q.gauche.forEach(function (g, i) {
+      var li = el('div', 'qz-assoc-ligne'), gl = el('div', 'qz-assoc-g', g), dr = el('div', 'qz-assoc-d');
+      dr.setAttribute('role', 'group'); dr.setAttribute('aria-label', 'Réponse associée à ' + texteSimple(g));
+      var ps = [];
+      ordreD.forEach(function (j) {
+        var b = boutonChoix('qz-pastille', q.droite[j]); b.dataset.j = j; ps[j] = b;
+        b.addEventListener('click', function () { if (b.disabled) return; rep[i] = rep[i] === j ? null : j; li.classList.remove('qz-faux'); maj(i); });
+        dr.appendChild(b);
+      });
+      li.appendChild(gl); li.appendChild(dr); box.appendChild(li); lignes.push({ li: li, ps: ps });
+    });
+    rendre(box);
+    function maj(i) { lignes[i].ps.forEach(function (b, j) { b.classList.toggle('choisie', rep[i] === j); b.setAttribute('aria-pressed', rep[i] === j ? 'true' : 'false'); }); }
+    return {
+      el: box, ordreD: ordreD,
+      lire: function () { return rep.slice(); },
+      marquer: function (r) {
+        lignes.forEach(function (l, i) { l.li.classList.toggle('qz-faux', !!(r.faux && r.faux.indexOf(i) >= 0)); l.li.classList.toggle('qz-juste', r.etat === 'juste'); });
+      },
+      figer: function () { lignes.forEach(function (l) { l.ps.forEach(function (b) { b.disabled = true; }); }); }
+    };
+  }
+
+  /* ----- tableau à double entrée, arbre pondéré : des cases MathLive compactes à la place des {k} ----- */
+  function saisieGrille(q, ctx) {
+    var champs = [], arbre = q.type === 'arbre';
+    var o = { champ: function (k, aria) {
+      var c = q.cases[k] || {}, mf = ctx.champ('quiz-champ petit qz-champ', (c.nom || aria || 'case ' + (k + 1)) + ' (' + ctx.label + ')');
+      mf.dataset.case = k;                         // l'ordre des cadres est celui de la lecture : math-field[data-case="k"] = case k
+      mf.addEventListener('input', function () { mf.classList.remove('qz-faux', 'qz-illisible'); });
+      champs[k] = mf; return mf;
+    } };
+    var fig = arbre ? dessinerArbre(q.arbre, 'saisie', o) : dessinerTableau(q.tableau, 'saisie', o);
+    rendre(fig.el);
+    entreeSuivante(Array.prototype.slice.call(fig.el.querySelectorAll('math-field')), ctx.valider);
+    return {
+      el: fig.el, champs: champs,
+      lire: function () { return q.cases.map(function (_, k) { return champs[k] ? champs[k].value : ''; }); },
+      marquer: function (r) {
+        champs.forEach(function (mf, k) {
+          if (!mf) return;
+          mf.classList.toggle('qz-faux', !!(r.faux && r.faux.indexOf(k) >= 0));
+          mf.classList.toggle('qz-illisible', !!(r.illisibles && r.illisibles.indexOf(k) >= 0));
+        });
+      },
+      figer: function () { figerChamps(champs); }
+    };
+  }
+
+  /* ----- expression, cases dans une phrase : pour les parties d'un exercice (même aspect que les questions seules) ----- */
+  function saisieExpr(q, ctx) {
+    var ligne = el('div', 'quiz-ligne'), mf = ctx.champ('quiz-champ', 'Ta réponse (' + ctx.label + ')');
+    if (q.prefixe) ligne.appendChild(el('span', 'quiz-prefixe', q.prefixe));
+    ligne.appendChild(mf);
+    if (q.suffixe) ligne.appendChild(el('span', 'quiz-prefixe quiz-suffixe', q.suffixe));
+    rendre(ligne);
+    mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
+    entreeSuivante([mf], ctx.valider);
+    return { el: ligne, champs: [mf], lire: function () { return mf.value; },
+      marquer: function (r) { mf.classList.toggle('qz-faux', r.etat === 'faux'); }, figer: function () { figerChamps([mf]); } };
+  }
+  function saisieCases(q, ctx) {
+    var ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
+    morceauxModele(String(q.modele)).forEach(function (m) {
+      var x = /^\{(\d+)\}$/.exec(m);
+      if (x) {
+        var i = +x[1], cd = q.cases[i] || {}, mf = ctx.champ('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (' + ctx.label + ')');
+        mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
+        champs[i] = mf; ligne.appendChild(mf);
+      } else if (m) ligne.appendChild(el('span', 'quiz-prefixe', m));
+    });
+    rendre(ligne);
+    entreeSuivante(Array.prototype.slice.call(ligne.querySelectorAll('math-field')), ctx.valider);
+    return { el: ligne, champs: champs, lire: function () { return champs.map(function (mf) { return mf ? mf.value : ''; }); },
+      marquer: function (r) {
+        champs.forEach(function (mf, k) { if (mf) mf.classList.toggle('qz-faux', r.etat === 'faux' && verifierExpr(caseVerif(q.cases[k]), mf.value).etat === 'faux'); });
+      },
+      figer: function () { figerChamps(champs); } };
+  }
+
+  /* ----- exercice : énoncé commun, parties numérotées « 1. », « 2. »…, un seul bouton Valider ----- */
+  function saisieExercice(q, ctx) {
+    var box = el('ol', 'qz-exo'), parties = [];
+    q.parties.forEach(function (pa, i) {
+      var li = el('li', 'qz-partie'), tete = el('div', 'qz-partie-tete'), en = el('div', 'qz-partie-enonce', pa.enonce);
+      tete.appendChild(el('span', 'qz-partie-num', (i + 1) + '.'));
+      if (pa.figure) { var f = el('figure', 'quiz-figure'), im = el('img'); im.src = pa.figure; im.alt = pa.figureAlt || 'Figure de la question'; f.appendChild(im); en.appendChild(f); }
+      figuresLecture(pa, en);
+      var apresZ = pa.enonceApres && (pa.type === 'arbre' || pa.type === 'tableau');   // après la figure à compléter
+      if (pa.enonceApres && !apresZ) en.appendChild(el('div', 'quiz-enonce-apres', pa.enonceApres));
+      tete.appendChild(en);
+      var coche = el('span', 'qz-partie-coche', '<svg viewBox="0 0 24 24" focusable="false"><path d="M6 12.5l4 4 8-9"/></svg>'); coche.setAttribute('aria-hidden', 'true');
+      tete.appendChild(coche); li.appendChild(tete); rendre(tete);
+      var s = saisiePour(pa, { label: ctx.label + ', partie ' + (i + 1), valider: ctx.valider, champ: ctx.champ });
+      var z = el('div', 'qz-partie-zone'), msg = el('p', 'qz-partie-msg');
+      msg.setAttribute('role', 'status'); msg.setAttribute('aria-live', 'polite');
+      z.appendChild(s.el); li.appendChild(z); li.appendChild(msg); box.appendChild(li);
+      if (apresZ) { var ea = el('div', 'quiz-enonce-apres', pa.enonceApres); z.appendChild(ea); rendre(ea); }
+      parties.push({ q: pa, li: li, s: s, msg: msg, etat: '' });
+    });
+    function verifier() {
+      var nouveaux = false;
+      var res = parties.map(function (p) {
+        if (p.etat) return { etat: p.etat };                         // déjà figée : juste, ou vrai / faux raté
+        var rep = p.s.lire();
+        return estVide(p.q, rep) ? { etat: 'vide' } : verifierReponse(p.q, rep);
+      });
+      res.forEach(function (r, i) {
+        var p = parties[i];
+        if (p.etat) return;
+        p.msg.className = 'qz-partie-msg'; ecrireMsg(p.msg, '');
+        if (r.etat === 'juste') { p.etat = 'juste'; p.li.classList.add('reussie'); p.s.marquer(r); p.s.figer(); }
+        else if (r.etat === 'faux') {
+          nouveaux = true; p.s.marquer(r); ecrireMsg(p.msg, r.msg || 'Ce n’est pas la bonne réponse.'); p.msg.classList.add('ko');
+          if (r.fige) { p.etat = 'rate'; p.li.classList.add('ratee'); p.s.figer(); }
+        } else if (r.etat === 'lecture') { p.s.marquer(r); ecrireMsg(p.msg, r.msg); p.msg.classList.add('info'); }
+      });
+      var b = bilanExercice(res), fini = !b.reste.length;
+      if (b.etat === 'faux' && !nouveaux)                            // seule une partie déjà ratée (vrai / faux) reste fausse
+        b = fini ? { etat: 'faux', calme: true, fige: true, parties: res, msg: 'Les autres questions sont justes, mais ' + b.msg.charAt(0).toLowerCase() + b.msg.slice(1, -1) + ' : regarde la correction.' }
+          : { etat: 'lecture', parties: res, msg: b.msg.replace(/^.*?\.\s*/, '') };
+      else if (b.etat === 'faux' && fini && parties.every(function (p) { return p.etat; })) b.fige = true;
+      return b;
+    }
+    return {
+      el: box, parties: parties, verifier: verifier,
+      lire: function () { return parties.map(function (p) { return p.s.lire(); }); },
+      marquer: function () {}, figer: function () { parties.forEach(function (p) { p.s.figer(); }); }
+    };
+  }
+  function saisiePour(q, ctx) {
+    switch (q.type) {
+      case 'qcm': return saisieQcm(q, ctx);
+      case 'vf': return saisieVf(q, ctx);
+      case 'associer': return saisieAssocier(q, ctx);
+      case 'tableau': case 'arbre': return saisieGrille(q, ctx);
+      case 'cases': return saisieCases(q, ctx);
+      case 'exercice': return saisieExercice(q, ctx);
+      default: return saisieExpr(q, ctx);
+    }
+  }
+
+  /* ----- figures dessinées par le moteur : tableau à double entrée, arbre pondéré ----- */
+  /* mode 'saisie' : cases MathLive (o.champ(k, aria)) ; 'lecture' : emplacement vide en pointillés ; 'correction' :
+     emplacement en pointillés où la valeur o.valeur(k) s'écrira (en rouge) à son étape (o.slots[k] = { el, val }). */
+  function contenuCase(v, mode, o, aria) {
+    var k = caseDe(v);
+    if (k < 0) return null;
+    if (mode === 'saisie') return o.champ(k, aria);
+    if (mode === 'correction') {
+      var s = el('span', 'qz-slot'), val = el('span', 'qz-val qv-e', '\\(' + o.valeur(k) + '\\)');
+      val.dataset.case = k; val.dataset.tex = o.valeur(k);
+      s.appendChild(el('span', 'qz-slot-vide')); s.appendChild(val); o.slots[k] = { el: s, val: val };
+      return s;
+    }
+    return el('span', 'qz-vide-slot');
+  }
+  function figuresLecture(q, cont, toutes) {   // arbre / tableau sous l'énoncé, en lecture seule (toutes : ceux à compléter aussi)
+    if (q.arbre && (toutes || q.type !== 'arbre')) cont.appendChild(dessinerArbre(q.arbre, 'lecture').el);
+    if (q.tableau && (toutes || q.type !== 'tableau')) cont.appendChild(dessinerTableau(q.tableau, 'lecture').el);
+  }
+  function dessinerTableau(t, mode, o) {
+    o = o || {}; o.slots = o.slots || [];
+    var cadre = el('div', 'qz-tab-cadre'), tab = el('table', 'qz-tab' + (t.totaux ? ' qz-avec-totaux' : '')), R = t.lignes.length;
+    t.lignes.forEach(function (ligne, i) {
+      var tr = el('tr'), C = ligne.length;
+      ligne.forEach(function (c, j) {
+        var tete = i === 0 || j === 0, td = el(tete ? 'th' : 'td');
+        if (tete) td.setAttribute('scope', i === 0 ? 'col' : 'row');
+        if (i === 0 && j === 0 && !String(c).trim()) td.className = 'qz-coin';
+        if (t.totaux && (i === R - 1 || j === C - 1)) td.classList.add('qz-total');
+        var x = contenuCase(c, mode, o, 'Case ' + [texteSimple(ligne[0]), texteSimple(t.lignes[0][j])].filter(Boolean).join(', '));
+        if (x) { td.appendChild(x); td.classList.add('qz-case'); } else td.innerHTML = celluleHTML(c);
+        tr.appendChild(td);
+      });
+      tab.appendChild(tr);
+    });
+    cadre.appendChild(tab);
+    return { el: cadre, slots: o.slots };
+  }
+
+  /* Arbre pondéré HORIZONTAL, comme dans le livret de M. Colin : racine (point noir) à gauche, nœuds dans des cercles,
+     probabilité au milieu de la branche, au-dessus d'une branche qui monte, au-dessous d'une branche qui descend.
+     Traits en SVG, étiquettes en HTML positionnées (cases MathLive comprises). La mise en page se refait quand une
+     étiquette change de taille (saisie, polices) : écarts choisis pour qu'aucune étiquette ne touche une autre, un
+     nœud ou une branche (une étiquette peut glisser le long de sa branche si le milieu est trop serré). */
+  var POS_BRANCHE = [0.5, 0.42, 0.58, 0.34, 0.66, 0.74];
+  function boite(l, t, r, b) { return { l: l, t: t, r: r, b: b }; }
+  function chevauche(a, b) { return a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b; }
+  function segmentCoupe(p, q, b) {              // le segment [pq] rencontre-t-il la boîte b ? (Liang–Barsky)
+    var t0 = 0, t1 = 1, dx = q.x - p.x, dy = q.y - p.y, P = [-dx, dx, -dy, dy], Q = [p.x - b.l, b.r - p.x, p.y - b.t, b.b - p.y];
+    for (var i = 0; i < 4; i++) {
+      if (P[i] === 0) { if (Q[i] < 0) return false; continue; }
+      var r = Q[i] / P[i];
+      if (P[i] < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+    }
+    return true;
+  }
+  function dessinerArbre(a, mode, o) {
+    o = o || {}; o.slots = o.slots || [];
+    var cadre = el('div', 'qz-arbre-cadre'), zone = el('div', 'qz-arbre'), svg = svgEl('svg', { class: 'qz-arbre-traits', 'aria-hidden': 'true', focusable: 'false' });
+    zone.setAttribute('role', 'group'); zone.setAttribute('aria-label', 'Arbre pondéré');
+    zone.appendChild(svg); cadre.appendChild(zone);
+    var racine = { prof: 0, enfants: [], racine: true }, noeuds = [], aretes = [], feuilles = [];
+    (function construire(parent, bs, prof) {
+      (bs || []).forEach(function (b) {
+        var nd = { prof: prof, enfants: [], b: b, parent: parent, nom: texteSimple(b.nom) };
+        parent.enfants.push(nd); noeuds.push(nd);
+        if (b.branches && b.branches.length) construire(nd, b.branches, prof + 1); else feuilles.push(nd);
+      });
+    })(racine, a.branches, 1);
+    var profMax = feuilles.reduce(function (m, f) { return Math.max(m, f.prof); }, 1);
+    var point = el('span', 'qz-racine'); zone.appendChild(point);
+    var file = racine.enfants.slice();            // ordre de lecture (et de tabulation) : niveau par niveau, de haut en bas
+    while (file.length) {
+      var nd = file.shift(), p = String(nd.b.p == null ? '' : nd.b.p).trim(), ar = { de: nd.parent, vers: nd, lab: null };
+      var x = contenuCase(p, mode, o, 'Probabilité de la branche ' + (nd.parent.racine ? 'vers ' : 'de ' + nd.parent.nom + ' vers ') + nd.nom);
+      if (x || p) { ar.lab = el('span', 'qz-proba' + (x ? ' qz-proba-case' : '')); if (x) ar.lab.appendChild(x); else ar.lab.innerHTML = '\\(' + p + '\\)'; zone.appendChild(ar.lab); }
+      nd.el = el('span', 'qz-noeud'); nd.t = el('span', 'qz-noeud-t', '\\(' + nd.b.nom + '\\)'); nd.el.appendChild(nd.t); zone.appendChild(nd.el);
+      aretes.push(ar);
+      file = file.concat(nd.enfants);
+    }
+    if (a.chemins) feuilles.forEach(function (f, i) {
+      var v = a.chemins[i]; if (v == null || !String(v).trim()) return;
+      var e = el('span', 'qz-chemin'), nom = a.cheminsNoms && a.cheminsNoms[i];
+      if (nom) e.appendChild(el('span', 'qz-chemin-nom', '\\(' + nom + '=\\)'));
+      var c = contenuCase(v, mode, o, 'Probabilité du chemin ' + (nom ? texteSimple(nom) : 'n° ' + (i + 1)));
+      e.appendChild(c || el('span', 'qz-chemin-val', '\\(' + v + '\\)'));
+      f.chemin = e; zone.appendChild(e);
+    });
+
+    function taille(e) { var r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }
+    function essai(R, dx, dy, smax, force) {
+      feuilles.forEach(function (f, i) { f.y = i * dy; });
+      (function posY(nd) { if (!nd.enfants.length) return; nd.enfants.forEach(posY); nd.y = (nd.enfants[0].y + nd.enfants[nd.enfants.length - 1].y) / 2; })(racine);
+      var X = [0];                                // abscisses niveau par niveau : une branche ne monte (ou ne descend) pas plus que smax
+      for (var d = 1; d <= profMax; d++) {
+        var ecart = 0;
+        noeuds.forEach(function (nd) { if (nd.prof === d) ecart = Math.max(ecart, Math.abs(nd.y - nd.parent.y)); });
+        X[d] = X[d - 1] + Math.max(dx, Math.round(ecart / smax));
+      }
+      racine.x = 0; noeuds.forEach(function (nd) { nd.x = X[nd.prof]; });
+      var col = X[profMax] + R + (smax > 1.2 ? 20 : smax > 0.8 ? 26 : 34), obst = [boite(-7, racine.y - 7, 7, racine.y + 7)], places = [];
+      noeuds.forEach(function (nd) { obst.push(boite(nd.x - R - 1, nd.y - R - 1, nd.x + R + 1, nd.y + R + 1)); });
+      var basChemin = -Infinity;
+      for (var c = 0; c < feuilles.length; c++) {
+        var f = feuilles[c]; if (!f.chemin) continue;
+        if (!force && f.y - f.ch / 2 < basChemin + 4) return null;     // deux chemins voisins se touchent : plus d'écart
+        obst.push(boite(col, f.y - f.ch / 2, col + f.cw, f.y + f.ch / 2)); basChemin = f.y + f.ch / 2;
+      }
+      aretes.forEach(function (ar) {
+        var A = ar.de, B = ar.vers, ux = B.x - A.x, uy = B.y - A.y, l = Math.sqrt(ux * ux + uy * uy), r0 = A.racine ? 4.5 : R;
+        ux /= l; uy /= l; ar.ux = ux; ar.uy = uy;
+        ar.a = { x: A.x + ux * r0, y: A.y + uy * r0 }; ar.b = { x: B.x - ux * R, y: B.y - uy * R };
+      });
+      function libre(bx, ar) {
+        var m = boite(bx.l - 2, bx.t - 2, bx.r + 2, bx.b + 2), j;
+        for (j = 0; j < obst.length; j++) if (chevauche(m, obst[j])) return false;
+        for (j = 0; j < places.length; j++) if (chevauche(m, places[j])) return false;
+        for (j = 0; j < aretes.length; j++) if (aretes[j] !== ar && segmentCoupe(aretes[j].a, aretes[j].b, m)) return false;
+        return true;
+      }
+      for (var i = 0; i < aretes.length; i++) {
+        var ar = aretes[i]; if (!ar.lab) continue;
+        var cotes = Math.abs(ar.uy) < 1e-6 ? [-1, 1] : [ar.uy < 0 ? -1 : 1], ok = false;   // -1 : au-dessus ; 1 : au-dessous
+        for (var ci = 0; ci < cotes.length && !ok; ci++) for (var ti = 0; ti < POS_BRANCHE.length && !ok; ti++) {
+          var t = POS_BRANCHE[ti], nx = cotes[ci] < 0 ? ar.uy : -ar.uy, ny = cotes[ci] < 0 ? -ar.ux : ar.ux;
+          var mx = ar.a.x + (ar.b.x - ar.a.x) * t, my = ar.a.y + (ar.b.y - ar.a.y) * t;
+          var d = ar.w / 2 * Math.abs(nx) + ar.h / 2 * Math.abs(ny) + 3, cx = mx + nx * d, cy = my + ny * d;
+          var bx = boite(cx - ar.w / 2, cy - ar.h / 2, cx + ar.w / 2, cy + ar.h / 2);
+          if (libre(bx, ar) || (force && ti === 0 && ci === 0)) { ar.cx = cx; ar.cy = cy; places.push(bx); ok = true; }
+        }
+        if (!ok) return null;
+      }
+      var x1 = X[profMax] + R + 5;
+      aretes.forEach(function (ar) { if (ar.lab) x1 = Math.max(x1, ar.cx + ar.w / 2); });
+      feuilles.forEach(function (f) { if (f.chemin) x1 = Math.max(x1, col + f.cw); });
+      var x0 = -7;
+      aretes.forEach(function (ar) { if (ar.lab) x0 = Math.min(x0, ar.cx - ar.w / 2); });
+      return { R: R, col: col, dx: dx, dy: dy, smax: smax, largeur: x1 - x0 + 12 };
+    }
+    function appliquer(L) {
+      var R = L.R, PAD = 6, x0 = -7, y0 = racine.y - 7, x1 = 7, y1 = racine.y + 7;
+      function inclure(l, t, r, b) { x0 = Math.min(x0, l); y0 = Math.min(y0, t); x1 = Math.max(x1, r); y1 = Math.max(y1, b); }
+      noeuds.forEach(function (nd) { inclure(nd.x - R - 2, nd.y - R - 2, nd.x + R + 5, nd.y + R + 6); });   // ombre portée comprise
+      aretes.forEach(function (ar) { if (ar.lab) inclure(ar.cx - ar.w / 2, ar.cy - ar.h / 2, ar.cx + ar.w / 2, ar.cy + ar.h / 2); });
+      feuilles.forEach(function (f) { if (f.chemin) inclure(L.col, f.y - f.ch / 2, L.col + f.cw, f.y + f.ch / 2); });
+      var ox = PAD - x0, oy = PAD - y0, W = Math.ceil(x1 - x0 + 2 * PAD), H = Math.ceil(y1 - y0 + 2 * PAD);
+      zone.style.width = W + 'px'; zone.style.height = H + 'px';
+      svg.setAttribute('width', W); svg.setAttribute('height', H); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      aretes.forEach(function (ar) { svg.appendChild(svgEl('line', { x1: ox + ar.a.x, y1: oy + ar.a.y, x2: ox + ar.b.x, y2: oy + ar.b.y, class: 'qz-trait' })); });
+      feuilles.forEach(function (f) {                          // une petite flèche de la feuille vers son chemin
+        if (!f.chemin) return;
+        var xa = ox + f.x + R + 4, xb = ox + L.col - 5, y = oy + f.y;
+        svg.appendChild(svgEl('path', { d: 'M' + xa + ' ' + y + 'H' + xb + 'M' + (xb - 5) + ' ' + (y - 3.5) + 'L' + xb + ' ' + y + 'L' + (xb - 5) + ' ' + (y + 3.5), class: 'qz-trait-chemin' }));
+      });
+      point.style.left = (ox - 4.5) + 'px'; point.style.top = (oy + racine.y - 4.5) + 'px';
+      noeuds.forEach(function (nd) { var s = nd.el.style; s.left = (ox + nd.x - R) + 'px'; s.top = (oy + nd.y - R) + 'px'; s.width = s.height = 2 * R + 'px'; });
+      aretes.forEach(function (ar) { if (ar.lab) { ar.lab.style.left = (ox + ar.cx - ar.w / 2) + 'px'; ar.lab.style.top = (oy + ar.cy - ar.h / 2) + 'px'; } });
+      feuilles.forEach(function (f) { if (f.chemin) { f.chemin.style.left = (ox + L.col) + 'px'; f.chemin.style.top = (oy + f.y - f.ch / 2) + 'px'; } });
+    }
+    function mesurerChemins(empile) {             // empilé : le nom du chemin au-dessus de sa case (écran étroit)
+      feuilles.forEach(function (f) { if (!f.chemin) return; f.chemin.classList.toggle('qz-chemin-empile', empile); var t = taille(f.chemin); f.cw = t.w; f.ch = t.h; });
+    }
+    function chercher(R, Hm, Wm, etroit, dispo) { // les paramètres de la mise en page retenue (sans chevauchement)
+      var smax = etroit ? 1.05 : 0.72;            // téléphone : branches un peu plus pentues
+      var dy0 = Math.max(2 * R + 12, Math.round(Hm) + 14), dx0 = Math.max(2 * R + (etroit ? 40 : 58), Math.round(2 * R + 0.8 * Math.min(Wm, 110) + (etroit ? 10 : 24))), L = null;
+      for (var s = 0; s < 36 && !L; s++) for (var ix = 0; ix <= s && !L; ix++) L = essai(R, dx0 + 8 * ix, dy0 + 4 * (s - ix), smax);
+      if (L && L.largeur > dispo) {               // trop large pour la place (téléphone, volet) : la plus étroite sans chevauchement,
+        var serre = null;                         // branches plus courtes et plus pentues si besoin
+        var dyMin = Math.max(2 * R + 6, Math.round(Hm) + 6);
+        [smax, 1.35, 1.75, 2.2].forEach(function (sm) {
+          if (serre && serre.largeur <= dispo) return;
+          for (var dx = dx0; dx >= 2 * R + 20 && !(serre && serre.largeur <= dispo && serre.smax === sm); dx -= 6)
+            for (var dy = dyMin; dy < dy0 + 56; dy += 4) {
+              var M = essai(R, dx, dy, sm);
+              if (M) { if (!serre || M.largeur < serre.largeur - 0.5 || (M.largeur <= dispo && serre.largeur > dispo)) serre = M; break; }
+            }
+        });
+        if (serre && serre.largeur < L.largeur) L = serre;
+      }
+      return L || { R: R, dx: dx0 + 8 * 18, dy: dy0 + 4 * 18, smax: smax, largeur: Infinity, force: true };
+    }
+    function placer() {
+      if (!zone.isConnected || !zone.getClientRects().length) return;
+      var R = 16, Hm = 0, Wm = 0, vide = false, etroit = cadre.clientWidth < 520, dispo = cadre.clientWidth - 4;
+      noeuds.forEach(function (nd) { var t = taille(nd.t); if (!t.w) vide = true; R = Math.max(R, Math.max(t.w, t.h) / 2 + 6); });
+      aretes.forEach(function (ar) { if (!ar.lab) return; var t = taille(ar.lab); ar.w = t.w; ar.h = t.h; Hm = Math.max(Hm, t.h); Wm = Math.max(Wm, t.w); if (!t.w) vide = true; });
+      if (vide) return;                           // pas encore affiché : on attendra
+      R = Math.ceil(R);
+      mesurerChemins(false);
+      var L = chercher(R, Hm, Wm, etroit, dispo);
+      if (L.largeur > dispo && feuilles.some(function (f) { return f.chemin && f.chemin.querySelector('.qz-chemin-nom'); })) {
+        mesurerChemins(true);
+        var L2 = chercher(R, Hm, Wm, etroit, dispo);
+        if (L2.largeur < L.largeur - 1) L = L2; else mesurerChemins(false);
+      }
+      appliquer(essai(R, L.dx, L.dy, L.smax, L.force) || essai(R, L.dx, L.dy, L.smax, true));
+      zone.classList.add('place');
+    }
+    var prevu = false;
+    function planifier() { if (prevu) return; prevu = true; (window.requestAnimationFrame || setTimeout)(function () { prevu = false; placer(); }); }
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(planifier);
+      noeuds.forEach(function (nd) { ro.observe(nd.t); });
+      aretes.forEach(function (ar) { if (ar.lab) ro.observe(ar.lab); });
+      feuilles.forEach(function (f) { if (f.chemin) ro.observe(f.chemin); });
+    } else setTimeout(placer, 400);
+    return { el: cadre, slots: o.slots, placer: placer };
+  }
+
+  /* ----- rappel de la question dans le volet (téléphone) : énoncé, figures, propositions ----- */
+  function resumeChoix(q, s, cont) {
+    if (q.type === 'qcm') {
+      var ul = el('ul', 'qz-rappel-props'), ordre = (s && s.ordre) || q.propositions.map(function (_, i) { return i; });
+      ordre.forEach(function (i, r) { ul.appendChild(el('li', '', '<b>' + LETTRES[r] + '.</b> ' + q.propositions[i])); });
+      cont.appendChild(ul);
+    } else if (q.type === 'associer') {
+      var u2 = el('ul', 'qz-rappel-props'), od = (s && s.ordreD) || q.droite.map(function (_, j) { return j; });
+      q.gauche.forEach(function (g) { u2.appendChild(el('li', '', g + ' → ?')); });
+      cont.appendChild(u2); cont.appendChild(el('p', 'qz-rappel-choix', 'Choix : ' + od.map(function (j) { return q.droite[j]; }).join(' ; ')));
+    } else if (q.type === 'vf') cont.appendChild(el('p', 'qz-rappel-choix', 'Vrai ou faux ?'));
+  }
+  function rappelQuestion(q, s) {                // dans l'ordre de la carte : énoncé, figure, arbre / tableau, suite de l'énoncé
+    var z = el('div', 'qv-rappel-texte', q.enonce);
+    if (q.figure) { var fi = el('figure', 'quiz-figure'), im = el('img'); im.src = q.figure; im.alt = q.figureAlt || 'Figure de la question'; fi.appendChild(im); z.appendChild(fi); }
+    figuresLecture(q, z, true);
+    if (q.enonceApres) z.appendChild(el('div', 'quiz-enonce-apres', q.enonceApres));
+    resumeChoix(q, s, z);
+    if (q.type === 'exercice') {
+      var ol = el('ol', 'qz-rappel-parties');
+      q.parties.forEach(function (pa, i) {
+        var li = el('li', '', pa.enonce); figuresLecture(pa, li, true);
+        if (pa.enonceApres) li.appendChild(el('div', 'quiz-enonce-apres', pa.enonceApres));
+        resumeChoix(pa, s && s.parties && s.parties[i].s, li); ol.appendChild(li);
+      });
+      z.appendChild(ol);
+    }
+    return z;
+  }
+
   /* ======================= 5 bis. Correction animée dans un volet ======================= */
   /* La correction d'une question (HTML : des <p> et des blocs \[\begin{aligned}…\end{aligned}\]) est découpée en ÉTAPES
      qui apparaissent une à une, comme dans les animations des corrections (charte § 3) : « A = » d'abord, l'expression
@@ -1361,22 +2078,43 @@
     var p = el('p', 'qv-p'), re = /\\\(([\s\S]*?)\\\)/g, m, dernier = 0, jetons = [];
     while ((m = re.exec(html))) { if (m.index > dernier) jetons.push({ t: html.slice(dernier, m.index) }); jetons.push({ m: m[1] }); dernier = re.lastIndex; }
     if (dernier < html.length) jetons.push({ t: html.slice(dernier) });
-    var cur = null, avecMaths = false;
-    function nouvelle() { cur = morceau(p, '', ajouter()); avecMaths = false; }
+    // cur : le morceau de l'étape en cours ; suite : après une égalité, l'étape de son dernier membre (la phrase continue
+    // dans un nouveau morceau de cette étape, HORS du conteneur insécable de l'égalité)
+    var cur = null, suite = null, avecMaths = false, derniere = null;
+    function nouvelle() { cur = morceau(p, '', ajouter()); suite = null; avecMaths = false; }
+    function courante() { if (!cur) { if (suite != null) { cur = morceau(p, '', suite); suite = null; } else nouvelle(); } return cur; }
     jetons.forEach(function (j) {
       if (j.t != null) {
-        var cad = cur && /^\s*c-à-d/.test(j.t);
+        var t = j.t, po = derniere && PONCT.exec(t);
+        if (po) {                                    // la ponctuation reste avec la formule, dans la même étape (14 nov. 2026)
+          var pt = document.createTextNode((po[1] ? ' ' : '') + po[2]);
+          if (derniere.parentNode.classList.contains('qv-formule')) derniere.appendChild(pt);
+          else { var w = el('span', 'qv-insec'); derniere.parentNode.insertBefore(w, derniere); w.appendChild(derniere); w.appendChild(pt); }
+          t = t.slice(po[0].length);
+        }
+        derniere = null;
+        if (!t) return;
+        var cad = (cur || suite != null) && /^\s*c-à-d/.test(t);
         if (cad) p.appendChild(el('br'));            // une ligne « c-à-d » à la fois (charte § 3)
-        if (!cur || cad || (avecMaths && MOTS.test(j.t))) nouvelle();
-        cur.insertAdjacentHTML('beforeend', cad ? j.t.replace(/^\s+/, '') : j.t);
+        if ((!cur && suite == null) || cad || (avecMaths && MOTS.test(t))) nouvelle();
+        courante().insertAdjacentHTML('beforeend', cad ? t.replace(/^\s+/, '') : t);
       } else {
-        var membres = membresEgalite(j.m), ch = new Chaine(ajouter, trans);
-        membres.forEach(function (x, i) {
-          if (!x.tex.trim()) return;
-          ch.preparer(x.tex);
-          if (!cur || i > 0) nouvelle();
-          var sm = el('span'); cur.appendChild(sm); ch.poser(sm, x.avant, x.apres, +cur.dataset.e);
-        });
+        var membres = membresEgalite(j.m), vrais = membres.filter(function (x) { return x.tex.trim(); }), ch = new Chaine(ajouter, trans);
+        if (vrais.length > 1) {
+          // une égalité « P(B₁) = 0,45 » : ses membres restent ENSEMBLE sur la ligne (conteneur insécable, 14 nov. 2026),
+          // chacun à son étape ; une égalité trop longue pour la ligne passe entière à la ligne suivante (réduite au besoin)
+          var e0 = +courante().dataset.e, grp = el('span', 'qv-insec qv-formule'), k = e0;
+          p.appendChild(grp); cur = null;
+          vrais.forEach(function (x, i) {
+            ch.preparer(x.tex);
+            k = i === 0 ? e0 : ajouter();
+            var sm = morceau(grp, '', k); ch.poser(sm, x.avant, x.apres, k); derniere = sm;
+          });
+          suite = k;
+        } else if (vrais.length) {
+          ch.preparer(vrais[0].tex);
+          var sm = el('span'); courante().appendChild(sm); ch.poser(sm, vrais[0].avant, vrais[0].apres, +cur.dataset.e); derniere = sm;
+        }
         ch.ecrire();
         // seul un CALCUL (égalité, résultat encadré) clôt l'étape ; un nom (« ABC », « B », « 5x ») reste dans la phrase
         if (membres.length > 1 || /\\boxed/.test(j.m)) avecMaths = true;
@@ -1415,7 +2153,7 @@
         lab.dataset.e = kj; fl.dataset.e = kj;
         fl.innerHTML = '<svg aria-hidden="true" focusable="false"><path/><path class="pointe"/></svg>';
         g.appendChild(fl); g.appendChild(lab);
-        justifs.push({ lab: lab, fl: fl, de: prec, vers: droite });
+        justifs.push({ lab: lab, fl: fl, de: prec, vers: droite, cells: [cellP, l.cols.length > 1 ? gauche : null, droite].filter(Boolean) });
       }
       var m = l.rhs.match(REL), rel = m ? m[1] : '', reste = m ? l.rhs.slice(m[0].length) : l.rhs, k = null, sp, sens = false;
       var ms = /^\s*\\sens\{([^{}]*)\}/.exec(l.rhs);   // \sens{<} : le symbole a changé de sens (en rouge)
@@ -1448,17 +2186,118 @@
     maths(j.slice(d));
     return out;
   }
+  function bordEcrit(d, R, g) {                 // bord droit de ce qui est ÉCRIT dans un membre (la cellule s'étire sur la colonne ;
+    var mx = d.getBoundingClientRect().left;    // un radical ou un exposant peut dépasser la boîte de son morceau)
+    Array.prototype.forEach.call(d.querySelectorAll('span'), function (e) {
+      if (e.closest('.ML__sr-only')) return;
+      var r = e.getBoundingClientRect(); if (r.width && r.height) mx = Math.max(mx, r.right);
+    });
+    return mx - R.left + g.scrollLeft;
+  }
+  /* Un calcul trop large pour le volet (téléphone) : ni défilement ni calcul coupé (charte § 2 : « baisser la taille du
+     texte ») : la taille du bloc baisse jusqu'à ce qu'il tienne ; quand la marge de droite ne laisse pas assez de place aux
+     justifications (« ×3 », « on échange les membres »), elles passent SOUS la ligne qu'elles précèdent (14 nov. 2026).
+     Une formule d'une phrase plus large que le volet est réduite de même. */
+  function ajusterLargeurs(racine, force) {
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-al, .qv-disp'), function (g) {
+      var W = g.clientWidth; if (!W || (g._ajuste === W && !force)) return;
+      g.style.fontSize = ''; g.classList.remove('qv-dessous');
+      if (g._justifs) g._justifs.forEach(function (j) {       // positions d'avant oubliées : elles fausseraient la mesure
+        j.cells.forEach(function (c) { c.style.paddingTop = ''; });
+        j.lab.style.left = j.fl.style.left = '0px'; j.lab.style.maxWidth = ''; j.lab.style.fontSize = ''; j.lab.style.width = '';
+      });
+      var f = 1;
+      function deborde() { return g.scrollWidth > g.clientWidth + 1; }
+      function reduire(min) { for (var i = 0; i < 4 && deborde() && f > min + 0.001; i++) { f = Math.max(min, f * g.clientWidth / g.scrollWidth * 0.985); g.style.fontSize = f.toFixed(3) + 'em'; } }
+      function margeManque() {                    // une justification n'a pas la place dans la marge : 44 px au moins, et son
+        var R = g.getBoundingClientRect();        // plus long mot (ou sa formule, qui ne se coupe pas) doit y tenir
+        return g._justifs.some(function (j) {
+          var m = g.clientWidth + g.scrollLeft - Math.max(bordEcrit(j.de, R, g), bordEcrit(j.vers, R, g)) - 46;
+          j.lab.style.width = 'min-content'; var mot = j.lab.offsetWidth; j.lab.style.width = '';
+          return m < Math.max(44, mot);
+        });
+      }
+      reduire(g._justifs ? 0.8 : 0.5);
+      if (g._justifs && (deborde() || margeManque())) { f = 1; g.style.fontSize = ''; g.classList.add('qv-dessous'); reduire(0.5); }
+      g._ajuste = W;
+    });
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-p'), function (p) {
+      var W = p.clientWidth; if (!W || (p._ajuste === W && !force)) return;
+      Array.prototype.forEach.call(p.querySelectorAll('.qv-insec'), function (q) { q.style.fontSize = ''; });
+      Array.prototype.forEach.call(p.querySelectorAll('.ML__sr-only'), function (sr) { sr.parentNode.style.fontSize = ''; });
+      Array.prototype.forEach.call(p.querySelectorAll('.qv-insec'), function (q) {     // égalité insécable : réduite en entier
+        if (q.parentNode.closest && q.parentNode.closest('.qv-insec')) return;
+        var w = q.getBoundingClientRect().width; if (w > W) q.style.fontSize = Math.max(0.5, W / w * 0.98).toFixed(3) + 'em';
+      });
+      Array.prototype.forEach.call(p.querySelectorAll('.ML__sr-only'), function (sr) {
+        var fo = sr.parentNode; if (fo.closest('.qv-insec')) return;
+        var w = fo.getBoundingClientRect().width; if (w > W) fo.style.fontSize = Math.max(0.5, W / w * 0.98).toFixed(3) + 'em';
+      });
+      espacerFractions(p);
+      p._ajuste = W;
+    });
+  }
+  /* Une fraction empilée dans une phrase (« \(P(A)=\dfrac{1}{3}\) ») : MathLive ne réserve pas toute sa hauteur dans la
+     ligne, si bien qu'elle chevaucherait la ligne du dessus ou du dessous. Sa formule devient un bloc en ligne, avec juste
+     ce qu'il faut de marge pour couvrir son encre (+ 4 px) : seules les lignes qui portent une fraction s'écartent. */
+  function espacerFractions(racine) {
+    var vus = [];
+    Array.prototype.forEach.call(racine.querySelectorAll('.ML__mfrac'), function (fr) {
+      var lat = fr.closest('.ML__latex'), f = lat && lat.parentNode;
+      if (!f || vus.indexOf(f) >= 0 || f.closest('.qz-arbre, .qz-tab, .qv-al, .qv-disp')) return; vus.push(f);   // figures et calculs : à part
+      f.classList.add('qv-frac'); f.style.paddingTop = f.style.paddingBottom = '';
+      var R = f.getBoundingClientRect(), t = Infinity, b = -Infinity, bloc = f.parentElement.closest('p, li, div, td, button');
+      if (bloc && R.width > bloc.clientWidth) { f.classList.remove('qv-frac'); return; }   // plus large que la ligne : elle garde ses coupures
+      Array.prototype.forEach.call(lat.querySelectorAll('*'), function (e) {
+        if (e.children.length) return;
+        var x = e.getBoundingClientRect(); if (!x.width || !x.height) return;
+        t = Math.min(t, x.top); b = Math.max(b, x.bottom);
+      });
+      if (t === Infinity || !R.height) return;
+      f.style.paddingTop = Math.max(0, Math.ceil(R.top - t + 4)) + 'px';
+      f.style.paddingBottom = Math.max(0, Math.ceil(b - R.bottom + 4)) + 'px';
+    });
+  }
+  function espacerCarte(c, force) {             // les fractions de l'énoncé d'une question affichée (une fois par largeur)
+    var W = c.clientWidth; if (!W || (c._frac === W && !force)) return;
+    c._frac = W; espacerFractions(c);
+  }
+  var espaceTour = 0;
+  window.addEventListener('resize', function () {
+    cancelAnimationFrame(espaceTour);
+    espaceTour = requestAnimationFrame(function () { Array.prototype.forEach.call(document.querySelectorAll('.quiz-carte:not([hidden])'), function (c) { espacerCarte(c); }); });
+  });
+  function justifsDessous(g) {                  // la marge manque : sous la ligne précédente, une petite flèche vers la ligne suivante
+    var R = g.getBoundingClientRect(), W = g.clientWidth;
+    g._justifs.forEach(function (j) {           // le texte va à droite de la flèche s'il y tient, sinon à gauche, sinon du côté le plus large
+      var b = j.vers.getBoundingClientRect(), x = b.left - R.left + g.scrollLeft, dr = W - (x + 22) - 2, ga = x - 6;
+      j.lab.style.fontSize = ''; j.lab.style.transform = 'none'; j.lab.style.maxWidth = Math.max(60, W - 34) + 'px';
+      var w = j.lab.offsetWidth, cote = w <= dr ? 'd' : w <= ga ? 'g' : (dr >= ga ? 'd' : 'g'), place = Math.max(60, cote === 'd' ? dr : ga);
+      if (w > place) {
+        j.lab.style.maxWidth = place + 'px';
+        if (j.lab.scrollWidth > place + 1) j.lab.style.fontSize = (Math.max(0.6, place / j.lab.scrollWidth) * 0.82).toFixed(3) + 'em';
+      }
+      j._x = x; j._cote = cote;
+      var hl = j.lab.offsetHeight;
+      j.cells.forEach(function (c) { c.style.paddingTop = (hl + 8) + 'px'; });
+    });
+    R = g.getBoundingClientRect();
+    g._justifs.forEach(function (j) {
+      var a = j.de.getBoundingClientRect(), b = j.vers.getBoundingClientRect(), x = j._x;
+      var y1 = a.bottom - R.top - 2, y2 = b.top - R.top + parseFloat(j.vers.style.paddingTop || 0) + 4, h = Math.max(14, y2 - y1), svg = j.fl.firstChild;
+      j.fl.style.left = x + 'px'; j.fl.style.top = y1 + 'px'; j.fl.style.width = '18px'; j.fl.style.height = h + 'px';
+      svg.setAttribute('width', 18); svg.setAttribute('height', h); svg.setAttribute('viewBox', '0 0 18 ' + h);
+      svg.firstChild.setAttribute('d', 'M9 1 C 2 ' + (h * 0.35).toFixed(1) + ', 2 ' + (h * 0.65).toFixed(1) + ', 9 ' + h);
+      svg.lastChild.setAttribute('d', 'M9 ' + h + ' l -6 -5 M9 ' + h + ' l 3.5 -7');
+      j.lab.style.left = (j._cote === 'd' ? x + 22 : Math.max(0, x - 4 - j.lab.offsetWidth)) + 'px';
+      j.lab.style.top = (b.top - R.top + 3) + 'px';
+    });
+  }
   function placerJustifs(racine) {              // flèches de la marge : après mise en page (positions réelles)
     Array.prototype.forEach.call(racine.querySelectorAll('.qv-al.avec-just'), function (g) {
       var R = g.getBoundingClientRect(); if (!R.width) return;
-      function bord(d) {                          // bord droit de ce qui est ÉCRIT dans un membre (la cellule s'étire sur la colonne ;
-        var mx = d.getBoundingClientRect().left;  // un radical ou un exposant peut dépasser la boîte de son morceau)
-        Array.prototype.forEach.call(d.querySelectorAll('span'), function (e) {
-          if (e.closest('.ML__sr-only')) return;
-          var r = e.getBoundingClientRect(); if (r.width && r.height) mx = Math.max(mx, r.right);
-        });
-        return mx - R.left + g.scrollLeft;
-      }
+      if (g.classList.contains('qv-dessous')) { justifsDessous(g); return; }
+      function bord(d) { return bordEcrit(d, R, g); }
       var bas = -Infinity;                       // une justification ne chevauche jamais la précédente
       g._justifs.forEach(function (j) {
         var x = Math.max(bord(j.de), bord(j.vers)) + 12;   // la flèche longe les deux lignes qu'elle relie
@@ -1469,7 +2308,7 @@
         svg.setAttribute('width', bo + 6); svg.setAttribute('height', h); svg.setAttribute('viewBox', '0 0 ' + (bo + 6) + ' ' + h);
         svg.firstChild.setAttribute('d', 'M2 0 C ' + (bo + 2) + ' 2, ' + (bo + 2) + ' ' + (h - 2) + ', 4 ' + h);
         svg.lastChild.setAttribute('d', 'M4 ' + h + ' l 7 -6.5 M4 ' + h + ' l 9.5 1.5');
-        j.lab.style.left = (x + bo + 10) + 'px';
+        j.lab.style.left = (x + bo + 10) + 'px'; j.lab.style.transform = '';
         var place = Math.max(44, g.clientWidth + g.scrollLeft - (x + bo + 10) - 4);   // reste dans la largeur visible
         j.lab.style.maxWidth = place + 'px'; j.lab.style.fontSize = '';
         if (j.lab.scrollWidth > place + 1)          // une formule qui ne se coupe pas (« 100 > 0 ») : on la rétrécit un peu
@@ -1642,32 +2481,139 @@
     }
     cadre.appendChild(t); return cadre;
   }
+  /* Quiz de chapitre (14 nov. 2026) : <!--cours:clé--> entre deux blocs = une étape qui montre la capture du cours
+     (window.QUIZ_COURS[clé]) ; <!--v:k--> (ou <!--v:2,3-->) = la valeur de la case k s'écrit dans l'arbre / le tableau
+     dessiné en tête de la correction, à la dernière étape construite avant le marqueur (une case sans marqueur : à la
+     dernière étape) ; un exercice : les corrections de ses parties à la suite, sous « Question 1 », « Question 2 »… */
   function construireEtapes(q) {
     var racine = el('div', 'qv-etapes'), n = 0, trans = [], majs = [];
-    function ajouter() { return ++n; }
-    if (q.figureCorrection) {                     // la lecture se montre sur la figure (charte § 5)
-      var f = el('figure', 'qv-fig qv-e'), im = el('img'); im.src = q.figureCorrection; im.alt = 'Figure de la correction'; im.decoding = 'async';
-      f.appendChild(im); f.dataset.e = ajouter(); racine.appendChild(f);
+    var ctx = { ajouter: function () { return ++n; }, n: function () { return n; }, trans: trans, majs: majs };
+    if (q.type === 'exercice') {
+      etapesFigure(q, racine, ctx);
+      etapesTexte(q.correction || '', racine, ctx, null);
+      q.parties.forEach(function (pa, i) {
+        var sec = el('section', 'qz-corr-partie'), t = el('h3', 'qz-corr-titre', 'Question ' + (i + 1));
+        racine.appendChild(sec);
+        if ((pa.type === 'arbre' && pa.arbre) || (pa.type === 'tableau' && pa.tableau)) etapesQuestion(pa, sec, ctx, t);   // titre collé avec la figure
+        else { t.classList.add('qv-e'); t.dataset.e = n + 1; sec.appendChild(t); etapesQuestion(pa, sec, ctx); }   // le titre vient avec la première étape
+      });
+    } else etapesQuestion(q, racine, ctx);
+    rendre(racine);
+    return { racine: racine, n: n, k: 0, trans: trans, majs: majs };
+  }
+  function etapesFigure(q, racine, ctx) {       // la lecture se montre sur la figure (charte § 5)
+    if (!q.figureCorrection) return;
+    var f = el('figure', 'qv-fig qv-e'), im = el('img'); im.src = q.figureCorrection; im.alt = 'Figure de la correction'; im.decoding = 'async';
+    f.appendChild(im); f.dataset.e = ctx.ajouter(); racine.appendChild(f);
+  }
+  function etapesQuestion(q, racine, ctx, titre) {
+    etapesFigure(q, racine, ctx);
+    var fig = (q.type === 'arbre' && q.arbre) || (q.type === 'tableau' && q.tableau) ? figureACompleter(q, racine, ctx, titre) : null;
+    etapesTexte(q.dev ? '' : q.correction || '', racine, ctx, fig);
+    if (q.dev) racine.appendChild(etapesDev(q.dev, ctx.ajouter, ctx.trans, ctx.majs));   // développement pas à pas (M. Colin, 14 nov. 2026)
+    if ((q.type === 'variations' && q.fleches) || (q.type === 'signes' && q.ligne)) {   // « trace le tableau » (M. Colin, 12 nov. 2026)
+      racine.appendChild(tableauCorrection(q, ctx.ajouter));
     }
-    var html = q.dev ? '' : q.correction || '', re = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]/g, m, dernier = 0;
-    function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ajouter()); racine.appendChild(b); } }
+    if (fig) fig.finir(ctx.n());
+  }
+  var RE_ETAPES = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]|<!--\s*(cours|v)\s*:\s*([\s\S]*?)\s*-->/g;
+  var RE_MARQUEUR = /<!--\s*(?:cours|v)\s*:/;
+  function etapesTexte(html, racine, ctx, fig) {
+    if (RE_MARQUEUR.test(html))                   // un marqueur glissé DANS un paragraphe le coupe en deux
+      html = html.replace(/<p>([\s\S]*?)<\/p>/g, function (tout, c) {
+        return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v)\s*:[\s\S]*?-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
+      }).replace(/<p>\s*<\/p>/g, '');
+    var re = new RegExp(RE_ETAPES.source, 'g'), m, dernier = 0;
+    function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ctx.ajouter()); racine.appendChild(b); } }
     while ((m = re.exec(html))) {
       libre(html.slice(dernier, m.index));
-      if (m[1] != null) racine.appendChild(etapesParagraphe(m[1], ajouter, trans));
-      else {
+      if (m[1] != null) racine.appendChild(etapesParagraphe(m[1], ctx.ajouter, ctx.trans));
+      else if (m[2] != null) {
         var a = m[2].match(/^\s*\\begin\{aligned\}([\s\S]*)\\end\{aligned\}\s*$/);
-        if (a) racine.appendChild(etapesAligne(a[1], ajouter, trans));
-        else { var b = el('div', 'qv-disp'); morceau(b, '\\[' + m[2] + '\\]', ajouter()); racine.appendChild(b); }
+        if (a) racine.appendChild(etapesAligne(a[1], ctx.ajouter, ctx.trans));
+        else { var b = el('div', 'qv-disp'); morceau(b, '\\[' + m[2] + '\\]', ctx.ajouter()); racine.appendChild(b); }
       }
+      else if (m[3] === 'cours') captureCours(m[4], racine, ctx);
+      else if (fig) fig.ecrire(m[4].split(',').map(function (x) { return parseInt(x, 10); }).filter(function (x) { return x >= 0; }), Math.max(1, ctx.n()));
       dernier = re.lastIndex;
     }
     libre(html.slice(dernier));
-    if (q.dev) racine.appendChild(etapesDev(q.dev, ajouter, trans, majs));   // développement pas à pas (M. Colin, 14 nov. 2026)
-    if ((q.type === 'variations' && q.fleches) || (q.type === 'signes' && q.ligne)) {   // « trace le tableau » (M. Colin, 12 nov. 2026)
-      racine.appendChild(tableauCorrection(q, ajouter));
+  }
+  function figureACompleter(q, racine, ctx, titre) {   // l'arbre / le tableau dessiné EN TÊTE, emplacements vides en pointillés
+    var o = { slots: [], valeur: function (k) { return (q.cases[k] || {}).attendu || ''; } };
+    var fig = q.type === 'arbre' ? dessinerArbre(q.arbre, 'correction', o) : dessinerTableau(q.tableau, 'correction', o);
+    var bloc = el('div', 'qz-fig-corr qv-e');
+    if (titre) bloc.appendChild(titre);           // exercice : « Question k » reste visible au-dessus de la figure collée
+    bloc.appendChild(fig.el); bloc.dataset.e = ctx.ajouter(); racine.appendChild(bloc);
+    ctx.majs.push(function () { collerFigure(bloc); });
+    function poser(ks, k) { ks.forEach(function (j) { var s = o.slots[j]; if (s && !s.val.dataset.e) s.val.dataset.e = k; }); }
+    return { ecrire: poser, finir: function (k) { poser(o.slots.map(function (_, j) { return j; }), k); } };
+  }
+  function collerFigure(b) {                    // collée en haut du volet pendant qu'on la complète, si la hauteur le permet
+    var corps = b.closest('.qv-corps'); if (!corps) return;
+    var h = b.offsetHeight;
+    b.classList.toggle('colle', h > 0 && h <= corps.clientHeight * 0.46);
+  }
+  /* Intitulé d'une capture du cours (texte de remplacement, titre de l'agrandissement) : window.QUIZ_COURS_NOMS[clé]
+     quand la page le donne (« Remarque : incompatibles et indépendants (p. 51) ») ; sinon déduit de la clé : « Définition 1 »,
+     « Propriété 1 »… ; les remarques ne sont pas numérotées dans le livret : « Remarque du cours ». */
+  function nomCours(cle) {
+    var donne = window.QUIZ_COURS_NOMS && window.QUIZ_COURS_NOMS[cle];
+    if (donne) return String(donne);
+    var m = /^(def|prop|th|meth|rq|ex)(\d*)$/.exec(cle), N = { def: 'Définition', prop: 'Propriété', th: 'Théorème', meth: 'Méthode', ex: 'Exemple' };
+    if (m && m[1] === 'rq') return 'Remarque du cours';
+    return m ? N[m[1]] + (m[2] ? ' ' + m[2] : '') : 'Extrait du cours';
+  }
+  function captureCours(cle, racine, ctx) {     // capture du cadre du cours, en PLEINE largeur du volet, ombre portée ; clé absente : rien
+    cle = String(cle).trim();
+    var src = window.QUIZ_COURS && window.QUIZ_COURS[cle];
+    if (!src) return;
+    var f = el('figure', 'qz-cours qv-e'), b = el('button', 'qz-cours-b'), im = el('img'), nom = nomCours(cle);
+    im.src = src; im.alt = nom; im.decoding = 'async';
+    b.type = 'button'; b.title = 'Agrandir'; b.setAttribute('aria-label', 'Agrandir : ' + nom);
+    b.appendChild(im);                           // l'invitation à agrandir est SOUS la capture : rien par-dessus le texte du cours
+    b.appendChild(el('span', 'qz-cours-loupe', '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg><span>Agrandir</span>'));
+    b.addEventListener('click', function () { loupe(src, nom, b); });
+    f.dataset.cours = cle; f.appendChild(b); f.dataset.e = ctx.ajouter(); racine.appendChild(f);
+  }
+  /* La capture en grand, plein écran : à la plus grande taille qui tient dans l'écran (jusqu'à 1,25 fois sa taille).
+     Téléphone tenu droit et capture large : elle est tournée d'un quart de tour (on tourne le téléphone pour la lire),
+     ce qui la rend environ deux fois plus grande ; si l'écran se met à l'horizontale, elle se redresse. Un toucher, Échap,
+     Entrée, Espace ou la croix la referment. */
+  function loupe(src, nom, retour) {
+    var o = el('div', 'qz-loupe'), cadre = el('div', 'qz-loupe-cadre'), im = el('img'), b = el('button', 'qz-loupe-fermer', '<span aria-hidden="true">×</span>');
+    var tete = el('div', 'qz-loupe-tete'), titre = el('p', 'qz-loupe-titre'), aide = el('p', 'qz-loupe-aide');
+    titre.textContent = nom;
+    o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-label', nom);
+    im.src = src; im.alt = nom; b.type = 'button'; b.setAttribute('aria-label', 'Fermer');
+    tete.appendChild(titre); tete.appendChild(aide);
+    cadre.appendChild(im); o.appendChild(cadre); o.appendChild(tete); o.appendChild(b);
+    function poser() {                           // en haut : l'intitulé, l'aide et la croix ; la capture dessous, au plus grand
+      var W = window.innerWidth, H = window.innerHeight, w = im.naturalWidth || 1000, h = im.naturalHeight || 300, m = 14, bas = 16;
+      function essai(rot) {
+        o.classList.toggle('tourne', rot);
+        aide.textContent = rot ? 'Tourne le téléphone pour lire. Touche l’écran pour fermer.' : 'Touche l’écran pour fermer.';
+        var haut = Math.max(64, Math.ceil(tete.getBoundingClientRect().bottom) + 12), L = H - haut - bas;
+        return { haut: haut, sc: rot ? Math.min(L / w, (W - 2 * m) / h, 1.25) : Math.min((W - 2 * m) / w, L / h, 1.25) };
+      }
+      var d = essai(false), t = W < H ? essai(true) : null, rot = !!t && t.sc > d.sc * 1.3, r = rot ? t : d;
+      if (t && !rot) essai(false);                 // essayée tournée, mais pas plus grande : on la remet droite
+      var lw = Math.round(w * r.sc), lh = Math.round(h * r.sc);
+      im.style.width = lw + 'px'; im.style.height = lh + 'px';
+      cadre.style.width = (rot ? lh : lw) + 'px'; cadre.style.height = (rot ? lw : lh) + 'px';
+      cadre.style.marginTop = (r.haut - bas) + 'px';   // centrée entre l'en-tête et le bas de l'écran
     }
-    rendre(racine);
-    return { racine: racine, n: n, k: 0, trans: trans, majs: majs };
+    function fermer() {
+      o.remove(); document.removeEventListener('keydown', cle, true); window.removeEventListener('resize', poser);
+      try { retour.focus({ preventScroll: true }); } catch (e) {}
+    }
+    function cle(ev) { if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopPropagation(); fermer(); } }
+    o.addEventListener('click', fermer);
+    document.addEventListener('keydown', cle, true);
+    window.addEventListener('resize', poser);
+    document.body.appendChild(o);
+    poser(); if (!(im.complete && im.naturalWidth)) im.addEventListener('load', poser);
+    try { b.focus({ preventScroll: true }); } catch (e) {}
   }
 
   var volet = null;
@@ -1710,7 +2656,7 @@
       else if (ev.key === 'ArrowRight' || ev.key === 'ArrowDown' || (ev.key === ' ' && tag !== 'BUTTON')) { ev.preventDefault(); arreterAuto(v); avancer(v, false); }
       else if (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') { ev.preventDefault(); arreterAuto(v); montrer(v, v.e.k - 1, false); }
     });
-    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) { placerJustifs(v.e.racine); surligner(v.e.racine); (v.e.majs || []).forEach(function (f) { f(v.e.k, false); }); } });
+    window.addEventListener('resize', function () { if (v.e && v.el.classList.contains('ouvert')) { ajusterLargeurs(v.e.racine, true); placerJustifs(v.e.racine); surligner(v.e.racine); (v.e.majs || []).forEach(function (f) { f(v.e.k, false); }); } });
     // quitter le quiz (« ‹ Première », changement d'onglet) ferme le volet et range l'onglet
     document.addEventListener('click', function (ev) {
       if (ev.target.closest && ev.target.closest('[data-retour], [role=tab]')) { fermerVolet(); v.languette.hidden = true; }
@@ -1753,6 +2699,7 @@
   }
   function montrer(v, k, anime) {               // affiche les étapes 1…k (jamais moins d'une)
     var et = v.e; et.k = Math.max(Math.min(1, et.n), Math.min(et.n, k));
+    ajusterLargeurs(et.racine);                    // un calcul trop large pour le volet : plus petit (une fois par largeur)
     placerJustifs(et.racine);                      // les polices des formules ont pu finir de charger : on recale les flèches
     var neufs = [];
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-e'), function (x) {
@@ -1768,10 +2715,11 @@
       if (x.closest('.qv-al, .qv-dev')) { var o = calque(x, et.racine, 'qv-eclair', 2); if (o) o.addEventListener('animationend', function () { o.remove(); }); }   // formule : l'éclair suit l'encre
       else { void x.offsetWidth; x.classList.add('neuf'); }                       // phrase : le fond suit les lignes du texte
     });
-    // surlignages : allumés de l'étape « on surligne » jusqu'à l'apparition du résultat, éteints ensuite
+    // surlignages : allumés de l'étape « on surligne » jusqu'à l'apparition du résultat, éteints ensuite ; à la DERNIÈRE
+    // étape, rien ne reste surligné (14 nov. 2026), sauf un surlignage voulu jusqu'au bout (développement pas à pas, show ∞)
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-c'), function (x) { x.classList.remove('allume', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'); });
     (et.trans || []).forEach(function (t) {
-      if (et.k < t.pre || et.k > t.show) return;
+      if (et.k < t.pre || et.k > t.show || (et.k === et.n && t.show === et.n)) return;
       var c = t.c || 'c' + (t.id % 3);             // t.sel, t.c : surlignages choisis par le développement pas à pas
       Array.prototype.forEach.call(et.racine.querySelectorAll('.' + (t.sel || 'qv-t' + t.id)), function (x) { x.classList.add('allume', c); });
     });
@@ -1779,9 +2727,17 @@
     (et.majs || []).forEach(function (f) { f(et.k, anime); });   // flèches, barres, cadre du développement pas à pas
     var der = neufs[neufs.length - 1];
     if (der) {                                    // garder la dernière étape à l'écran, sans faire défiler la page
-      var r = der.getBoundingClientRect(), c = v.corps.getBoundingClientRect();
+      var r = der.getBoundingClientRect(), c = v.corps.getBoundingClientRect(), haut = c.top, colles = [];
+      Array.prototype.forEach.call(v.corps.querySelectorAll('.qz-fig-corr.colle'), function (f) {   // figure collée en haut du volet
+        if (f.contains(der)) return; var fr = f.getBoundingClientRect(); if (fr.top <= c.top + 2) { haut = Math.max(haut, fr.bottom); colles.push(f); }
+      });
+      var t = r.top;                               // une valeur écrite dans la figure à la même étape : visible aussi, si la place suffit
+      neufs.forEach(function (x) {
+        if (colles.some(function (f) { return f.contains(x); })) return;
+        var q = x.getBoundingClientRect(); if (q.height && r.bottom - Math.min(t, q.top) <= c.bottom - 40 - haut) t = Math.min(t, q.top);
+      });
       if (r.bottom > c.bottom - 12) v.corps.scrollBy({ top: r.bottom - c.bottom + 28, behavior: 'smooth' });
-      else if (r.top < c.top) v.corps.scrollBy({ top: r.top - c.top - 16, behavior: 'smooth' });
+      else if (t < haut) v.corps.scrollBy({ top: t - haut - 16, behavior: 'smooth' });
     }
     majPied(v);
   }
@@ -1813,9 +2769,9 @@
     arreterAuto(v);
     if (!c._etapes) c._etapes = construireEtapes(q);
     if (!c._rappel) {                             // rappel de la question (affiché sur téléphone, où le volet la recouvre)
-      var d = el('details', 'qv-rappel'), s = el('summary', '', 'Rappel de la question'), z = el('div', 'qv-rappel-texte', q.enonce + (q.enonceApres || ''));
-      if (q.figure) { var fi = el('figure', 'quiz-figure'), im = el('img'); im.src = q.figure; im.alt = q.figureAlt || 'Figure de la question'; fi.appendChild(im); z.appendChild(fi); }
+      var d = el('details', 'qv-rappel'), s = el('summary', '', 'Rappel de la question'), z = rappelQuestion(q, c._saisie);
       d.appendChild(s); d.appendChild(z); rendre(z); c._rappel = d;
+      d.addEventListener('toggle', function () { if (d.open) espacerFractions(z); });
     }
     v.quiz = quiz; v.n = n; v.e = c._etapes;
     v.titre.innerHTML = 'Correction <span class="qv-num">· question ' + (n + 1) + '</span>';
@@ -1824,8 +2780,8 @@
     document.body.classList.add('volet-ouvert');
     v.languette.hidden = true;
     if (window.mathVirtualKeyboard) try { window.mathVirtualKeyboard.hide(); } catch (e) {}
-    placerJustifs(v.e.racine);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (v.e && v.e.racine.isConnected) { placerJustifs(v.e.racine); surligner(v.e.racine); (v.e.majs || []).forEach(function (f) { f(v.e.k, false); }); } });
+    ajusterLargeurs(v.e.racine); placerJustifs(v.e.racine);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (v.e && v.e.racine.isConnected) { ajusterLargeurs(v.e.racine, true); placerJustifs(v.e.racine); surligner(v.e.racine); (v.e.majs || []).forEach(function (f) { f(v.e.k, false); }); } });
     if (v.e.k === 0) montrer(v, 1, true); else montrer(v, v.e.k, false);
     if (window.matchMedia && window.matchMedia('(max-width: 999px)').matches) {
       // téléphone : la feuille monte par le bas ; on remonte la question juste sous les barres collées en haut
@@ -1982,7 +2938,9 @@
   window.ColineaireQuiz = {
     analyser: analyser, evaluer: evaluer, verifierExpr: verifierExpr, verifierCases: verifierCases, verifierEnsemble: verifierEnsemble,
     verifierIntervalles: verifierIntervalles, verifierComparer: verifierComparer, verifierTableau: verifierTableau, verifierRepere: verifierRepere,
-    lireIntervalles: lireIntervalles, FORMES: FORMES,
+    lireIntervalles: lireIntervalles, FORMES: FORMES, verifierCoords: verifierCoords,
+    // TOUS les types (quiz de chapitre, 14 nov. 2026) : réponse au format de reponseAttendue(q), voir la section 2 bis
+    verifierReponse: verifierReponse, reponseAttendue: reponseAttendue,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
     monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre
   };

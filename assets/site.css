@@ -812,3 +812,33 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-sens { color: #D62828; }
 .qv-just [data-latex] { padding: .32em 0; }       /* une fraction ne déborde pas sur la ligne voisine */
 @media (max-width: 720px) { .qv-al.avec-just { padding-right: 2.8em; } }   /* après la règle générale : elle l'emporte sur téléphone */
+
+/* développement pas à pas (q.dev, M. Colin, 14 nov. 2026) : « = » en retrait, puis des termes qui passent à la ligne
+   entre deux termes ; post-it jaune « On utilise » ; flèches rouges de distributivité ; termes barrés ; résultat encadré */
+.qv-dev { position: relative; isolation: isolate; margin: 4px 0 16px; }
+.qv-dl { display: flex; align-items: baseline; padding: 4px 0; }
+.qv-dl.avec-fl { padding-top: 1.45em; }
+.qv-dl.avec-fl-bas { padding-bottom: 1.45em; }
+.qv-deg { flex: none; width: 1.5em; margin-left: .7em; }
+.qv-dl0 .qv-deg { display: none; }
+.qv-dc { display: flex; flex-wrap: wrap; align-items: baseline; row-gap: .45em; min-width: 0; border-radius: .25em;
+  outline: 2px solid transparent; outline-offset: 4px; transition: outline-color .35s; }
+.qv-dc.qv-cadre { outline-color: var(--rouge); }
+.qv-dp { white-space: nowrap; }
+.qv-dp.qv-dps { margin-left: .24em; }
+.qv-dev-fl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 1; }
+.qv-dfl { color: #D62828; }
+.qv-dfl.bas { color: #2F6FD6; }
+.qv-dfl path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.qv-dfl.trace .tige { stroke-dasharray: var(--L); stroke-dashoffset: var(--L); animation: qv-trace .8s cubic-bezier(.25, .7, .35, 1) forwards; }
+.qv-dfl.trace .pointe { opacity: 0; animation: qv-pointe .15s .75s forwards; }
+@keyframes qv-trace { to { stroke-dashoffset: 0; } }
+@keyframes qv-pointe { to { opacity: 1; } }
+.qv-raye { position: absolute; z-index: 2; pointer-events: none;
+  background: linear-gradient(to bottom right, transparent calc(50% - 1.3px), #D62828 calc(50% - 1.3px), #D62828 calc(50% + 1.3px), transparent calc(50% + 1.3px)); }
+.qv-notes { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 16px; margin: 8px 0 12px 1.2em; }
+.qv-note { display: flex; flex-direction: column; padding: 6px 12px 8px; background: #FFF6C4; border: 1px solid #E6D37A; border-radius: 3px;
+  box-shadow: 3px 5px 14px rgba(51, 51, 51, .25); color: #222; font-size: .86em; line-height: 1.5; transform: rotate(-1.2deg); }
+.qv-note-t { font-size: .6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7D6A12; }
+.qv-note .ML__latex { font-size: 1.05em; }
+@media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe { animation: none; stroke-dasharray: none; opacity: 1; } }

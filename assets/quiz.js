@@ -769,6 +769,20 @@
   function rendre(elm) { if (window.MathLive && window.MathLive.renderMathInElement) try { window.MathLive.renderMathInElement(elm); } catch (e) {} }
   function melanger(t) { t = t.slice(); for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = t[i]; t[i] = t[j]; t[j] = x; } return t; }
 
+  /* Tirage ÉQUILIBRÉ (option equilibre d'un quiz à réglages, 15 nov. 2026) : chaque sous-banque (même banque, même
+     q.theme) fournit des questions en proportion de sa taille (plus forts restes), puis tout est mélangé : 20 questions
+     d'un thème qui regroupe plusieurs sous-banques ne tombent pas toutes dans la même. */
+  function tirageEquilibre(toutes, n) {
+    var groupes = {}, cles = [];
+    toutes.forEach(function (t) { if (!groupes[t.g]) { groupes[t.g] = []; cles.push(t.g); } groupes[t.g].push(t); });
+    n = Math.min(n, toutes.length);
+    var parts = cles.map(function (c) { var x = n * groupes[c].length / toutes.length; return { c: c, k: Math.floor(x), r: x - Math.floor(x) + Math.random() * 1e-6 }; });
+    var reste = n - parts.reduce(function (a, p) { return a + p.k; }, 0);
+    parts.slice().sort(function (a, b) { return b.r - a.r; }).slice(0, reste).forEach(function (p) { p.k++; });
+    var out = [];
+    parts.forEach(function (p) { out = out.concat(melanger(groupes[p.c]).slice(0, p.k)); });
+    return melanger(out);
+  }
   function Quiz(racine, def, opts) {
     this.racine = racine; this.source = def; this.i = 0; this.opts = opts || {};
     this.construire();
@@ -779,9 +793,9 @@
     var toutes = [];
     (s.tirage.depuis || [null]).forEach(function (id) {             // sans « depuis » : tirage dans la banque du quiz lui-même
       var d = id ? (window.QUIZ || {})[id] : s;
-      if (d) d.questions.forEach(function (q, i) { toutes.push({ q: q, i: toutes.length }); });
+      if (d) d.questions.forEach(function (q, i) { toutes.push({ q: q, i: toutes.length, g: (id || '') + '|' + (q.theme || '') }); });
     });
-    var tirees = melanger(toutes).slice(0, s.tirage.n || 20);
+    var tirees = s.tirage.equilibre ? tirageEquilibre(toutes, s.tirage.n || 20) : melanger(toutes).slice(0, s.tirage.n || 20);
     if (s.tirage.ordre === 'banque') tirees.sort(function (a, b) { return a.i - b.i; });   // garde la progression de la banque
     var d2 = {}; for (var c in s) d2[c] = s[c];
     d2.questions = tirees.map(function (t) { return t.q; });
@@ -1901,7 +1915,7 @@
     var tous = ch.length === this.cfg.themes.length;
     var def = { etiquette: this.cfg.etiquette, titre: this.cfg.titre,
       sousTitre: n + ' questions tirées au hasard' + (tous ? ' dans tous les thèmes' : ch.length === 1 ? ' : ' + ((this.cfg.noms && this.cfg.noms[ch[0]]) || window.QUIZ[ch[0]].titre).toLowerCase() : ' dans ' + ch.length + ' thèmes') + ', nouveau tirage à chaque essai.',
-      tirage: { depuis: ch, n: n }, questions: [] };   // ordre au hasard, thèmes mélangés (M. Colin, 13 nov. 2026 : le calcul ne vient plus toujours en premier)
+      tirage: { depuis: ch, n: n, equilibre: !!this.cfg.equilibre }, questions: [] };   // ordre au hasard, thèmes mélangés (M. Colin, 13 nov. 2026 : le calcul ne vient plus toujours en premier)
     this.quiz = new Quiz(this.racine, def, { reglages: function () { self.afficher(); self.racine.scrollIntoView({ block: 'start', behavior: 'smooth' }); } });
     this.racine.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };

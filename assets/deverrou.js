@@ -4,6 +4,9 @@
   'use strict';
   var CLE = 'mathandco.mdp';
   var carte = document.getElementById('carte'), champ = document.getElementById('mdp');
+  // page de quiz réservée aux élèves (14 nov. 2026, <html data-mc-type="quiz">) : une page du site qui défile, pas une
+  // scène 1600 × 900 : ni corps figé, ni invitation à tourner le téléphone
+  var QUIZ = document.documentElement.getAttribute('data-mc-type') === 'quiz';
 
   // ---------- téléphone ----------
   // Les corrections sont une scène de 1600 × 900 mise à l'échelle de l'écran. Sur téléphone, la scène débordait de
@@ -26,9 +29,9 @@
     'border-radius:999px;padding:10px 18px;cursor:pointer}' +
     // fond blanc : plus de quadrillage de cahier derrière les corrections animées (5 nov. 2026)
     '#defil{background-image:none!important;background-color:#fff!important}';
-  document.head.appendChild(st);
+  if (!QUIZ) document.head.appendChild(st);
 
-  var telephone = window.matchMedia && matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
+  var telephone = !QUIZ && window.matchMedia && matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
   if (telephone) {
     var voile = document.createElement('div');
     voile.id = 'mc-tourner';
@@ -127,7 +130,8 @@
     Array.prototype.slice.call(carte.children).forEach(function (n) { if (n !== titre) n.remove(); });
     var p = document.createElement('p');
     p.style.cssText = 'font-size:16px;line-height:1.5;color:#3A4558;margin:14px 0 6px';
-    p.textContent = 'Cette correction n\'est pas encore disponible. Elle s\'ouvrira après sa correction en classe.';
+    p.textContent = QUIZ ? 'Ce quiz n\'est pas encore ouvert aux élèves.'
+      : 'Cette correction n\'est pas encore disponible. Elle s\'ouvrira après sa correction en classe.';
     var a = document.createElement('a');
     a.href = '../eleves.html'; a.textContent = 'Retour à l\'espace élèves';
     a.style.cssText = 'display:block;margin-top:16px;padding:11px;border-radius:8px;background:#17233A;color:#fff;text-align:center;font-weight:600;text-decoration:none';

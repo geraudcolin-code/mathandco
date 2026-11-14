@@ -22,6 +22,7 @@
   --jaune: #d9a515; --jaune-vif: #c4940f; --jaune-fond: #fbf1cf; --jaune-texte: #6b4e00;                      /* bloc « questions flash » */
   --sepia: #8a6634; --sepia-vif: #73542a; --sepia-fond: #f5ecdd; --sepia-texte: #6b4c22;                    /* bloc « éléments historiques » */
   --prune: #7a3b8c; --prune-vif: #653072; --prune-fond: #f1e6f5; --prune-texte: #5c2a6b;                    /* bloc « devoirs maison » */
+  --sarcelle: #17767f; --sarcelle-vif: #12626a; --sarcelle-fond: #ddeff1; --sarcelle-texte: #115a61;        /* bloc « quiz » (14 nov. 2026) */
   --carreau: #dbe9f5;       /* quadrillage */
   --papier: #ffffff;
   --verre: rgba(251, 251, 253, .78);
@@ -388,11 +389,13 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .dossier-bloc.d-exercices { --dc: var(--marine); --dc-vif: var(--marine-vif); --dc-fond: var(--marine-fond); --dc-texte: var(--marine-texte); }
 .dossier-bloc.d-histoire { --dc: var(--sepia); --dc-vif: var(--sepia-vif); --dc-fond: var(--sepia-fond); --dc-texte: var(--sepia-texte); }
 .dossier-bloc.d-dm { --dc: var(--prune); --dc-vif: var(--prune-vif); --dc-fond: var(--prune-fond); --dc-texte: var(--prune-texte); }
+.dossier-bloc.d-quiz { --dc: var(--sarcelle); --dc-vif: var(--sarcelle-vif); --dc-fond: var(--sarcelle-fond); --dc-texte: var(--sarcelle-texte); }
 .chapitre.dossier.d-poly, .chapitre.dossier.d-exercices, .chapitre.dossier.d-ds { --dc: var(--orange); --dc-fond: var(--orange-fond); --dc-texte: var(--orange-texte); }
 .chapitre.dossier.d-poly { --dc: var(--vert-mat); --dc-fond: var(--vert-mat-fond); --dc-texte: var(--vert-mat-texte); }
 .chapitre.dossier.d-exercices { --dc: var(--marine); --dc-fond: var(--marine-fond); --dc-texte: var(--marine-texte); }
 .chapitre.dossier.d-histoire { --dc: var(--sepia); --dc-fond: var(--sepia-fond); --dc-texte: var(--sepia-texte); }
 .chapitre.dossier.d-dm { --dc: var(--prune); --dc-fond: var(--prune-fond); --dc-texte: var(--prune-texte); }
+.chapitre.dossier.d-quiz { --dc: var(--sarcelle); --dc-fond: var(--sarcelle-fond); --dc-texte: var(--sarcelle-texte); }
 .dossier-bloc.d-flash { --dc: var(--jaune); --dc-vif: var(--jaune-vif); --dc-fond: var(--jaune-fond); --dc-texte: var(--jaune-texte); }
 .chapitre.dossier.d-flash { --dc: var(--jaune); --dc-fond: var(--jaune-fond); --dc-texte: var(--jaune-texte); }
 .dossier-bloc.d-flash .dossier-tete { color: #3a2a00; }
@@ -775,6 +778,13 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-surl.c0 { background: color-mix(in srgb, var(--qv-c0) 24%, transparent); }
 .qv-surl.c1 { background: color-mix(in srgb, var(--qv-c1) 22%, transparent); }
 .qv-surl.c2 { background: color-mix(in srgb, var(--qv-c2) 22%, transparent); }
+/* pastilles des factorisations (charte § 3, M. Colin 14 nov. 2026) : facteur commun bleu ciel (c3), autres facteurs
+   rose (c4) puis pêche (c5) ; capsules aux bouts arrondis, bord adouci ; l'encre garde sa couleur */
+.quiz-volet { --qv-c3: #3d9be0; --qv-c4: #e0609c; --qv-c5: #ee9a2e; }
+.qv-surl.c3, .qv-surl.c4, .qv-surl.c5 { border-radius: 999px; }
+.qv-surl.c3 { background: color-mix(in srgb, var(--qv-c3) 30%, transparent); box-shadow: 0 0 4px 1px color-mix(in srgb, var(--qv-c3) 22%, transparent); }
+.qv-surl.c4 { background: color-mix(in srgb, var(--qv-c4) 28%, transparent); box-shadow: 0 0 4px 1px color-mix(in srgb, var(--qv-c4) 20%, transparent); }
+.qv-surl.c5 { background: color-mix(in srgb, var(--qv-c5) 32%, transparent); box-shadow: 0 0 4px 1px color-mix(in srgb, var(--qv-c5) 22%, transparent); }
 @keyframes qv-surl { from { opacity: 0; } to { opacity: 1; } }
 .qv-eclair { animation: qv-neuf 1.6s var(--courbe) forwards; }
 
@@ -825,6 +835,15 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   outline: 2px solid transparent; outline-offset: 4px; transition: outline-color .35s; }
 .qv-dc.qv-cadre { outline-color: var(--rouge); }
 .qv-dp { white-space: nowrap; }
+.qv-dgr { display: inline-flex; flex-wrap: nowrap; align-items: baseline; max-width: 100%; }   /* une parenthèse entière : pas de retour à la ligne dedans */
+.qv-dev-g { display: grid; grid-template-columns: max-content 1.7em minmax(0, 1fr); align-items: baseline; }   /* « = » alignés : une seule grille */
+.qv-dev-g > .qv-dl { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; }
+.qv-dev-g > .qv-notes { grid-column: 1 / -1; }
+.qv-dev-g .qv-dlg { text-align: right; white-space: nowrap; }
+.qv-dev-g .qv-deg { width: auto; margin-left: 0; text-align: center; }
+.qv-dev-g .qv-dl0 .qv-dlg { display: none; }
+.qv-dev-g .qv-dl0 .qv-dc { grid-column: 1 / -1; }
+.qv-cadre-calque { position: absolute; z-index: 1; pointer-events: none; border: 2px solid var(--rouge); border-radius: .3em; }
 .qv-dp.qv-dps { margin-left: .24em; }
 .qv-dev-fl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 1; }
 .qv-dfl { color: #D62828; }

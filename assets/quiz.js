@@ -342,7 +342,8 @@
         if (cs.every(function (c) { return c !== null; }) && cs.reduce(pgcd) > 1) return 'entier';
       }
     }
-    if (reduits && (nombres > 1 || puissX > 1)) return 'regrouper';
+    if (reduits && puissX > 1) return 'regrouper';
+    if (reduits && nombres > 1) return 'regrouperN';      // 2 × 2(2x − 3) : seulement des nombres à regrouper
     return '';
   }
   function nbFacteurs(n) {                   // facteurs non constants, multiplicités comprises : (x − 5)² en compte 2
@@ -453,6 +454,11 @@
       if (facto) {
         var rf = raisonFacto(expr, vars[0], forme === 'factorise', q.facteursReduits);
         if (rf === 'un') return { etat: 'faux', msg: MSG_FORME.un };
+        if (q.facteursReduits && rf === 'regrouperN') {      // le message ne parle que des nombres (« 2 × 2 = 4 »)
+          var ns = aplatirProduit(expr).map(sansSigne).filter(estConstante).map(function (m) { return evaluer(m, {}); });
+          var pr = ns.reduce(function (a, b) { return a * b; }, 1), f = function (v) { return String(Math.round(v * 1e6) / 1e6).replace('.', ','); };
+          return { etat: 'faux', msg: 'C’est égal, mais regroupe les nombres en un seul coefficient : ' + ns.map(f).join(' × ') + ' = ' + f(pr) + '.' };
+        }
         if (q.facteursReduits && (rf === 'produit' || rf === 'reduire' || rf === 'regrouper')) return { etat: 'faux', msg: MSG_FORME[rf] };
       }
       var mf = forme === 'factorise' && !FORMES.produit(expr) ? MSG_FORME.produit : MSG_FORME[forme];
@@ -1521,16 +1527,12 @@
         }
         else if (t === 'fx') fl.forEach(function (f) { if (f.k1 === Infinity) f.k1 = k - 1; });
         else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], k0: k }); });
-        else if (t === 'c') cadres.push({ c: gauche[r[0]] ? C[r[0]].row : C[r[0]].c, k0: k });   // avec un membre de gauche : toute l'égalité encadrée
+        else if (t === 'c') cadres.push(gauche[r[0]] ? { ligne: C[r[0]].row, k0: k } : { c: C[r[0]].c, k0: k });   // avec un membre de gauche : toute l'égalité encadrée
       });
     });
     var svg = svgEl('svg', { class: 'qv-dev-fl', 'aria-hidden': 'true', focusable: 'false' }); g.appendChild(svg);
     majs.push(function (k, anime) {
       var H = g.getBoundingClientRect(); if (!H.width) return;
-      if (avecG) {                                // colonne des membres de gauche : à la largeur du plus long
-        var w = 0; Array.prototype.forEach.call(g.querySelectorAll('.qv-dlg'), function (x) { w = Math.max(w, x.scrollWidth); });
-        g.style.setProperty('--qv-lgw', Math.ceil(w) + 'px');
-      }
       fl.forEach(function (f) {                   // flèches de distributivité : du cœur du facteur au cœur du terme
         if (k < f.k0 || k > f.k1) { if (f.el) { f.el.remove(); f.el = null; } return; }
         var a = g.querySelector('.qv-m-' + f.de), b = g.querySelector('.qv-m-' + f.vers), A = a && boiteEncre(a), B = b && boiteEncre(b);
@@ -1555,7 +1557,20 @@
         if (k < b.k0) { if (b.o) { b.o.remove(); b.o = null; } return; }
         b.o = calque(b.p, g, 'qv-raye', 1, b.o);
       });
-      cadres.forEach(function (c) { c.c.classList.toggle('qv-cadre', k >= c.k0); });
+      cadres.forEach(function (c) {
+        if (c.c) { c.c.classList.toggle('qv-cadre', k >= c.k0); return; }
+        // égalité « gauche = droite » : cadre à la taille de ce qui est écrit (la ligne occupe toute la grille)
+        if (k < c.k0) { if (c.o) { c.o.remove(); c.o = null; } return; }
+        var u = null;                                // union de l'encre des morceaux (pas des cellules de la grille)
+        Array.prototype.forEach.call(c.ligne.querySelectorAll('.qv-dp, .qv-deg'), function (x) {
+          var b = boiteEncre(x); if (!b) return;
+          u = u ? { l: Math.min(u.l, b.l), t: Math.min(u.t, b.t), r: Math.max(u.r, b.r), b: Math.max(u.b, b.b) } : b;
+        });
+        if (!u) return;
+        if (!c.o) { c.o = el('span', 'qv-cadre-calque'); g.appendChild(c.o); }
+        c.o.style.left = (u.l - H.left - 6) + 'px'; c.o.style.top = (u.t - H.top - 5) + 'px';
+        c.o.style.width = (u.r - u.l + 12) + 'px'; c.o.style.height = (u.b - u.t + 10) + 'px';
+      });
     });
     return g;
   }

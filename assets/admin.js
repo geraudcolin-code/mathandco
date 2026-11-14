@@ -248,7 +248,8 @@
   $('recherche').addEventListener('input', function (e) { texte = e.target.value; appliquer(); });
 
   function bilan(msgEtat, cls) {
-    var tous = items(), ouv = tous.filter(function (it) { return PUBLIE[ident(it)]; }).length, ch = changements();
+    var tous = items().filter(function (it) { return it.type !== 'quiz'; }), ch = changements();   // un quiz n'est pas une correction
+    var ouv = tous.filter(function (it) { return PUBLIE[ident(it)]; }).length;
     $('resume').textContent = ouv + ' corrections ouvertes aux élèves sur ' + tous.length + '. Les nouvelles corrections arrivent fermées.';
     var e = $('etat');
     e.className = 'etat' + (cls ? ' ' + cls : '');

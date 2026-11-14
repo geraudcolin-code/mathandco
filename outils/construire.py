@@ -431,8 +431,10 @@ def catalogue(mdp, mdp_prof=None):
 
     # cartes « classes » de la page d'accueil (titres des chapitres et nombre de corrections, en clair)
     cartes = []
+    # un quiz n'est pas une « correction » : il n'entre pas dans les compteurs (15 nov. 2026)
+    ncorr = lambda its: sum(1 for it in its if it.get('type') != 'quiz')
     for c in classes:
-        n = sum(len(ch['items']) + sum(len(d['items']) for d in ch.get('dossiers', [])) for ch in c['chapitres'])
+        n = sum(ncorr(ch['items']) + sum(ncorr(d['items']) for d in ch.get('dossiers', [])) for ch in c['chapitres'])
         lignes = ''.join(f'<li><span class="ch-num">Chapitre {ch["numero"]}</span> {H.escape(ch["titre"])}</li>' for ch in c['chapitres'])
         cartes.append(
             f'<a class="classe" href="eleves.html#{c["id"]}">\n'
@@ -444,7 +446,7 @@ def catalogue(mdp, mdp_prof=None):
     page = open(acc, encoding='utf-8').read()
     page = re.sub(r'(<!-- debut:classes -->).*?(<!-- fin:classes -->)',
                   lambda m: m.group(1) + '\n' + '\n'.join(cartes) + '\n' + m.group(2), page, flags=re.S)
-    total = sum(len(ch['items']) + sum(len(d['items']) for d in ch.get('dossiers', [])) for c in classes for ch in c['chapitres'])
+    total = sum(ncorr(ch['items']) + sum(ncorr(d['items']) for d in ch.get('dossiers', [])) for c in classes for ch in c['chapitres'])
     page = re.sub(r'(<!-- debut:total -->).*?(<!-- fin:total -->)', lambda m: m.group(1) + str(total) + m.group(2), page, flags=re.S)
     open(acc, 'w', encoding='utf-8').write(page)
     npdf = sum(1 for c in classes for ch in c['chapitres'] for dd in [ch] + ch.get('dossiers', []) for it in dd['items'] if 'pdf' in it)

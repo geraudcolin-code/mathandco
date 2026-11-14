@@ -288,6 +288,7 @@
       });
     var tous = [];
     DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { tous = tous.concat(tousItems(ch)); }); });
+    tous = tous.filter(function (it) { return it.type !== 'quiz'; });     // un quiz n'est pas une « correction » (15 nov. 2026)
     var dispo = tous.filter(ouverte).length;
     $('resume').textContent = ACCES === null
       ? 'Impossible de vérifier quelles corrections sont ouvertes : rechargez la page dans un instant.'

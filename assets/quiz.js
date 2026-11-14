@@ -770,17 +770,23 @@
   function melanger(t) { t = t.slice(); for (var i = t.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), x = t[i]; t[i] = t[j]; t[j] = x; } return t; }
 
   /* Tirage ÉQUILIBRÉ (option equilibre d'un quiz à réglages, 15 nov. 2026) : chaque sous-banque (même banque, même
-     q.theme) fournit des questions en proportion de sa taille (plus forts restes), puis tout est mélangé : 20 questions
-     d'un thème qui regroupe plusieurs sous-banques ne tombent pas toutes dans la même. */
+     q.theme) fournit des questions en proportion de sa taille, puis tout est mélangé : 20 questions d'un thème qui
+     regroupe plusieurs sous-banques ne tombent pas toutes dans la même. Arrondi SANS BIAIS (tirage systématique) :
+     sous-banques dans un ordre au hasard, parts n × taille / total cumulées, n points u, u + 1, …, u + n − 1 (u au hasard
+     dans [0 ; 1[) : une sous-banque reçoit les points de son intervalle, soit sa part arrondie au-dessous ou au-dessus,
+     en moyenne exactement sa part (une petite sous-banque sort aussi en 5 questions, pas toujours la même). */
   function tirageEquilibre(toutes, n) {
     var groupes = {}, cles = [];
     toutes.forEach(function (t) { if (!groupes[t.g]) { groupes[t.g] = []; cles.push(t.g); } groupes[t.g].push(t); });
     n = Math.min(n, toutes.length);
-    var parts = cles.map(function (c) { var x = n * groupes[c].length / toutes.length; return { c: c, k: Math.floor(x), r: x - Math.floor(x) + Math.random() * 1e-6 }; });
-    var reste = n - parts.reduce(function (a, p) { return a + p.k; }, 0);
-    parts.slice().sort(function (a, b) { return b.r - a.r; }).slice(0, reste).forEach(function (p) { p.k++; });
-    var out = [];
-    parts.forEach(function (p) { out = out.concat(melanger(groupes[p.c]).slice(0, p.k)); });
+    cles = melanger(cles);
+    var u = Math.random(), cumul = 0, out = [];
+    cles.forEach(function (c, j) {
+      var a = cumul;
+      cumul = j === cles.length - 1 ? n : cumul + n * groupes[c].length / toutes.length;
+      var k = Math.ceil(cumul - u) - Math.ceil(a - u);           // nombre d'entiers m tels que a <= u + m < cumul
+      out = out.concat(melanger(groupes[c]).slice(0, k));
+    });
     return melanger(out);
   }
   function Quiz(racine, def, opts) {
@@ -1511,10 +1517,20 @@
         var t = p.t, sg = j && !ouvrant ? /^(\\class\{[^{}]*\}\{[+-]\}|[+=-])/.exec(t) : null;   // un signe (ou un « = ») entre deux morceaux : espacé
         if (sg) t = sg[1] + '\\:' + t.slice(sg[1].length);                              // comme une opération (morceaux séparés)
         var s = el('span', 'qv-dp qv-e' + (sg ? ' qv-dps' : ''), '\\(' + t + '\\)'); s.dataset.ligne = i; P[p.i] = s;
+        var nu = p.t.replace(/\\class\{[^{}]*\}/g, '');                              // un terme « court » : ni somme entre parenthèses, ni texte
+        if (!/\\text|\([^()]*[+-][^()]*\)/.test(nu)) s.dataset.court = '1';
         if (p.g) { if (!groupes[p.g]) { groupes[p.g] = el('span', 'qv-dgr'); c.appendChild(groupes[p.g]); } groupes[p.g].appendChild(s); }
         else c.appendChild(s);
         (p.t.match(/qv-m-[\w-]+/g) || []).forEach(function (m) { ligneDe[m.slice(5)] = i; });
       });
+      // garde-fou (15 nov. 2026) : le dernier morceau d'une ligne n'est jamais laissé seul à la ligne : collé au précédent
+      var kids = c.children, der = kids[kids.length - 1], avant = kids[kids.length - 2];
+      var seul = der && (der.classList.contains('qv-dgr') ? (der.children.length === 1 ? der.firstElementChild : null) : der);
+      if (seul && avant && seul.dataset.court) {                                      // un terme court (« − 4 », « + 12 », « − 1² »)
+        if (avant.classList.contains('qv-dgr')) avant.appendChild(seul);             // dans le groupe qui précède
+        else { var colle = el('span', 'qv-dgr'); c.insertBefore(colle, avant); colle.appendChild(avant); colle.appendChild(seul); }
+        if (der !== seul) c.removeChild(der);
+      }
       var ns = (d.n || []).filter(function (x) { return x.apres === i; });
       if (ns.length) {
         var bloc = el('div', 'qv-notes');
@@ -1532,6 +1548,7 @@
         var t = a[0], r = a.slice(1);
         if (t === 'v') r.forEach(function (id) { var p = P[id]; p.dataset.e = k; var L = C[+p.dataset.ligne]; if (!p.dataset.gauche && L.eg.classList.contains('qv-e') && !L.eg.dataset.e) L.eg.dataset.e = k; });
         else if (t === 'n') N[r[0]].el.dataset.e = k;
+        else if (t === 'nx') N[r[0]].el.dataset.f = k;                     // le post-it s'en va (le suivant prend sa place)
         else if (t === 'nl') N[r[0]].l[r[1]].dataset.e = k;
         else if (t === 'h') { var o = { id: trans.length, sel: 'qv-m-' + r[0], c: r[1], pre: k, show: Infinity }; trans.push(o); ouverts[r[0]] = o; }
         else if (t === 'hx') r.forEach(function (id) { if (ouverts[id]) { ouverts[id].show = k - 1; delete ouverts[id]; } });
@@ -1740,7 +1757,9 @@
     var neufs = [];
     Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-e'), function (x) {
       var i = +x.dataset.e;
-      x.classList.toggle('vu', i <= et.k);
+      var parti = x.dataset.f && et.k >= +x.dataset.f;              // ['nx', note] : un post-it qui a servi s'en va
+      x.classList.toggle('vu', i <= et.k && !parti);
+      x.classList.toggle('qv-parti', !!parti);
       x.classList.remove('neuf');
       if (anime && i === et.k) neufs.push(x);
     });
@@ -1965,7 +1984,7 @@
     verifierIntervalles: verifierIntervalles, verifierComparer: verifierComparer, verifierTableau: verifierTableau, verifierRepere: verifierRepere,
     lireIntervalles: lireIntervalles, FORMES: FORMES,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
-    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes
+    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

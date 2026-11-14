@@ -15,6 +15,7 @@
   --marine: #cf405c; --marine-vif: #b8314d; --marine-fond: #ffe6ea; --marine-texte: #9c2540;
   --jaune: #eab01a; --jaune-vif: #d79f0f; --jaune-fond: #fff3c9; --jaune-texte: #6f5000;
   --prune: #94418a; --prune-vif: #7d3374; --prune-fond: #f8e7f4; --prune-texte: #6d2a64;
+  --sarcelle: #1f8a8a; --sarcelle-vif: #187373; --sarcelle-fond: #e2f4f2; --sarcelle-texte: #155f5f;
   --carreau: #ffe4d8; --papier: #fffdfa; --verre: rgba(255, 248, 241, .84);
   --ombre: 0 18px 44px rgba(214, 61, 69, .16), 0 3px 8px rgba(214, 61, 69, .10);
   --f-titre: "Fredoka", "Nunito", ui-rounded, "SF Pro Rounded", "Varela Round", "Trebuchet MS", sans-serif;
@@ -125,6 +126,7 @@
 .pample .dossier-bloc.d-exercices { --dc: #d6405a; }
 .pample .dossier-bloc.d-histoire { --dc: #a3773a; }
 .pample .dossier-bloc.d-dm { --dc: #94418a; }
+.pample .dossier-bloc.d-quiz { --dc: #1f8a8a; }
 .pample .dossier-bloc.d-ds { --dc: #e2761c; }
 .pample .dossier-bloc.d-flash { --dc: #f0b81c; }
 

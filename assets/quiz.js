@@ -266,27 +266,8 @@
       if (n.t === '^') return sansParentheses(n.a) !== n.a;
       return false;
     },
-    factorise: function (n, x) {              // produit dont aucun facteur ne se factorise encore (x en facteur, ou entier commun)
-      if (!FORMES.produit(n)) return false;
-      var facteurs = [];
-      (function aplatir(m) { m = sansSigne(m); if (m.t === '*') { aplatir(m.a); aplatir(m.b); } else facteurs.push(m.t === '^' ? sansParentheses(m.a) : m); })(n);
-      function coef(m) {                       // coefficient entier d'un monôme simple, sinon null
-        if (estNombre(m)) return estEntier(m) ? Math.abs(evaluer(m, {})) : null;
-        if (m.t === 'var' || m.t === '^') return 1;
-        if (m.t === '*' && estNombre(m.a)) return estEntier(m.a) ? Math.abs(evaluer(m.a, {})) : null;
-        return null;
-      }
-      for (var i = 0; i < facteurs.length; i++) {
-        var ts = termes(sansParentheses(facteurs[i]), 1);
-        if (ts.length < 2) continue;
-        var degs = ts.map(function (t) { return degreMonome(t.n, x); });
-        if (degs.some(function (d) { return d < 0; })) continue;
-        if (Math.min.apply(null, degs) >= 1) return false;
-        var cs = ts.map(function (t) { return coef(t.n); });
-        if (cs.every(function (c) { return c !== null; }) && cs.reduce(pgcd) > 1) return false;
-      }
-      return true;
-    },
+    factorise: function (n, x) { return raisonFacto(n, x, true) === ''; },     // factorisé AU MAXIMUM (« factoriser au maximum »)
+    factorisee: function (n, x) { return raisonFacto(n, x, false) === ''; },   // factorisé, facteurs réduits ; un entier commun peut rester dans un facteur
     decimal: function (n) { return estDecimal(n); },                          // un nombre, calcul effectué
     fraction: function (n) { return estEntier(n) || estFractionIrred(n); },   // entier ou fraction irréductible
     nombre: function (n) { return estDecimal(n) || estFractionIrred(n); },    // décimal ou fraction irréductible
@@ -309,12 +290,51 @@
     },
     libre: function () { return true; }
   };
+  /* Forme factorisée (M. Colin, 14 nov. 2026, quiz de Seconde CH03) : '' si n convient, sinon la raison :
+     'produit' (pas un produit), 'reduire' (un facteur n'est pas réduit : parenthèses ou termes semblables à l'intérieur,
+     ou plusieurs facteurs numériques), 'x' (x encore en facteur dans un facteur), 'entier' (strict seulement : un entier
+     commun reste dans un facteur, 2(2x + 4)). Avec strict = false, (3x − 4)(3x + 6) est accepté comme 3(3x − 4)(x + 2),
+     comme dans les corrections de Seconde (« (4x + 12)(2x + 2) » du cours). */
+  function contientSomme(m) {
+    if (!m || typeof m !== 'object') return false;
+    if (m.t === '+' || m.t === '-') return true;
+    return contientSomme(m.a) || contientSomme(m.b);
+  }
+  function raisonFacto(n, x, strict) {
+    if (!FORMES.produit(n)) return 'produit';
+    var facteurs = [], nombres = 0;
+    (function aplatir(m) { m = sansSigne(m); if (m.t === '*') { aplatir(m.a); aplatir(m.b); } else facteurs.push(m.t === '^' ? sansParentheses(m.a) : m); })(n);
+    function coef(m) {                       // coefficient entier d'un monôme simple, sinon null
+      if (estNombre(m)) return estEntier(m) ? Math.abs(evaluer(m, {})) : null;
+      if (m.t === 'var' || m.t === '^') return 1;
+      if (m.t === '*' && estNombre(m.a)) return estEntier(m.a) ? Math.abs(evaluer(m.a, {})) : null;
+      return null;
+    }
+    for (var i = 0; i < facteurs.length; i++) {
+      var f = sansSigne(facteurs[i]);
+      if (estConstante(f)) { nombres++; continue; }
+      var ts = termes(f, 1);
+      if (ts.length < 2) { if (contientSomme(f)) return 'reduire'; continue; }
+      if (ts.some(function (t) { return contientSomme(t.n); })) return 'reduire';
+      var degs = ts.map(function (t) { return degreMonome(t.n, x); }), vus = {};
+      for (var j = 0; j < degs.length; j++) { if (degs[j] < 0) continue; if (vus[degs[j]]) return 'reduire'; vus[degs[j]] = true; }
+      if (degs.some(function (d) { return d < 0; })) continue;
+      if (Math.min.apply(null, degs) >= 1) return 'x';
+      if (strict) {
+        var cs = ts.map(function (t) { return coef(t.n); });
+        if (cs.every(function (c) { return c !== null; }) && cs.reduce(pgcd) > 1) return 'entier';
+      }
+    }
+    return nombres > 1 ? 'reduire' : '';
+  }
   var MSG_FORME = {
     polynome: 'Le résultat est juste, mais l’expression n’est pas complètement développée et réduite.',
     affine: 'C’est la bonne droite, mais l’équation n’est pas sous la forme réduite y = mx + p.',
     puissance: 'C’est égal, mais on peut encore simplifier : une seule puissance.',
     produit: 'C’est égal, mais ce n’est pas une forme factorisée : on attend un produit.',
     factorise: 'C’est égal, mais ce n’est pas factorisé au maximum : un des facteurs se factorise encore.',
+    factorisee: 'C’est égal, mais un des facteurs se factorise encore (x est encore en facteur).',
+    reduire: 'C’est égal, mais chaque facteur doit être réduit : plus de parenthèses ni de termes semblables à l’intérieur d’un facteur.',
     decimal: 'C’est égal, mais il faut effectuer le calcul et donner un nombre.',
     fraction: 'C’est égal, mais il faut l’écrire sous forme d’une fraction irréductible (ou d’un entier).',
     nombre: 'C’est égal, mais il faut effectuer le calcul : un nombre décimal ou une fraction irréductible.',
@@ -380,8 +400,11 @@
     }
     var forme = q.forme || 'libre';
     if (!FORMES[forme](expr, vars[0])) {
-      var mf = forme === 'factorise' && !FORMES.produit(expr) ? MSG_FORME.produit : MSG_FORME[forme];
-      return { etat: 'faux', msg: q.indiceForme || mf || 'Le résultat est juste, mais pas écrit sous la forme demandée.' };
+      if (forme === 'factorise' || forme === 'factorisee') {   // pas un produit, facteur pas réduit : le message le dit, quel que soit indiceForme
+        var rf = raisonFacto(expr, vars[0], forme === 'factorise');
+        if (rf === 'produit' || rf === 'reduire') return { etat: 'faux', msg: MSG_FORME[rf] };
+      }
+      return { etat: 'faux', msg: q.indiceForme || MSG_FORME[forme] || 'Le résultat est juste, mais pas écrit sous la forme demandée.' };
     }
     return { etat: 'juste' };
   }
@@ -1379,9 +1402,11 @@
      constantes orange), ceux qui s'annulent barrés en rouge ; le résultat encadré. Chaque terme est un morceau à part :
      une longue ligne passe à la ligne entre deux termes, rien ne déborde du volet.
      d = { l: [[{i, t}, …], …]  lignes (la première : l'expression de l'énoncé ; les suivantes commencent par « = ») ;
-           n: [{i, apres, t, l: [html…]}]  post-it, posés sous la ligne « apres » ;
+           n: [{i, apres, t, l: [html…], titre}]  post-it, posés sous la ligne « apres » (titre : « On utilise » par défaut,
+              « On factorise par » pour une factorisation) ;
            s: [[action, …], …]  une entrée par clic : ['v', morceau…] fait apparaître ; ['n', note] ; ['nl', note, rang] ;
-              ['h', marque, couleur] … ['hx', marque…] surlignage (c0 orange, c1 vert, c2 violet) ; ['f', de, vers, 'bas'?]
+              ['h', marque, couleur] … ['hx', marque…] surlignage (c0 orange, c1 vert, c2 violet ; pastilles des
+              factorisations : c3 bleu ciel pour le facteur commun, c4 rose et c5 pêche pour les autres facteurs) ; ['f', de, vers, 'bas'?]
               flèche, jusqu'à ['fx'] ; ['x', morceau…] barré en rouge ; ['c', ligne] cadre du résultat }
      Une marque est posée dans le TeX d'un morceau : \class{qv-c qv-m-<id>}{…} (le cœur d'un terme, jamais son signe). */
   function etapesDev(d, ajouter, trans, majs) {
@@ -1390,7 +1415,8 @@
       var row = el('div', 'qv-dl' + (i ? '' : ' qv-dl0')), eg = el('span', 'qv-deg' + (i ? ' qv-e' : ''), i ? '\\(=\\)' : ''), c = el('span', 'qv-dc');
       row.appendChild(eg); row.appendChild(c); g.appendChild(row); C.push({ row: row, eg: eg, c: c });
       L.forEach(function (p, j) {
-        var t = p.t, sg = j ? /^(\\class\{[^{}]*\}\{[+-]\}|[+-])/.exec(t) : null;   // un signe entre deux termes : espacé
+        var ouvrant = j && /[([]\s*$/.test(L[j - 1].t);                             // juste après « ( » ou « [ » : un signe de début de terme, pas d'opération
+        var t = p.t, sg = j && !ouvrant ? /^(\\class\{[^{}]*\}\{[+-]\}|[+-])/.exec(t) : null;   // un signe entre deux termes : espacé
         if (sg) t = sg[1] + '\\:' + t.slice(sg[1].length);                              // comme une opération (morceaux séparés)
         var s = el('span', 'qv-dp qv-e' + (sg ? ' qv-dps' : ''), '\\(' + t + '\\)'); s.dataset.ligne = i; P[p.i] = s; c.appendChild(s);
         (p.t.match(/qv-m-[\w-]+/g) || []).forEach(function (m) { ligneDe[m.slice(5)] = i; });
@@ -1399,7 +1425,7 @@
       if (ns.length) {
         var bloc = el('div', 'qv-notes');
         ns.forEach(function (x) {
-          var o = el('div', 'qv-note qv-e', '<span class="qv-note-t">On utilise</span><span class="qv-note-id">\\(' + x.t + '\\)</span>'), lg = [];
+          var o = el('div', 'qv-note qv-e', '<span class="qv-note-t">' + (x.titre || 'On utilise') + '</span><span class="qv-note-id">\\(' + x.t + '\\)</span>'), lg = [];
           (x.l || []).forEach(function (t) { var e = el('span', 'qv-note-l qv-e', t); o.appendChild(e); lg.push(e); });
           N[x.i] = { el: o, l: lg }; bloc.appendChild(o);
         });
@@ -1594,7 +1620,7 @@
     Array.prototype.forEach.call(racine.querySelectorAll('.qv-c.allume'), function (e) {
       if (e.parentElement && e.parentElement.closest('.qv-c.allume')) return;   // déjà couvert par un surlignage qui l'englobe
       var pas = e.closest('.qv-e'); if (pas && !pas.classList.contains('vu')) return;   // ligne pas encore écrite : rien à surligner
-      var c = (e.className.match(/\bc[012]\b/) || ['c0'])[0];
+      var c = (e.className.match(/\bc[0-5]\b/) || ['c0'])[0];
       var o = e._surl && e._surl.isConnected && e._surl.classList.contains(c) ? e._surl : null;   // reste allumé : on ne le refait pas clignoter
       e._surl = calque(e, racine, 'qv-surl ' + c, 3, o);
       if (e._surl) gardes.push(e._surl);
@@ -1617,7 +1643,7 @@
       else { void x.offsetWidth; x.classList.add('neuf'); }                       // phrase : le fond suit les lignes du texte
     });
     // surlignages : allumés de l'étape « on surligne » jusqu'à l'apparition du résultat, éteints ensuite
-    Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-c'), function (x) { x.classList.remove('allume', 'c0', 'c1', 'c2'); });
+    Array.prototype.forEach.call(et.racine.querySelectorAll('.qv-c'), function (x) { x.classList.remove('allume', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5'); });
     (et.trans || []).forEach(function (t) {
       if (et.k < t.pre || et.k > t.show) return;
       var c = t.c || 'c' + (t.id % 3);             // t.sel, t.c : surlignages choisis par le développement pas à pas

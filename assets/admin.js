@@ -139,6 +139,7 @@
     if (it.type === 'dm') return 'Devoir maison, exercice ' + it.numero;
     if (it.type === 'poly') return 'Poly à trous';
     if (it.type === 'flash') return 'Questions flash';
+    if (it.type === 'quiz') return 'Quiz';
     return it.titre || it.nom;
   }
 

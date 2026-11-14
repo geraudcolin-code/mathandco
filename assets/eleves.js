@@ -94,7 +94,7 @@
       num.appendChild(document.createTextNode(it.numero));
     } else {
       f.classList.add('speciale');
-      num.textContent = it.type === 'poly' ? 'Poly à trous' : it.type === 'flash' ? 'Questions flash' : it.type === 'histoire' ? 'Repères historiques' : (it.titre || it.nom);
+      num.textContent = it.type === 'poly' ? 'Poly à trous' : it.type === 'flash' ? 'Questions flash' : it.type === 'histoire' ? 'Repères historiques' : it.type === 'quiz' ? 'Quiz' : (it.titre || it.nom);
     }
     a.appendChild(num);
     var titre = it.type === 'poly' ? 'Le cours du chapitre, complété clic par clic' : it.titre;
@@ -104,17 +104,17 @@
       // grisée : ni animation ni corrigé ; un clic ne fait que rappeler pourquoi
       f.classList.add('ferme');
       a.removeAttribute('href'); a.setAttribute('role', 'link'); a.setAttribute('aria-disabled', 'true'); a.tabIndex = 0;
-      a.setAttribute('aria-label', (it.type === 'exercice' || it.type === 'dm' ? 'Exercice ' + it.numero : (it.titre || it.nom)) + ' : disponible après la correction en classe');
+      a.setAttribute('aria-label', (it.type === 'exercice' || it.type === 'dm' ? 'Exercice ' + it.numero : it.type === 'quiz' ? 'Quiz ' + (it.titre || '') : (it.titre || it.nom)) + (it.type === 'quiz' ? ' : bientôt disponible' : ' : disponible après la correction en classe'));
       var refus = function (ev) { ev.preventDefault(); f.classList.remove('secoue'); void f.offsetWidth; f.classList.add('secoue'); };
       a.addEventListener('click', refus);
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
-      actions.appendChild(el('span', 'action verrou', 'Après la correction en classe'));
+      actions.appendChild(el('span', 'action verrou', it.type === 'quiz' ? 'Bientôt disponible' : 'Après la correction en classe'));
       f.appendChild(actions);
       f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
     }
     if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
-    actions.appendChild(el('span', 'action anim', 'Animation'));
+    actions.appendChild(el('span', 'action anim', it.type === 'quiz' ? 'Lancer le quiz' : 'Animation'));
     if (it.pdf) {
       var b = el('button', 'action pdf'); b.type = 'button';
       b.setAttribute('aria-label', 'Télécharger le corrigé PDF' + (it.numero ? ' de l\'exercice ' + it.numero : ''));
@@ -189,7 +189,7 @@
     return b;
   }
 
-  // blocs du chapitre (poly à trous : vert ; exercices : bleu marine ; devoirs surveillés : orange mat, rangés par sujet) ; un clic déplie
+  // blocs du chapitre (poly à trous : vert ; exercices : bleu marine ; quiz : sarcelle ; devoirs surveillés : orange mat, rangés par sujet) ; un clic déplie
   var CADENAS = '<svg viewBox="0 0 11 13" aria-hidden="true" width="14" height="16"><path fill="currentColor" d="M2.5 5.5V4a3 3 0 0 1 6 0v1.5h.5a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1zm1.5 0h3V4a1.5 1.5 0 0 0-3 0z"/></svg>';
   function secouer(e) { e.classList.remove('secoue'); void e.offsetWidth; e.classList.add('secoue'); }
 

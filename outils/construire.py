@@ -32,7 +32,9 @@ Ce que fait le script
   fichiers sans .html]}). Une correction absente de la liste est grisée dans l'espace élèves et sa page refuse de
   s'ouvrir ; une correction AJOUTÉE arrive donc FERMÉE. M. Colin ouvre / ferme depuis admin.html (Espace professeur :
   enregistrement par l'API GitHub avec sa clé personnelle) ; Claude peut aussi le faire avec « ouvrir » / « fermer ».
-- NOMS (1er nov. 2026) : [CLASSE]CHxx_Correction_ExerciceN = exercice ; [CLASSE]CHxx_DM_Correction_ExerciceN (ou DM1_,
+- NOMS (1er nov. 2026) : [CLASSE]CHxx_Quiz_Sujet (14 nov. 2026) = quiz réservé aux élèves (bloc « Quiz », sarcelle ;
+  adresse 2nde-ch03-quiz-sujet.html ; la page chiffrée donne son intitulé dans sa charge, clé « titre ») ;
+  [CLASSE]CHxx_Correction_ExerciceN = exercice ; [CLASSE]CHxx_DM_Correction_ExerciceN (ou DM1_,
   DM2_…) = devoir maison, rangé dans le bloc « Devoirs maison » (prune) du chapitre ; [CLASSE]CHxx_DS…_Correction_ExerciceN
   = devoir surveillé.
 - « catalogue » : déchiffre chaque correction avec le mot de passe pour lire son titre (« Exercice 7 Sens de
@@ -219,6 +221,10 @@ def analyser_nom(titre):
         slug = f'{base}-' + (sans_accents(prefixe).lower().replace('_', '-') + '-' if prefixe else '') + f'exercice-{n}'
         if prefixe:
             t = 'dm' if re.fullmatch(r'dm\d*', prefixe, re.I) else 'evaluation'     # devoir maison (1er nov. 2026) / devoir surveillé
+    elif reste.startswith('Quiz'):                       # quiz réservé aux élèves (14 nov. 2026) : bloc « Quiz » du chapitre
+        sujet = reste.split('_', 1)[1] if '_' in reste else ''
+        t, n = 'quiz', 0
+        slug = f'{base}-quiz' + ('-' + re.sub(r'(?<!^)(?=[A-Z])', '-', sans_accents(sujet)).lower() if sujet else '')
     elif re.match(r'(Histoire|Elements?_?historiques?)', sans_accents(reste), re.I):     # repères historiques (8 nov. 2026) : bloc à part
         t, n, slug = 'histoire', 0, f'{base}-' + sans_accents(reste).lower().replace('_', '-')
     else:
@@ -260,7 +266,9 @@ def infos_page(page, mdp, nom, mdp_prof=None):
             continue
     else:
         raise SystemExit(f'Mot de passe refusé pour « {nom} ».')
-    if d:
+    if d and d.get('titre'):          # page qui donne elle-même son intitulé (quiz, 14 nov. 2026)
+        titre, consigne = d['titre'], d.get('consigne', '')
+    elif d:
         b = d['body']
         m = re.search(r'<div class="ex">(.*?)</div>', b, re.S)
         if m:
@@ -379,19 +387,21 @@ def catalogue(mdp, mdp_prof=None):
                            if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
         for num in sorted({e['chapitre'] for e in items}):
             lot = [e for e in items if e['chapitre'] == num]
-            rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5, 'histoire': 6}
+            rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5, 'histoire': 6, 'quiz': 7}
             lot.sort(key=lambda e: (rang[e['type']], e['numero'], e['fichier']))
             titre_ch = CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
             # chaque chapitre range ses pages en blocs repliables de couleur : cours (vert : poly à trous puis
             # animations du chapitre, p. ex. combinaisons de vecteurs, nombre dérivé et vitesse), correction des exercices
             # (bleu marine), devoirs maison (prune), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier ;
-            # « Éléments historiques » (sépia, 8 nov. 2026) juste après le cours
+            # « Éléments historiques » (sépia, 8 nov. 2026) juste après le cours ; « Quiz » (sarcelle, 14 nov. 2026 : quiz
+            # réservés aux élèves, pages chiffrées comme les corrections) juste après les exercices
             def bloc(ident, titre, types, cle=lambda e: (e['numero'], e['fichier'])):
                 lst = sorted((e for e in lot if e['type'] in types), key=cle)
                 return {'id': ident, 'titre': titre, 'items': [fiche_cat(e) for e in lst]} if lst else None
             blocs = [bloc('poly', 'Cours et animations', ('poly', 'autre'), lambda e: (rang[e['type']], e['numero'], e['fichier'])),
                      bloc('histoire', 'Éléments historiques', ('histoire',)),
                      bloc('exercices', 'Correction des exercices', ('exercice',)),
+                     bloc('quiz', 'Quiz', ('quiz',)),
                      bloc('dm', 'Devoirs maison', ('dm',),
                           lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero'])),
                      bloc('ds', 'Devoirs surveillés', ('evaluation',),

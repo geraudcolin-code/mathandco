@@ -9,8 +9,8 @@
   "assets": {
     "directory": "./"
   },
-  // Base D1 des résultats : créée automatiquement au premier déploiement (Wrangler 4.45 ou plus récent, package.json).
+  // Base D1 des résultats, créée par M. Colin dans le tableau de bord Cloudflare (15 nov. 2026).
   "d1_databases": [
-    { "binding": "DB", "database_name": "mathandco-notes" }
+    { "binding": "DB", "database_name": "mathandco-notes", "database_id": "f9c300ad-43d1-4398-9597-6d7de6857c00" }
   ]
 }

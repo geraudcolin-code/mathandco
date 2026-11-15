@@ -1046,3 +1046,8 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
   .qv-corps .qz-arbre, .qv-corps .qz-tab { font-size: .92rem; }
 }
 @media (prefers-reduced-motion: reduce) { .qz-partie-coche, .qz-prop, .qz-vf-b, .qz-pastille { transition: none; } .qz-val.neuf { animation: none; } }
+
+/* Facteurs barrés (\cancel) des simplifications : le trait de MathLive est trop fin (≈ 1 px) pour qu'on le voie ;
+   barre oblique nette, comme dans les corrections de M. Colin (15 nov. 2026) */
+.quiz svg line[vector-effect="non-scaling-stroke"], .quiz-volet svg line[vector-effect="non-scaling-stroke"],
+.qz-exo svg line[vector-effect="non-scaling-stroke"] { stroke-width: 2.5px; }

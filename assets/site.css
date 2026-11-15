@@ -1051,3 +1051,14 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
    barre oblique nette, comme dans les corrections de M. Colin (15 nov. 2026) */
 .quiz svg line[vector-effect="non-scaling-stroke"], .quiz-volet svg line[vector-effect="non-scaling-stroke"],
 .qz-exo svg line[vector-effect="non-scaling-stroke"] { stroke-width: 2.5px; }
+
+/* Quiz noté (15 nov. 2026) : écran du pseudo, questions répondues, note */
+.qn-form { display: grid; gap: 10px; }
+.qn-label { font-weight: 600; }
+.qn-pseudo { font: inherit; font-size: 1.15rem; padding: 10px 12px; border: 1.5px solid var(--filet); border-radius: 10px; background: var(--fond); color: var(--encre); max-width: 22rem; width: 100%; box-sizing: border-box; }
+.qn-pseudo:focus-visible { outline: 3px solid var(--bleu); outline-offset: 1px; border-color: var(--bleu); }
+.qn-regles { margin: 4px 0 0; padding-left: 1.2em; color: var(--gris); }
+.qn-regles li { margin: 2px 0; }
+.quiz-point.repondue { background: var(--bleu-fond); border-color: var(--bleu); color: var(--bleu); }
+.quiz-point.fausse { background: var(--rouge); border-color: var(--rouge); color: #fff; }
+.qn-note strong { font-size: 2.2rem; }

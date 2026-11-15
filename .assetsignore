@@ -4,3 +4,8 @@ wrangler.jsonc
 outils
 LISEZMOI.md
 CNAME
+worker
+package.json
+package-lock.json
+node_modules
+.wrangler

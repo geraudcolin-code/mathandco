@@ -3,7 +3,14 @@
   "compatibility_date": "2025-10-01",
   "workers_dev": false,
   "preview_urls": false,
+  // Les fichiers du site sont servis tels quels ; le Worker ne répond qu'aux adresses sans fichier (/api/quiz-notes :
+  // résultats chiffrés des quiz notés, 15 nov. 2026).
+  "main": "worker/notes.js",
   "assets": {
     "directory": "./"
-  }
+  },
+  // Base D1 des résultats : créée automatiquement au premier déploiement (Wrangler 4.45 ou plus récent, package.json).
+  "d1_databases": [
+    { "binding": "DB", "database_name": "mathandco-notes" }
+  ]
 }

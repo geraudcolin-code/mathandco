@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Outil de déploiement du site Colinéaire (Cloudflare Workers) : version de Wrangler imposée.",
+  "devDependencies": {
+    "wrangler": "^4.45.0"
+  }
+}

@@ -1111,8 +1111,9 @@
     var actions = el('div', 'quiz-actions');
     var bv = el('button', 'bouton', 'Valider'); bv.type = 'button'; bv.addEventListener('click', function () { self.valider(n); });
     var bs = el('button', 'bouton discret', 'Voir la correction <span aria-hidden="true">›</span>'); bs.type = 'button'; bs.hidden = true; bs.addEventListener('click', function () { self.correction(n); });
-    var bn = el('button', 'bouton', n + 1 < total ? 'Question suivante' : 'Voir le bilan'); bn.type = 'button'; bn.hidden = true;
+    var bn = el('button', 'bouton', n + 1 < total ? 'Question suivante' : (this.opts.note ? 'Terminer le quiz' : 'Voir le bilan')); bn.type = 'button'; bn.hidden = true;
     bn.addEventListener('click', function () { fermerVolet(); self.suivante(n); });
+    if (this.opts.note) { bn.hidden = false; bn.className = 'bouton secondaire'; }   // quiz noté : on peut passer une question et y revenir
     actions.appendChild(bv); actions.appendChild(bs); actions.appendChild(bn); c.appendChild(actions);
     c._bv = bv; c._bs = bs; c._bn = bn; c._q = q;
     return c;
@@ -1135,12 +1136,19 @@
     Array.prototype.forEach.call(this.points.children, function (b, j) {
       var e = self.etat[j];
       b.classList.toggle('courant', j === self.i && self.fin.hidden);
+      if (self.opts.note) {                        // quiz noté : « répondue » pendant le quiz, juste / fausse après la note
+        b.classList.toggle('repondue', !!e.repondue && !self.noteFinie);
+        b.classList.toggle('juste', !!self.noteFinie && e.points === 1);
+        b.classList.toggle('fausse', !!self.noteFinie && e.points !== 1);
+      } else {
       b.classList.toggle('juste', e.juste);
       b.classList.toggle('vue', !e.juste && e.vue);
+      }
       b.setAttribute('aria-current', j === self.i && self.fin.hidden ? 'step' : 'false');
     });
   };
   Quiz.prototype.valider = function (n) {
+    if (this.opts.note) return this.validerNote(n);
     var c = this.cartes[n], e = this.etat[n];
     if (e.juste || c._fini) return;
     var r = c._lire();
@@ -1176,6 +1184,7 @@
     this.majPoints();
   };
   Quiz.prototype.correction = function (n) {
+    if (this.opts.note && !this.noteFinie) return;             // quiz noté : les corrections viennent après la note
     var c = this.cartes[n];
     this.etat[n].vue = true;
     c._bn.hidden = false;
@@ -1184,6 +1193,7 @@
   };
   Quiz.prototype.suivante = function (n) { if (n + 1 < this.cartes.length) this.aller(n + 1); else this.bilan(); };
   Quiz.prototype.bilan = function () {
+    if (this.opts.note) return this.terminerNote();
     var self = this, total = this.etat.length;
     var premier = this.etat.filter(function (e) { return e.premier; }).length;
     var justes = this.etat.filter(function (e) { return e.juste; }).length;
@@ -2816,6 +2826,174 @@
   /* ======================= 5 ter. Réglages d'un quiz à thèmes ======================= */
   /* window.QUIZ_CONFIG[id] = { etiquette, titre, sousTitre, themes: [id de QUIZ…], choix: [10, 20…], defaut: 20 }.
      Écran de départ : nombre de questions, thèmes (tous cochés par défaut), bouton « Lancer le quiz ». */
+
+  /* ----- QUIZ NOTÉ (M. Colin, 15 nov. 2026) : pseudo donné en classe, tirage imposé, une seule réponse par question,
+     note sur 20 et corrections à la fin, résultat chiffré pour le professeur (clé publique ECDH P-256) et envoyé à
+     /api/quiz-notes (Worker Cloudflare + D1). Réglage : QUIZ_CONFIG[id].note = {n, cle (JWK publique), envoi}. ----- */
+  function b64(u) { u = new Uint8Array(u); var t = ''; for (var k = 0; k < u.length; k++) t += String.fromCharCode(u[k]); return btoa(t); }
+  function chiffrerPourProf(jwk, obj) {
+    var S = crypto.subtle, pub, eph;
+    return S.importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y, ext: true }, { name: 'ECDH', namedCurve: 'P-256' }, false, [])
+      .then(function (k) { pub = k; return S.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']); })
+      .then(function (k) { eph = k; return S.deriveKey({ name: 'ECDH', public: pub }, eph.privateKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']); })
+      .then(function (cle) {
+        var iv = crypto.getRandomValues(new Uint8Array(12));
+        return S.encrypt({ name: 'AES-GCM', iv: iv }, cle, new TextEncoder().encode(JSON.stringify(obj))).then(function (ct) {
+          return S.exportKey('jwk', eph.publicKey).then(function (e) { return { epk: { x: e.x, y: e.y }, iv: b64(iv), ct: b64(ct) }; });
+        });
+      });
+  }
+  var ATTENTE = 'colineaire.notes.attente';
+  function lireAttente() { try { return JSON.parse(localStorage.getItem(ATTENTE) || '[]'); } catch (e) { return []; } }
+  function ecrireAttente(l) { try { localStorage.setItem(ATTENTE, JSON.stringify(l)); } catch (e) {} }
+  function poster(url, paquet) {
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(paquet) })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return true; });
+  }
+  function renvoyerAttente(url) {                 // résultats restés en attente (pas de réseau) : renvoyés à la visite suivante
+    var l = lireAttente(); if (!l.length) return;
+    var reste = [];
+    l.reduce(function (p, paquet) { return p.then(function () { return poster(url, paquet).catch(function () { reste.push(paquet); }); }); }, Promise.resolve())
+      .then(function () { ecrireAttente(reste); });
+  }
+  function QuizNote(racine, cfg) {
+    this.racine = racine; this.cfg = cfg; this.pseudo = '';
+    try { this.pseudo = sessionStorage.getItem('colineaire.pseudo') || ''; } catch (e) {}
+    renvoyerAttente(cfg.note.envoi || '/api/quiz-notes');
+    this.afficher();
+  }
+  QuizNote.prototype.afficher = function () {
+    var self = this, cfg = this.cfg, r = this.racine, N = cfg.note.n || 20;
+    fermerVolet(); if (volet) volet.languette.hidden = true;
+    r.innerHTML = '';
+    var tete = el('div', 'quiz-tete');
+    tete.appendChild(el('div', 'quiz-titres', '<span class="quiz-etiquette">' + cfg.etiquette + '</span><h2>' + cfg.titre + '</h2>' +
+      '<p class="quiz-sous-titre">Quiz noté : ' + N + ' questions tirées au hasard dans tout le chapitre.</p>'));
+    r.appendChild(tete);
+    var carte = el('section', 'quiz-carte quiz-reglages qn-accueil');
+    var f = el('form', 'qn-form'); f.setAttribute('autocomplete', 'off');
+    f.appendChild(el('label', 'qn-label', 'Écris le pseudo donné en classe'));
+    var i = el('input', 'qn-pseudo'); i.type = 'text'; i.maxLength = 40; i.value = this.pseudo;
+    i.setAttribute('autocapitalize', 'off'); i.setAttribute('spellcheck', 'false'); i.id = 'qn-pseudo-' + (cfg.id || 'quiz');
+    f.firstChild.setAttribute('for', i.id);
+    f.appendChild(i);
+    var regles = el('ul', 'qn-regles',
+      '<li>Une seule réponse par question : réfléchis bien avant de valider.</li>' +
+      '<li>Ta note sur 20 et les corrections s’affichent à la fin.</li>' +
+      '<li>Ton résultat est envoyé à M. Colin avec ton pseudo.</li>');
+    f.appendChild(regles);
+    var m = el('p', 'quiz-message'); m.setAttribute('role', 'alert'); f.appendChild(m);
+    var a = el('div', 'quiz-actions');
+    var go = el('button', 'bouton qn-commencer', 'Commencer le quiz noté <span aria-hidden="true">›</span>'); go.type = 'submit';
+    a.appendChild(go); f.appendChild(a);
+    f.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var p = i.value.replace(/\s+/g, ' ').trim();
+      if (p.length < 2) { m.className = 'quiz-message ko'; m.textContent = 'Écris ton pseudo (celui donné en classe).'; i.focus(); return; }
+      self.pseudo = p; try { sessionStorage.setItem('colineaire.pseudo', p); } catch (e) {}
+      self.lancer();
+    });
+    carte.appendChild(f); r.appendChild(carte);
+    setTimeout(function () { try { i.focus({ preventScroll: true }); } catch (e) {} }, 50);
+  };
+  QuizNote.prototype.lancer = function () {
+    var self = this, cfg = this.cfg;
+    var source = { etiquette: cfg.etiquette, titre: cfg.titre, sousTitre: 'Quiz noté · pseudo : ' + echapper(this.pseudo), questions: [],
+                   tirage: { depuis: cfg.themes.slice(), n: cfg.note.n || 20 } };
+    this.debut = new Date();
+    this.racine._quiz = this;
+    this.quiz = new Quiz(this.racine, source, { note: {
+      fin: function (res) { return self.envoyer(res); },
+      recommencer: function () { self.afficher(); self.racine.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    } });
+  };
+  QuizNote.prototype.envoyer = function (res) {
+    var cfg = this.cfg, fin = new Date();
+    var obj = { quiz: cfg.id, pseudo: this.pseudo, debut: this.debut.toISOString(), fin: fin.toISOString(),
+                duree: Math.round((fin - this.debut) / 1000), note: res.note, points: res.points, total: res.total, questions: res.details };
+    var url = cfg.note.envoi || '/api/quiz-notes';
+    return chiffrerPourProf(cfg.note.cle, obj).then(function (paquet) {
+      paquet.quiz = cfg.id;
+      return poster(url, paquet).catch(function (e) { var l = lireAttente(); l.push(paquet); ecrireAttente(l); throw e; });
+    });
+  };
+  function echapper(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function pointsTexte(x) { return String(Math.round(x * 100) / 100).replace('.', ','); }
+  Quiz.prototype.validerNote = function (n) {
+    var c = this.cartes[n], e = this.etat[n], q = c._q;
+    if (this.noteFinie || e.repondue) return;
+    var r = c._saisie ? verifierReponse(q, c._saisie.lire()) : c._lire();   // sans marquer les cases : rien ne trahit la réponse
+    c._msg.className = 'quiz-message';
+    if (q.type === 'exercice' && r.reste && r.reste.length) {
+      ecrireMsg(c._msg, 'Réponds à toutes les questions de l’exercice (il reste ' + (r.reste.length > 1 ? 'les questions ' : 'la question ') + numeros(r.reste) + ').');
+      c._msg.classList.add('info'); return;
+    }
+    if (r.etat === 'lecture') { ecrireMsg(c._msg, r.msg); c._msg.classList.add('info'); return; }
+    e.repondue = true; e.res = r;
+    e.points = r.etat === 'juste' ? 1 : (q.type === 'exercice' && r.parties ? r.parties.filter(function (x) { return x.etat === 'juste'; }).length / r.parties.length : 0);
+    c._fini = true;
+    c._msg.textContent = 'Réponse enregistrée.'; c._msg.classList.add('info');
+    c._bv.hidden = true; c._bs.hidden = true; c._bn.hidden = false; c._bn.className = 'bouton';
+    c.querySelectorAll('.quiz-zone math-field').forEach(function (s) { s.readOnly = true; s.blur(); });
+    c.querySelectorAll('.quiz-zone button').forEach(function (s) { s.disabled = true; });
+    if (c._saisie) c._saisie.figer();
+    window.mathVirtualKeyboard && window.mathVirtualKeyboard.hide();
+    this.majPoints();
+    setTimeout(function () { try { c._bn.focus({ preventScroll: true }); } catch (x) {} }, 50);
+  };
+  Quiz.prototype.terminerNote = function (force) {
+    var self = this, etat = this.etat, total = etat.length;
+    fermerVolet(); this.cartes.forEach(function (c) { c.hidden = true; });
+    this.fin.innerHTML = '';
+    var sans = []; etat.forEach(function (e, j) { if (!e.repondue) sans.push(j); });
+    if (sans.length && !force && !this.noteFinie) {
+      this.fin.appendChild(el('p', 'quiz-num', 'Avant de terminer'));
+      this.fin.appendChild(el('p', 'quiz-detail', sans.length > 1 ? 'Il reste ' + sans.length + ' questions sans réponse (' + numeros(sans) + ') : elles compteront 0.'
+        : 'Il reste une question sans réponse (' + numeros(sans) + ') : elle comptera 0.'));
+      var a0 = el('div', 'quiz-actions');
+      var rv = el('button', 'bouton', 'Revenir aux questions'); rv.type = 'button'; rv.addEventListener('click', function () { self.aller(sans[0]); });
+      var tq = el('button', 'bouton secondaire', 'Terminer quand même'); tq.type = 'button'; tq.addEventListener('click', function () { self.terminerNote(true); });
+      a0.appendChild(rv); a0.appendChild(tq); this.fin.appendChild(a0);
+      this.fin.hidden = false; this.majPoints(); majLanguette(this);
+      this.fin.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      return;
+    }
+    var premiere = !this.noteFinie;
+    this.noteFinie = true;
+    var pts = 0; etat.forEach(function (e) { pts += e.points || 0; });
+    var note = Math.round(pts / total * 20 * 100) / 100;
+    if (premiere) {
+      this.cartes.forEach(function (c, j) {                  // relecture : chaque carte dit ce qu'elle a rapporté, correction ouverte
+        var e = etat[j], q = c._q;
+        c._fini = true; c._bv.hidden = true; c._bs.hidden = false; c._bn.hidden = false; c._bn.className = 'bouton secondaire';
+        c._bn.innerHTML = j + 1 < total ? 'Question suivante' : 'Revoir la note';
+        c.querySelectorAll('.quiz-zone math-field').forEach(function (s) { s.readOnly = true; });
+        c.querySelectorAll('.quiz-zone button').forEach(function (s) { s.disabled = true; });
+        if (c._saisie) { c._saisie.figer(); if (e.res && q.type !== 'exercice') try { c._saisie.marquer(e.res); } catch (x) {} }
+        c.classList.toggle('reussie', e.points === 1); c.classList.toggle('ratee', e.points !== 1);
+        c._msg.className = 'quiz-message ' + (e.points === 1 ? 'ok' : 'ko');
+        c._msg.textContent = !e.repondue ? 'Pas de réponse : 0 point.' : e.points === 1 ? 'Juste : 1 point.'
+          : (q.type === 'exercice' && e.points > 0 ? 'En partie juste : ' + pointsTexte(e.points) + ' point.' : 'Faux : 0 point.');
+      });
+      this.envoi = this.opts.note.fin({ note: note, points: Math.round(pts * 100) / 100, total: total,
+        details: this.def.questions.map(function (q, j) { return { ref: q.ref || '', theme: q.theme || '', type: q.type, points: Math.round((etat[j].points || 0) * 100) / 100 }; }) });
+    }
+    this.fin.appendChild(el('p', 'quiz-num', 'Note'));
+    this.fin.appendChild(el('p', 'quiz-score qn-note', '<strong>' + pointsTexte(note) + ' / 20</strong>'));
+    var justes = etat.filter(function (e) { return e.points === 1; }).length;
+    this.fin.appendChild(el('p', 'quiz-detail', justes + ' question' + (justes > 1 ? 's' : '') + ' juste' + (justes > 1 ? 's' : '') + ' sur ' + total +
+      ' · touche un numéro pour revoir une question et sa correction.'));
+    var st = el('p', 'quiz-message info qn-envoi', 'Envoi du résultat à M. Colin…'); st.setAttribute('role', 'status'); this.fin.appendChild(st);
+    var a = el('div', 'quiz-actions');
+    var nt = el('button', 'bouton', 'Nouvelle tentative'); nt.type = 'button'; nt.addEventListener('click', function () { self.opts.note.recommencer(); });
+    a.appendChild(nt); this.fin.appendChild(a);
+    (this.envoi || Promise.resolve()).then(function () { st.className = 'quiz-message ok qn-envoi'; st.textContent = 'Résultat envoyé à M. Colin.'; },
+      function () { st.className = 'quiz-message ko qn-envoi'; st.textContent = 'Le résultat n’a pas pu être envoyé (pas de connexion ?) : il est gardé sur cet appareil et partira à ta prochaine visite de ce quiz.'; });
+    this.fin.hidden = false;
+    this.majPoints(); majLanguette(this);
+    this.fin.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+
   function Reglages(racine, cfg) {
     this.racine = racine; this.cfg = cfg;
     this.n = cfg.defaut || 20;
@@ -2927,7 +3105,7 @@
         var def = !cfg && (window.QUIZ || {})[r.dataset.quiz];
         if (!def && !cfg) return;
         if (cfg) cfg.id = r.dataset.quizConfig;
-        function lancer() { if (r._quiz) return; r._quiz = cfg ? new Reglages(r, cfg) : new Quiz(r, def); }
+        function lancer() { if (r._quiz) return; r._quiz = cfg ? (cfg.note ? new QuizNote(r, cfg) : new Reglages(r, cfg)) : new Quiz(r, def); }
         if (r.getClientRects().length) { lancer(); return; }
         if (!window.ResizeObserver) { lancer(); return; }
         var ro = new ResizeObserver(function () { if (r.getClientRects().length) { ro.disconnect(); lancer(); } });

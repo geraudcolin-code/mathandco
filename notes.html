@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Résultats des quiz notés, Colinéaire</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="assets/icone.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
+<link rel="stylesheet" href="assets/site.css?v=20261115g">
+<link rel="stylesheet" href="assets/theme-cyber.css?v=20261115b">
+<link rel="stylesheet" href="assets/theme-pample.css?v=20261114a">
+<script src="assets/theme.js?v=20261104f"></script>
+<style>
+.nt-outils { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 16px; }
+.nt-outils select, .nt-outils input { font: inherit; padding: 8px 10px; border: 1.5px solid var(--filet); border-radius: 10px; background: var(--fond); color: var(--encre); }
+.nt-table-cadre { overflow-x: auto; border: 1px solid var(--filet); border-radius: 12px; background: var(--fond); }
+.nt-table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.nt-table th, .nt-table td { padding: 9px 12px; border-bottom: 1px solid var(--filet); text-align: left; white-space: nowrap; }
+.nt-table th { background: var(--fond-2); font-weight: 600; position: sticky; top: 0; }
+.nt-table td.nt-note { font-weight: 700; }
+.nt-table tr.nt-detail td { white-space: normal; background: var(--fond-2); font-size: .88rem; color: var(--gris); }
+.nt-table button.nt-voir { font: inherit; font-size: .85rem; border: 1px solid var(--filet); border-radius: 8px; background: none; color: var(--bleu); padding: 3px 8px; cursor: pointer; }
+.nt-vide { padding: 24px; color: var(--gris); }
+</style>
+</head>
+<body>
+<header class="nav gouttiere" id="nav">
+  <div class="colonne nav-int">
+    <a class="logo" href="./" aria-label="Colinéaire, accueil">Colin<span class="esperluette">éaire</span></a>
+    <nav class="nav-liens" aria-label="Navigation"><a href="admin.html">Espace professeur</a></nav>
+  </div>
+</header>
+<main>
+  <section class="porte gouttiere" id="porte">
+    <form id="formulaire" autocomplete="off">
+      <h1>Résultats des quiz notés</h1>
+      <p class="aide">Les résultats sont chiffrés : seul le mot de passe professeur les rend lisibles.</p>
+      <div class="champ">
+        <label for="mdp" style="position:absolute;left:-9999px">Mot de passe professeur</label>
+        <input id="mdp" type="password" placeholder="Mot de passe professeur" required autocomplete="current-password">
+      </div>
+      <button class="bouton" id="entrer" type="submit">Voir les résultats</button>
+      <p class="message" id="message" role="alert"></p>
+    </form>
+  </section>
+  <div id="tableau" hidden>
+    <section class="gouttiere">
+      <div class="colonne biblio-tete"><div><h1>Résultats des quiz notés</h1><p id="resume"></p></div></div>
+    </section>
+    <section class="gouttiere" style="padding-bottom:40px">
+      <div class="colonne">
+        <div class="nt-outils">
+          <select id="quiz" aria-label="Quiz"></select>
+          <select id="vue" aria-label="Tentatives affichées">
+            <option value="toutes">Toutes les tentatives</option>
+            <option value="meilleure">Meilleure note par pseudo</option>
+            <option value="derniere">Dernière tentative par pseudo</option>
+          </select>
+          <input id="cherche" type="search" placeholder="Pseudo…" aria-label="Chercher un pseudo">
+          <button class="bouton secondaire petit" id="actualiser" type="button">Actualiser</button>
+          <button class="bouton petit" id="csv" type="button">Télécharger (CSV)</button>
+        </div>
+        <div class="nt-table-cadre"><table class="nt-table"><thead><tr>
+          <th>Pseudo</th><th>Note / 20</th><th>Questions justes</th><th>Date</th><th>Durée</th><th></th>
+        </tr></thead><tbody id="lignes"></tbody></table></div>
+      </div>
+    </section>
+  </div>
+</main>
+<script src="assets/notes.js?v=20261115a"></script>
+</body>
+</html>

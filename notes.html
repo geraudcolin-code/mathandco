@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
-<link rel="stylesheet" href="assets/site.css?v=20261115g">
+<link rel="stylesheet" href="assets/site.css?v=20261115h">
 <link rel="stylesheet" href="assets/theme-cyber.css?v=20261115b">
 <link rel="stylesheet" href="assets/theme-pample.css?v=20261114a">
 <script src="assets/theme.js?v=20261104f"></script>
@@ -24,6 +24,7 @@
 .nt-table tr.nt-detail td { white-space: normal; background: var(--fond-2); font-size: .88rem; color: var(--gris); }
 .nt-table button.nt-voir { font: inherit; font-size: .85rem; border: 1px solid var(--filet); border-radius: 8px; background: none; color: var(--bleu); padding: 3px 8px; cursor: pointer; }
 .nt-vide { padding: 24px; color: var(--gris); }
+.nt-table td.nt-quitte { color: var(--rouge); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -64,12 +65,12 @@
           <button class="bouton petit" id="csv" type="button">Télécharger (CSV)</button>
         </div>
         <div class="nt-table-cadre"><table class="nt-table"><thead><tr>
-          <th>Pseudo</th><th>Note / 20</th><th>Questions justes</th><th>Date</th><th>Durée</th><th></th>
+          <th>Pseudo</th><th>Note / 20</th><th>Questions justes</th><th>État</th><th>Date</th><th>Durée</th><th></th>
         </tr></thead><tbody id="lignes"></tbody></table></div>
       </div>
     </section>
   </div>
 </main>
-<script src="assets/notes.js?v=20261115a"></script>
+<script src="assets/notes.js?v=20261115b"></script>
 </body>
 </html>

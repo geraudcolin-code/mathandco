@@ -1062,3 +1062,4 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
 .quiz-point.repondue { background: var(--bleu-fond); border-color: var(--bleu); color: var(--bleu); }
 .quiz-point.fausse { background: var(--rouge); border-color: var(--rouge); color: #fff; }
 .qn-note strong { font-size: 2.2rem; }
+.quiz-point.bloquee, .quiz-point:disabled { opacity: .35; cursor: not-allowed; }

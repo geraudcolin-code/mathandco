@@ -1019,6 +1019,8 @@
       var d = id ? (window.QUIZ || {})[id] : s;
       if (d) d.questions.forEach(function (q, i) { toutes.push({ q: q, i: toutes.length, g: (id || '') + '|' + (q.theme || '') }); });
     });
+    var vues = {};                                 // une seule question par famille (q.famille : même énoncé, d'autres nombres)
+    toutes = melanger(toutes).filter(function (t) { var f = t.q.famille; if (!f) return true; if (vues[f]) return false; vues[f] = 1; return true; });
     var tirees = s.tirage.equilibre ? tirageEquilibre(toutes, s.tirage.n || 20) : melanger(toutes).slice(0, s.tirage.n || 20);
     if (s.tirage.ordre === 'banque') tirees.sort(function (a, b) { return a.i - b.i; });   // garde la progression de la banque
     var d2 = {}; for (var c in s) d2[c] = s[c];
@@ -1113,12 +1115,16 @@
     var bs = el('button', 'bouton discret', 'Voir la correction <span aria-hidden="true">›</span>'); bs.type = 'button'; bs.hidden = true; bs.addEventListener('click', function () { self.correction(n); });
     var bn = el('button', 'bouton', n + 1 < total ? 'Question suivante' : (this.opts.note ? 'Terminer le quiz' : 'Voir le bilan')); bn.type = 'button'; bn.hidden = true;
     bn.addEventListener('click', function () { fermerVolet(); self.suivante(n); });
-    if (this.opts.note) { bn.hidden = false; bn.className = 'bouton secondaire'; }   // quiz noté : on peut passer une question et y revenir
     actions.appendChild(bv); actions.appendChild(bs); actions.appendChild(bn); c.appendChild(actions);
     c._bv = bv; c._bs = bs; c._bn = bn; c._q = q;
     return c;
   };
+  Quiz.prototype.prochaine = function () {        // quiz noté : première question sans réponse
+    for (var j = 0; j < this.etat.length; j++) if (!this.etat[j].repondue) return j;
+    return -1;
+  };
   Quiz.prototype.aller = function (n) {
+    if (this.opts.note && !this.noteFinie && !this.etat[n].repondue && n !== this.prochaine()) return;   // répondre avant de passer à la suivante (M. Colin, 15 nov. 2026)
     if (volet && volet.quiz === this && volet.n !== n) fermerVolet();
     this.i = n;
     this.fin.hidden = true;
@@ -1138,6 +1144,8 @@
       b.classList.toggle('courant', j === self.i && self.fin.hidden);
       if (self.opts.note) {                        // quiz noté : « répondue » pendant le quiz, juste / fausse après la note
         b.classList.toggle('repondue', !!e.repondue && !self.noteFinie);
+        b.classList.toggle('bloquee', !self.noteFinie && !e.repondue && j !== self.prochaine());
+        b.disabled = !self.noteFinie && !e.repondue && j !== self.prochaine();
         b.classList.toggle('juste', !!self.noteFinie && e.points === 1);
         b.classList.toggle('fausse', !!self.noteFinie && e.points !== 1);
       } else {
@@ -2878,7 +2886,7 @@
     f.firstChild.setAttribute('for', i.id);
     f.appendChild(i);
     var regles = el('ul', 'qn-regles',
-      '<li>Une seule réponse par question : réfléchis bien avant de valider.</li>' +
+      '<li>Une seule réponse par question : réfléchis bien avant de valider. Il faut répondre pour passer à la suivante.</li>' +
       '<li>Ta note sur 20 et les corrections s’affichent à la fin.</li>' +
       '<li>Ton résultat est envoyé à M. Colin avec ton pseudo.</li>');
     f.appendChild(regles);

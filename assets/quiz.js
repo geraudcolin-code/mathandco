@@ -524,7 +524,8 @@
 
   /* Quiz NOTÉ (M. Colin, 16 nov. 2026, quiz de Seconde CH03) : une question à plusieurs cases (« compléter une égalité »)
      rapporte la part de ses cases justes, comme un exercice en plusieurs questions ; avec des remplissages justes
-     différents (variantes), le meilleur compte. Tableaux et arbres à remplir : toujours 1 ou 0. */
+     différents (variantes), le meilleur compte. Tableaux et arbres à remplir : même barème (M. Colin, 16 nov. 2026,
+     quiz 1ère CH03 : « Oui tu fais au prorata »), voir detailGrille / pointsReponse. */
   function detailCases(q, latexs) {                 // case par case (true = juste), pour le meilleur remplissage
     var rem = [q.cases.map(function (c) { return c.attendu; })].concat(q.variantes || []), mieux = null;
     rem.forEach(function (att) {
@@ -767,10 +768,47 @@
     if (vides.length) return { etat: 'lecture', msg: 'Remplis toutes les cases.', vides: vides };
     if (illisibles.length) return { etat: 'lecture', msg: 'Je n’arrive pas à lire ' + (illisibles.length > 1 ? 'certaines cases' : 'une des cases') + ' : vérifie l’écriture.', illisibles: illisibles };
     if (!faux.length) return { etat: 'juste' };
+    if (q.variantes && detailGrille(q, rep).every(Boolean)) return { etat: 'juste' };   // autre remplissage juste (variantes)
     // ordre des messages : piège ou forme d'une case, puis la cohérence (totaux, somme 1, produit le long d'un chemin), puis le compte
     var msg = msgCase || (genre === 'arbre' ? incoherenceArbre(q.arbre, rep, faux) : incoherenceTableau(q.tableau, rep));
     if (!msg) msg = faux.length === 1 ? 'Une valeur n’est pas juste (en rouge).' : faux.length + ' valeurs ne sont pas justes (en rouge).';
     return { etat: 'faux', msg: msg, faux: faux };
+  }
+  /* Quiz NOTÉ (M. Colin, 16 nov. 2026, quiz 1ère CH03) : un tableau ou un arbre à remplir rapporte la part de ses cases
+     justes (cases à remplir seulement : les valeurs déjà écrites ne comptent pas) ; s'il y a plusieurs remplissages justes
+     (q.variantes : une liste d'attendus par remplissage), le meilleur compte. Rien n'est jugé tant qu'une case est vide
+     ou illisible (verifierGrille rend alors « lecture » : rien d'enregistré). */
+  function detailGrille(q, rep) {                   // case par case (true = juste), pour le meilleur remplissage
+    rep = rep || [];
+    var rem = [q.cases.map(function (c) { return c.attendu; })].concat(q.variantes || []), mieux = null;
+    rem.forEach(function (att) {
+      var d = q.cases.map(function (c, k) {
+        if (sansReponse(rep[k])) return false;
+        var cv = caseVerif(c); cv.attendu = att[k];
+        try { return verifierExpr(cv, rep[k]).etat === 'juste'; } catch (e) { return false; }
+      });
+      if (!mieux || d.filter(Boolean).length > mieux.filter(Boolean).length) mieux = d;
+    });
+    return mieux || [];
+  }
+  function pointsGrille(q, rep) {
+    var n = q.cases.length;
+    return n ? detailGrille(q, rep).filter(Boolean).length / n : 0;
+  }
+  /* points d'une réponse JUGÉE (quiz noté) : 1 si juste ; « compléter », tableau, arbre : part des cases justes ; exercice :
+     moyenne des points de ses questions (une question à cases, un tableau ou un arbre y compte aussi au prorata) ; 0 sinon */
+  function pointsReponse(q, rep, r) {
+    if (r && r.etat === 'juste') return 1;
+    switch (q.type) {
+      case 'cases': return pointsCases(q, rep || []);
+      case 'tableau': case 'arbre': return pointsGrille(q, rep || []);
+      case 'exercice': {
+        var n = q.parties.length, s = 0, rs = (r && r.parties) || [];
+        q.parties.forEach(function (pa, i) { s += pointsReponse(pa, (rep || [])[i], rs[i]); });
+        return n ? s / n : 0;
+      }
+      default: return 0;
+    }
   }
   function valeurCellule(c, rep) { var k = caseDe(c); return k >= 0 ? valeurTeX(rep[k]) : valeurTeX(c); }
   function incoherenceTableau(t, rep) {         // totaux : dernière ligne et dernière colonne
@@ -1649,6 +1687,10 @@
           mf.classList.toggle('qz-illisible', !!(r.illisibles && r.illisibles.indexOf(k) >= 0));
         });
       },
+      marquerFin: function (rep) {                // revue finale du quiz noté : chaque case en vert ou en rouge
+        var d = detailGrille(q, rep);
+        champs.forEach(function (mf, k) { if (!mf) return; mf.classList.remove('vide', 'qz-illisible'); mf.classList.toggle('qz-juste', !!d[k]); mf.classList.toggle('qz-faux', !d[k]); });
+      },
       figer: function () { figerChamps(champs); }
     };
   }
@@ -1680,6 +1722,10 @@
     return { el: ligne, champs: champs, lire: function () { return champs.map(function (mf) { return mf ? mf.value : ''; }); },
       marquer: function (r) {
         champs.forEach(function (mf, k) { if (mf) mf.classList.toggle('qz-faux', r.etat === 'faux' && verifierExpr(caseVerif(q.cases[k]), mf.value).etat === 'faux'); });
+      },
+      marquerFin: function (rep) {                // revue finale du quiz noté (question d'un exercice) : cases vertes / rouges
+        var d = detailCases(q, rep || []);
+        champs.forEach(function (mf, k) { if (!mf) return; mf.classList.remove('vide'); mf.classList.toggle('qz-juste', !!d[k]); mf.classList.toggle('qz-faux', !d[k]); });
       },
       figer: function () { figerChamps(champs); } };
   }
@@ -1731,7 +1777,16 @@
     return {
       el: box, parties: parties, verifier: verifier,
       lire: function () { return parties.map(function (p) { return p.s.lire(); }); },
-      marquer: function () {}, figer: function () { parties.forEach(function (p) { p.s.figer(); }); }
+      marquer: function () {}, figer: function () { parties.forEach(function (p) { p.s.figer(); }); },
+      marquerFin: function (rep, r) {             // revue finale du quiz noté : chaque question juste (vert), en partie juste (orange), fausse (rouge)
+        var rs = (r && r.parties) || [];
+        parties.forEach(function (p, i) {
+          var ri = rs[i], x = pointsReponse(p.q, (rep || [])[i], ri);
+          p.li.classList.toggle('reussie', x === 1); p.li.classList.toggle('partielle', x > 0 && x < 1); p.li.classList.toggle('ratee', !(x > 0));
+          if (p.s.marquerFin) p.s.marquerFin((rep || [])[i], ri);
+          else if (ri && ri.etat && ri.etat !== 'juste') try { p.s.marquer(ri); } catch (e) {}
+        });
+      }
     };
   }
   function saisiePour(q, ctx) {
@@ -3060,27 +3115,35 @@
   };
   function echapper(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function pointsTexte(x) { return String(Math.round(x * 100) / 100).replace('.', ','); }
-  /* points d'une question : « 0,5 point », « 2/3 de point », « 1/3 de point » (charte § 11.2 septies) : un décimal à deux
-     chiffres au plus s'écrit en décimal, sinon en fraction (tiers, sixièmes…) */
+  /* points d'une question : « 0,5 point », « 0,75 point », « 2/3 de point », « 3/5 de point », « 7/12 de point » (charte
+     § 11.2 septies, 16 nov. 2026) : demis et quarts en décimal, toute autre part en fraction IRRÉDUCTIBLE (le plus petit
+     dénominateur qui convient) ; au-delà de 240, décimal à deux chiffres */
   function fractionPoints(x) {
-    if (Math.abs(x * 100 - Math.round(x * 100)) < 1e-6) return pointsTexte(x);
-    for (var d = 3; d <= 12; d++) { var k = Math.round(x * d); if (Math.abs(x * d - k) < 1e-6) return k + '/' + d; }
+    for (var d = 1; d <= 240; d++) {
+      var k = Math.round(x * d);
+      if (Math.abs(x - k / d) < 1e-9) return d === 1 || d === 2 || d === 4 ? pointsTexte(k / d) : k + '/' + d;
+    }
     return pointsTexte(x);
   }
   function pointQuestion(x) { var t = fractionPoints(x); return t + (t.indexOf('/') >= 0 ? ' de point' : ' point'); }
   Quiz.prototype.validerNote = function (n) {
     var c = this.cartes[n], e = this.etat[n], q = c._q;
     if (this.noteFinie || e.repondue) return;
-    var r = c._saisie ? verifierReponse(q, c._saisie.lire()) : c._lire();   // sans marquer les cases : rien ne trahit la réponse
+    var rep = c._saisie ? c._saisie.lire() : null;
+    var r = c._saisie ? verifierReponse(q, rep) : c._lire();   // sans marquer les cases : rien ne trahit la réponse
     c._msg.className = 'quiz-message';
     if (q.type === 'exercice' && r.reste && r.reste.length) {
-      ecrireMsg(c._msg, 'Réponds à toutes les questions de l’exercice (il reste ' + (r.reste.length > 1 ? 'les questions ' : 'la question ') + numeros(r.reste) + ').');
+      var aCompleter = r.reste.filter(function (i) { return r.parties[i] && r.parties[i].etat === 'lecture' && r.parties[i].msg; });   // commencée, pas finie
+      ecrireMsg(c._msg, 'Réponds à toutes les questions de l’exercice (il reste ' + (r.reste.length > 1 ? 'les questions ' : 'la question ') + numeros(r.reste) + ').'
+        + aCompleter.map(function (i) { return ' Question ' + (i + 1) + ' : ' + r.parties[i].msg; }).join(''));
       c._msg.classList.add('info'); return;
     }
     if (r.etat === 'lecture') { ecrireMsg(c._msg, r.msg); c._msg.classList.add('info'); return; }
-    e.repondue = true; e.res = r;
-    e.points = r.etat === 'juste' ? 1 : (q.type === 'exercice' && r.parties ? r.parties.filter(function (x) { return x.etat === 'juste'; }).length / r.parties.length
-      : q.type === 'cases' && typeof r.prorata === 'number' ? r.prorata : 0);      // plusieurs cases : au prorata des cases justes
+    e.repondue = true; e.res = r; e.rep = rep;
+    // au prorata (M. Colin, 16 nov. 2026) : « compléter » (cases justes), tableau et arbre (cases justes), exercice (moyenne
+    // de ses questions, chacune au prorata de ses cases) ; 1 ou 0 pour les autres types
+    e.points = r.etat === 'juste' ? 1 : c._saisie ? pointsReponse(q, rep, r)
+      : (q.type === 'cases' && typeof r.prorata === 'number' ? r.prorata : 0);
     c._fini = true;
     c._msg.textContent = 'Réponse enregistrée.'; c._msg.classList.add('info');
     c._bv.hidden = true; c._bs.hidden = true; c._bn.hidden = false; c._bn.className = 'bouton';
@@ -3125,7 +3188,11 @@
         c._bn.innerHTML = j + 1 < total ? 'Question suivante' : 'Revoir la note';
         c.querySelectorAll('.quiz-zone math-field').forEach(function (s) { s.readOnly = true; });
         c.querySelectorAll('.quiz-zone button').forEach(function (s) { s.disabled = true; });
-        if (c._saisie) { c._saisie.figer(); if (e.res && q.type !== 'exercice') try { c._saisie.marquer(e.res); } catch (x) {} }
+        if (c._saisie) {
+          c._saisie.figer();
+          if (e.res && e.repondue && c._saisie.marquerFin) try { c._saisie.marquerFin(e.rep, e.res); } catch (x) {}   // tableau, arbre, exercice : chaque case / question marquée
+          else if (e.res && q.type !== 'exercice') try { c._saisie.marquer(e.res); } catch (x) {}
+        }
         var partiel = e.points > 0 && e.points < 1;
         if (q.type === 'cases' && e.repondue && c._lire && c._lire.marquerCases) try { c._lire.marquerCases(); } catch (x) {}
         c.classList.toggle('reussie', e.points === 1); c.classList.toggle('partielle', partiel); c.classList.toggle('ratee', !(e.points > 0));
@@ -3277,7 +3344,8 @@
     // TOUS les types (quiz de chapitre, 14 nov. 2026) : réponse au format de reponseAttendue(q), voir la section 2 bis
     verifierReponse: verifierReponse, reponseAttendue: reponseAttendue,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
-    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases, pointQuestion: pointQuestion
+    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases, pointQuestion: pointQuestion,
+    pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

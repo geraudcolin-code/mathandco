@@ -51,11 +51,15 @@
   }
   function etat(r) { return r.statut === 'quitté' ? 'quitté après ' + (r.repondues || 0) + ' / ' + r.total + ' réponses' : 'terminé'; }
   function virgule(x) { return String(x).replace('.', ','); }
-  // points d'une question : 1, 0, 0,5… ou 2/3 (une question à 3 cases) : la somme du détail redonne exactement la note
+  // points d'une question : 1, 0, 0,5, 0,75… ou 2/3, 3/5, 7/12 (cases, tableau, arbre, exercice au prorata, 16 nov. 2026) :
+  // demis et quarts en décimal, sinon fraction irréductible ; la somme du détail redonne exactement la note. Les points
+  // sont envoyés arrondis au millionième ; un ancien résultat arrondi au centième (0,33) reste écrit en décimal.
   function pts(x) {
     x = +x || 0;
-    if (Math.abs(x * 100 - Math.round(x * 100)) < 1e-4) return virgule(Math.round(x * 100) / 100);
-    for (var d = 3; d <= 12; d++) { var k = Math.round(x * d); if (Math.abs(x * d - k) < 0.006 * d) return k + '/' + d; }
+    for (var d = 1; d <= 240; d++) {
+      var k = Math.round(x * d);
+      if (Math.abs(x - k / d) < 2e-6) return d === 1 || d === 2 || d === 4 || d >= 100 ? virgule(Math.round(x * 100) / 100) : k + '/' + d;
+    }
     return virgule(Math.round(x * 100) / 100);
   }
   function dateFr(iso) { var d = new Date(iso); return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }

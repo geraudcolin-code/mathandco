@@ -515,6 +515,21 @@
     return { etat: 'juste' };
   }
 
+  /* Quiz NOTÉ (M. Colin, 16 nov. 2026, quiz de Seconde CH03) : une question à plusieurs cases (« compléter une égalité »)
+     rapporte la part de ses cases justes, comme un exercice en plusieurs questions ; avec des remplissages justes
+     différents (variantes), le meilleur compte. Tableaux et arbres à remplir : toujours 1 ou 0. */
+  function pointsCases(q, latexs) {
+    var rem = [q.cases.map(function (c) { return c.attendu; })].concat(q.variantes || []), n = q.cases.length, mieux = 0;
+    rem.forEach(function (att) {
+      var k = 0;
+      q.cases.forEach(function (c, j) {
+        try { if (verifierExpr({ attendu: att[j], forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe }, latexs[j]).etat === 'juste') k++; } catch (e) {}
+      });
+      mieux = Math.max(mieux, k);
+    });
+    return n ? mieux / n : 0;
+  }
+
   /* ----- ensemble de solutions { a ; b } ----- */
   function verifierEnsemble(q, latex) {
     var s = String(latex || '').replace(/^\s*S\s*=\s*/, '').replace(/^\\(\{|lbrace)|\\(\}|rbrace)$/g, '').trim();
@@ -1226,7 +1241,7 @@
 
   /* ----- plusieurs cadres dans une phrase : modele 'texte {0} texte {1}' ----- */
   Quiz.prototype.cases = function (q, zone, n, entree) {
-    var ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
+    var self = this, ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
     morceauxModele(String(q.modele)).forEach(function (morceau) {
       var m = /^\{(\d+)\}$/.exec(morceau);
       if (m) {
@@ -1236,7 +1251,11 @@
       } else if (morceau) { var t = el('span', 'quiz-prefixe', morceau); ligne.appendChild(t); }
     });
     zone.appendChild(ligne); rendre(ligne);
-    return function () { return verifierCases(q, champs.map(function (mf) { return mf.value; })); };
+    return function () {
+      var l = champs.map(function (mf) { return mf.value; }), r = verifierCases(q, l);
+      if (self.opts.note && r.etat !== 'lecture') r.prorata = r.etat === 'juste' ? 1 : pointsCases(q, l);   // quiz noté : part des cases justes
+      return r;
+    };
   };
 
   /* ----- coordonnées d'un vecteur : deux cases en colonne ----- */
@@ -3002,7 +3021,7 @@
   QuizNote.prototype.lancer = function () {
     var self = this, cfg = this.cfg;
     var source = { etiquette: cfg.etiquette, titre: cfg.titre, sousTitre: 'Quiz noté · pseudo : ' + echapper(this.pseudo), questions: [],
-                   tirage: { depuis: cfg.themes.slice(), n: cfg.note.n || 20 } };
+                   tirage: { depuis: cfg.themes.slice(), n: cfg.note.n || 20, equilibre: !!cfg.equilibre } };   // equilibre : sous-banques en proportion (Seconde CH03)
     this.debut = new Date();
     this.tentative = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
     this.racine._quiz = this;
@@ -3036,7 +3055,8 @@
     }
     if (r.etat === 'lecture') { ecrireMsg(c._msg, r.msg); c._msg.classList.add('info'); return; }
     e.repondue = true; e.res = r;
-    e.points = r.etat === 'juste' ? 1 : (q.type === 'exercice' && r.parties ? r.parties.filter(function (x) { return x.etat === 'juste'; }).length / r.parties.length : 0);
+    e.points = r.etat === 'juste' ? 1 : (q.type === 'exercice' && r.parties ? r.parties.filter(function (x) { return x.etat === 'juste'; }).length / r.parties.length
+      : q.type === 'cases' && typeof r.prorata === 'number' ? r.prorata : 0);      // plusieurs cases : au prorata des cases justes
     c._fini = true;
     c._msg.textContent = 'Réponse enregistrée.'; c._msg.classList.add('info');
     c._bv.hidden = true; c._bs.hidden = true; c._bn.hidden = false; c._bn.className = 'bouton';
@@ -3085,7 +3105,7 @@
         c.classList.toggle('reussie', e.points === 1); c.classList.toggle('ratee', e.points !== 1);
         c._msg.className = 'quiz-message ' + (e.points === 1 ? 'ok' : 'ko');
         c._msg.textContent = !e.repondue ? 'Pas de réponse : 0 point.' : e.points === 1 ? 'Juste : 1 point.'
-          : (q.type === 'exercice' && e.points > 0 ? 'En partie juste : ' + pointsTexte(e.points) + ' point.' : 'Faux : 0 point.');
+          : ((q.type === 'exercice' || q.type === 'cases') && e.points > 0 ? 'En partie juste : ' + pointsTexte(e.points) + ' point.' : 'Faux : 0 point.');
       });
       this.envoi = this.opts.note.fin(bn);
     }
@@ -3231,7 +3251,7 @@
     // TOUS les types (quiz de chapitre, 14 nov. 2026) : réponse au format de reponseAttendue(q), voir la section 2 bis
     verifierReponse: verifierReponse, reponseAttendue: reponseAttendue,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
-    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre
+    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

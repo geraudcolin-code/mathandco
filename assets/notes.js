@@ -3,7 +3,10 @@
    (assets/notes-cle.json). Rien de lisible ne quitte cette page. */
 (function () {
   'use strict';
-  var QUIZ = [{ id: '1ere-ch03-quiz', titre: 'Première spécialité · Chapitre 3 · Probabilités conditionnelles et indépendance' }];
+  // un quiz noté = son identifiant (clé de QUIZ_CONFIG dans la page du quiz, envoyé en clair au Worker et répété dans le
+  // paquet chiffré) ; les résultats d'un quiz ne se mêlent jamais à ceux d'un autre
+  var QUIZ = [{ id: '1ere-ch03-quiz', titre: 'Première spécialité · Chapitre 3 · Probabilités conditionnelles et indépendance' },
+              { id: '2nde-ch03-devfact', titre: 'Seconde · Chapitre 3 · Développer et factoriser' }];
   var S = crypto.subtle, cle = null, donnees = [];
   var $ = function (id) { return document.getElementById(id); };
   function octets(b) { var t = atob(b), u = new Uint8Array(t.length); for (var k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
@@ -28,7 +31,8 @@
     return fetch('/api/quiz-notes?quiz=' + encodeURIComponent(id), { cache: 'no-store' }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status); return r.json();
     }).then(function (l) { return Promise.all(l.map(function (x) { return lire(x.paquet); })); })
-      .then(function (l) { donnees = uneParTentative(l.filter(Boolean)); afficher(); },
+      .then(function (l) { if (id !== $('quiz').value) return;   // un autre quiz a été choisi entre-temps
+        donnees = uneParTentative(l.filter(function (r) { return r && r.quiz === id; })); afficher(); },
         function () { donnees = []; afficher(); $('resume').textContent = 'Les résultats n’ont pas pu être chargés (connexion ?).'; });
   }
   // Une tentative quittée envoie son rapport à la sortie (et parfois plusieurs fois, si l'élève est revenu) : on ne garde

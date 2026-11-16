@@ -2638,7 +2638,7 @@
      comme dans les tableaux de M. Colin. */
   function tableauCorrection(q, ajouter) {
     var vari = q.type === 'variations', ls = vari ? q.ligneSigne : q.ligne, b = q.bornes || [-Infinity, Infinity], xs = [b[0]].concat(q.valeurs, [b[1]]), n = q.valeurs.length;
-    var cadre = el('div', 'quiz-tab-cadre qv-tab-cadre'), t = el('div', 'quiz-tab qv-tab' + (vari ? ' quiz-var' : '') + (vari && ls ? ' quiz-var-signe' : ''));
+    var cadre = el('div', 'quiz-tab-cadre qv-tab-cadre'), t = el('div', 'quiz-tab qv-tab' + (vari ? ' quiz-var' : '') + (vari && ls ? ' quiz-var-signe' : '') + (q.convexite ? ' qv-avec-cvx' : ''));
     var cols = ['max-content'];
     for (var c = 0; c < 2 * n + 3; c++) cols.push(c % 2 === 0 ? 'auto' : 'minmax(1.8em, 1fr)');
     t.style.gridTemplateColumns = cols.join(' ');
@@ -2712,8 +2712,10 @@
     f.appendChild(im); f.dataset.e = ctx.ajouter(); racine.appendChild(f);
   }
   function etapesQuestion(q, racine, ctx, titre) {
-    etapesFigure(q, racine, ctx);
-    var fig = (q.type === 'arbre' && q.arbre) || (q.type === 'tableau' && q.tableau) ? figureACompleter(q, racine, ctx, titre) : null;
+    var aComp = (q.type === 'arbre' && q.arbre) || (q.type === 'tableau' && q.tableau);
+    if (!aComp) etapesFigure(q, racine, ctx);
+    var fig = aComp ? figureACompleter(q, racine, ctx, titre) : null;
+    if (aComp) etapesFigure(q, racine, ctx);       // tableau à compléter ET figure de lecture (TERM CH05) : le tableau en tête, collé en haut
     // « trace le tableau » (M. Colin, 12 nov. 2026) : à la fin, ou à l'étape du marqueur <!--tableau--> (16 nov. 2026)
     // q.tableauCorrection (quiz TERM CH05) : le tableau de signes / de variations d'une question d'un autre type (lecture
     // graphique, intervalles…), tracé de même ({type: 'signes' | 'variations', valeurs, ligne | ligneSigne, fleches, images, convexite})

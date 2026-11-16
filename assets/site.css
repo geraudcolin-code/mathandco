@@ -1061,6 +1061,20 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
 .qn-regles li { margin: 2px 0; }
 .quiz-point.repondue { background: var(--bleu-fond); border-color: var(--bleu); color: var(--bleu); }
 .quiz-point.fausse { background: var(--rouge); border-color: var(--rouge); color: #fff; }
+/* quiz noté, question EN PARTIE JUSTE (relecture du 16 nov. 2026) : orange, entre le vert et le rouge, dans les trois
+   styles ; cases d'une question « compléter » marquées une à une (vert / rouge) dans la revue finale */
+:root { --quiz-partiel: #b45309; --quiz-partiel-texte: #ffffff; --quiz-partiel-encre: #b45309; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --quiz-partiel: #f59e0b; --quiz-partiel-texte: #1a1206; --quiz-partiel-encre: #f5a524; } }
+:root[data-theme="dark"] { --quiz-partiel: #f59e0b; --quiz-partiel-texte: #1a1206; --quiz-partiel-encre: #f5a524; }
+:root.cyber { --quiz-partiel: #ff9f1c; --quiz-partiel-texte: #0a0b14; --quiz-partiel-encre: #ffb347; }
+:root.pample { --quiz-partiel: #a85d00; --quiz-partiel-texte: #ffffff; --quiz-partiel-encre: #8f4f00; }
+.quiz-point.partielle { background: var(--quiz-partiel); border-color: var(--quiz-partiel); color: var(--quiz-partiel-texte); }
+.quiz-message.partiel { color: var(--quiz-partiel-encre); }
+math-field.quiz-champ.qz-juste { border-color: var(--vert); border-style: solid; background: color-mix(in srgb, var(--vert) 9%, var(--papier)); }
+/* revue finale : une case marquée s'élargit à sa réponse (une réponse longue n'est jamais coupée) */
+.quiz-cases math-field.quiz-champ.petit.qz-juste, .quiz-cases math-field.quiz-champ.petit.qz-faux { width: auto; min-width: 4.6em; max-width: 100%; }
+@media (max-width: 720px) { .quiz-cases math-field.quiz-champ.petit.qz-juste, .quiz-cases math-field.quiz-champ.petit.qz-faux { min-width: 3.8em; } }
+.quiz-cases math-field.quiz-champ.petit.large.qz-juste, .quiz-cases math-field.quiz-champ.petit.large.qz-faux { min-width: 8em; }
 .qn-note strong { font-size: 2.2rem; }
 .quiz-point.bloquee, .quiz-point:disabled { opacity: .35; cursor: not-allowed; }
 .qn-protege body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

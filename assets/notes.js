@@ -3,7 +3,10 @@
    (assets/notes-cle.json). Rien de lisible ne quitte cette page. */
 (function () {
   'use strict';
-  var QUIZ = [{ id: '1ere-ch03-quiz', titre: 'Première spécialité · Chapitre 3 · Probabilités conditionnelles et indépendance' }];
+  // un quiz noté = son identifiant (clé de QUIZ_CONFIG dans la page du quiz, envoyé en clair au Worker et répété dans le
+  // paquet chiffré) ; les résultats d'un quiz ne se mêlent jamais à ceux d'un autre
+  var QUIZ = [{ id: '1ere-ch03-quiz', titre: 'Première spécialité · Chapitre 3 · Probabilités conditionnelles et indépendance' },
+              { id: '2nde-ch03-devfact', titre: 'Seconde · Chapitre 3 · Développer et factoriser' }];
   var S = crypto.subtle, cle = null, donnees = [];
   var $ = function (id) { return document.getElementById(id); };
   function octets(b) { var t = atob(b), u = new Uint8Array(t.length); for (var k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
@@ -24,12 +27,14 @@
   }
   function charger() {
     var id = $('quiz').value;
+    donnees = []; afficher();                      // rien de l'ancien quiz pendant le chargement (CSV compris)
     $('resume').textContent = 'Chargement…';
     return fetch('/api/quiz-notes?quiz=' + encodeURIComponent(id), { cache: 'no-store' }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status); return r.json();
     }).then(function (l) { return Promise.all(l.map(function (x) { return lire(x.paquet); })); })
-      .then(function (l) { donnees = uneParTentative(l.filter(Boolean)); afficher(); },
-        function () { donnees = []; afficher(); $('resume').textContent = 'Les résultats n’ont pas pu être chargés (connexion ?).'; });
+      .then(function (l) { if (id !== $('quiz').value) return;   // un autre quiz a été choisi entre-temps
+        donnees = uneParTentative(l.filter(function (r) { return r && r.quiz === id; })); afficher(); },
+        function () { if (id !== $('quiz').value) return; donnees = []; afficher(); $('resume').textContent = 'Les résultats n’ont pas pu être chargés (connexion ?).'; });
   }
   // Une tentative quittée envoie son rapport à la sortie (et parfois plusieurs fois, si l'élève est revenu) : on ne garde
   // que le dernier paquet de chaque tentative, le résultat final s'il existe.
@@ -46,6 +51,13 @@
   }
   function etat(r) { return r.statut === 'quitté' ? 'quitté après ' + (r.repondues || 0) + ' / ' + r.total + ' réponses' : 'terminé'; }
   function virgule(x) { return String(x).replace('.', ','); }
+  // points d'une question : 1, 0, 0,5… ou 2/3 (une question à 3 cases) : la somme du détail redonne exactement la note
+  function pts(x) {
+    x = +x || 0;
+    if (Math.abs(x * 100 - Math.round(x * 100)) < 1e-4) return virgule(Math.round(x * 100) / 100);
+    for (var d = 3; d <= 12; d++) { var k = Math.round(x * d); if (Math.abs(x * d - k) < 0.006 * d) return k + '/' + d; }
+    return virgule(Math.round(x * 100) / 100);
+  }
   function dateFr(iso) { var d = new Date(iso); return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
   function duree(s) { var m = Math.floor(s / 60); return m + ' min ' + String(s % 60).padStart(2, '0') + ' s'; }
   function justes(r) { return (r.questions || []).filter(function (q) { return q.points === 1; }).length + ' / ' + r.total; }
@@ -78,7 +90,7 @@
       b.type = 'button'; b.className = 'nt-voir'; b.textContent = 'Détail'; td.appendChild(b); tr.appendChild(td);
       var det = document.createElement('tr'); det.className = 'nt-detail'; det.hidden = true;
       var dd = document.createElement('td'); dd.colSpan = 7;
-      dd.textContent = (r.questions || []).map(function (q, i) { return (i + 1) + '. ' + (q.ref || q.theme) + ' : ' + virgule(q.points); }).join(' · ');
+      dd.textContent = (r.questions || []).map(function (q, i) { return (i + 1) + '. ' + (q.ref || q.theme) + ' : ' + pts(q.points); }).join(' · ');
       det.appendChild(dd);
       b.addEventListener('click', function () { det.hidden = !det.hidden; });
       tb.appendChild(tr); tb.appendChild(det);
@@ -90,7 +102,7 @@
     for (var k = 1; k <= n; k++) tete.push('q' + k);
     var lignes = [tete.join(';')].concat(l.map(function (r) {
       var c = [r.pseudo, virgule(r.note), justes(r), etat(r), dateFr(r.debut), dateFr(r.fin), r.duree];
-      (r.questions || []).forEach(function (q) { c.push((q.ref || q.theme) + ' : ' + virgule(q.points)); });
+      (r.questions || []).forEach(function (q) { c.push((q.ref || q.theme) + ' : ' + pts(q.points)); });
       return c.map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(';');
     }));
     var blob = new Blob(['﻿' + lignes.join('\r\n')], { type: 'text/csv;charset=utf-8' });

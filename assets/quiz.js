@@ -490,6 +490,13 @@
 
   /* ----- plusieurs cadres dans une phrase ----- */
   function verifierCases(q, latexs) {
+    // TOUTES les cases d'abord (relecture du 16 nov. 2026) : une case vide ou illisible n'est pas une erreur ; on ne juge
+    // rien tant que tout n'est pas rempli (sinon une 1re case fausse enregistrait 0 en quiz noté, et « Remplis toutes les
+    // cases » trahissait qu'elle était juste)
+    for (var i0 = 0; i0 < q.cases.length; i0++) {
+      var l0 = latexs[i0], r0 = String(l0 || '').trim() ? verifierExpr({ attendu: q.cases[i0].attendu, forme: 'libre', variable: q.cases[i0].variable }, l0) : { etat: 'lecture', msg: 'vide' };
+      if (r0.etat === 'lecture') return { etat: 'lecture', msg: /vide/.test(r0.msg) ? 'Remplis toutes les cases.' : r0.msg };
+    }
     if (q.variantes) for (var vi = 0; vi < q.variantes.length; vi++) {   // autre remplissage juste ((x − 3)² au lieu de (x + 3)², 15 nov. 2026)
       var qv = { cases: q.cases.map(function (c, j) { var o = {}; for (var a in c) o[a] = c[a]; o.attendu = q.variantes[vi][j]; return o; }) };
       if (verifierCases(qv, latexs).etat === 'juste') return { etat: 'juste' };
@@ -513,6 +520,24 @@
       }
     }
     return { etat: 'juste' };
+  }
+
+  /* Quiz NOTÉ (M. Colin, 16 nov. 2026, quiz de Seconde CH03) : une question à plusieurs cases (« compléter une égalité »)
+     rapporte la part de ses cases justes, comme un exercice en plusieurs questions ; avec des remplissages justes
+     différents (variantes), le meilleur compte. Tableaux et arbres à remplir : toujours 1 ou 0. */
+  function detailCases(q, latexs) {                 // case par case (true = juste), pour le meilleur remplissage
+    var rem = [q.cases.map(function (c) { return c.attendu; })].concat(q.variantes || []), mieux = null;
+    rem.forEach(function (att) {
+      var d = q.cases.map(function (c, j) {
+        try { return verifierExpr({ attendu: att[j], forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe }, latexs[j]).etat === 'juste'; } catch (e) { return false; }
+      });
+      if (!mieux || d.filter(Boolean).length > mieux.filter(Boolean).length) mieux = d;
+    });
+    return mieux || [];
+  }
+  function pointsCases(q, latexs) {
+    var n = q.cases.length;
+    return n ? detailCases(q, latexs).filter(Boolean).length / n : 0;
   }
 
   /* ----- ensemble de solutions { a ; b } ----- */
@@ -1147,7 +1172,8 @@
         b.classList.toggle('bloquee', !self.noteFinie && !e.repondue && j !== self.prochaine());
         b.disabled = !self.noteFinie && !e.repondue && j !== self.prochaine();
         b.classList.toggle('juste', !!self.noteFinie && e.points === 1);
-        b.classList.toggle('fausse', !!self.noteFinie && e.points !== 1);
+        b.classList.toggle('partielle', !!self.noteFinie && e.points > 0 && e.points < 1);   // en partie juste : orange
+        b.classList.toggle('fausse', !!self.noteFinie && !(e.points > 0));
       } else {
       b.classList.toggle('juste', e.juste);
       b.classList.toggle('vue', !e.juste && e.vue);
@@ -1226,7 +1252,7 @@
 
   /* ----- plusieurs cadres dans une phrase : modele 'texte {0} texte {1}' ----- */
   Quiz.prototype.cases = function (q, zone, n, entree) {
-    var ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
+    var self = this, ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
     morceauxModele(String(q.modele)).forEach(function (morceau) {
       var m = /^\{(\d+)\}$/.exec(morceau);
       if (m) {
@@ -1236,7 +1262,16 @@
       } else if (morceau) { var t = el('span', 'quiz-prefixe', morceau); ligne.appendChild(t); }
     });
     zone.appendChild(ligne); rendre(ligne);
-    return function () { return verifierCases(q, champs.map(function (mf) { return mf.value; })); };
+    var lire = function () {
+      var l = champs.map(function (mf) { return mf.value; }), r = verifierCases(q, l);
+      if (self.opts.note && r.etat !== 'lecture') r.prorata = r.etat === 'juste' ? 1 : pointsCases(q, l);   // quiz noté : part des cases justes
+      return r;
+    };
+    lire.marquerCases = function () {              // revue finale du quiz noté : chaque case en vert ou en rouge
+      var d = detailCases(q, champs.map(function (mf) { return mf.value; }));
+      champs.forEach(function (mf, j) { if (!mf) return; mf.classList.remove('vide'); mf.classList.toggle('qz-juste', !!d[j]); mf.classList.toggle('qz-faux', !d[j]); });
+    };
+    return lire;
   };
 
   /* ----- coordonnées d'un vecteur : deux cases en colonne ----- */
@@ -3002,7 +3037,7 @@
   QuizNote.prototype.lancer = function () {
     var self = this, cfg = this.cfg;
     var source = { etiquette: cfg.etiquette, titre: cfg.titre, sousTitre: 'Quiz noté · pseudo : ' + echapper(this.pseudo), questions: [],
-                   tirage: { depuis: cfg.themes.slice(), n: cfg.note.n || 20 } };
+                   tirage: { depuis: cfg.themes.slice(), n: cfg.note.n || 20, equilibre: !!cfg.equilibre } };   // equilibre : sous-banques en proportion (Seconde CH03)
     this.debut = new Date();
     this.tentative = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
     this.racine._quiz = this;
@@ -3025,6 +3060,14 @@
   };
   function echapper(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function pointsTexte(x) { return String(Math.round(x * 100) / 100).replace('.', ','); }
+  /* points d'une question : « 0,5 point », « 2/3 de point », « 1/3 de point » (charte § 11.2 septies) : un décimal à deux
+     chiffres au plus s'écrit en décimal, sinon en fraction (tiers, sixièmes…) */
+  function fractionPoints(x) {
+    if (Math.abs(x * 100 - Math.round(x * 100)) < 1e-6) return pointsTexte(x);
+    for (var d = 3; d <= 12; d++) { var k = Math.round(x * d); if (Math.abs(x * d - k) < 1e-6) return k + '/' + d; }
+    return pointsTexte(x);
+  }
+  function pointQuestion(x) { var t = fractionPoints(x); return t + (t.indexOf('/') >= 0 ? ' de point' : ' point'); }
   Quiz.prototype.validerNote = function (n) {
     var c = this.cartes[n], e = this.etat[n], q = c._q;
     if (this.noteFinie || e.repondue) return;
@@ -3036,7 +3079,8 @@
     }
     if (r.etat === 'lecture') { ecrireMsg(c._msg, r.msg); c._msg.classList.add('info'); return; }
     e.repondue = true; e.res = r;
-    e.points = r.etat === 'juste' ? 1 : (q.type === 'exercice' && r.parties ? r.parties.filter(function (x) { return x.etat === 'juste'; }).length / r.parties.length : 0);
+    e.points = r.etat === 'juste' ? 1 : (q.type === 'exercice' && r.parties ? r.parties.filter(function (x) { return x.etat === 'juste'; }).length / r.parties.length
+      : q.type === 'cases' && typeof r.prorata === 'number' ? r.prorata : 0);      // plusieurs cases : au prorata des cases justes
     c._fini = true;
     c._msg.textContent = 'Réponse enregistrée.'; c._msg.classList.add('info');
     c._bv.hidden = true; c._bs.hidden = true; c._bn.hidden = false; c._bn.className = 'bouton';
@@ -3052,7 +3096,7 @@
     var etat = this.etat, total = etat.length, pts = 0, rep = 0;
     etat.forEach(function (e) { pts += e.points || 0; if (e.repondue) rep++; });
     return { note: Math.round(pts / total * 20 * 100) / 100, points: Math.round(pts * 100) / 100, total: total, repondues: rep,
-      details: this.def.questions.map(function (q, j) { return { ref: q.ref || '', theme: q.theme || '', type: q.type, points: Math.round((etat[j].points || 0) * 100) / 100, repondue: !!etat[j].repondue }; }) };
+      details: this.def.questions.map(function (q, j) { return { ref: q.ref || '', theme: q.theme || '', type: q.type, points: Math.round((etat[j].points || 0) * 1e6) / 1e6, repondue: !!etat[j].repondue }; }) };
   };
   Quiz.prototype.terminerNote = function (force) {
     var self = this, etat = this.etat, total = etat.length;
@@ -3082,10 +3126,12 @@
         c.querySelectorAll('.quiz-zone math-field').forEach(function (s) { s.readOnly = true; });
         c.querySelectorAll('.quiz-zone button').forEach(function (s) { s.disabled = true; });
         if (c._saisie) { c._saisie.figer(); if (e.res && q.type !== 'exercice') try { c._saisie.marquer(e.res); } catch (x) {} }
-        c.classList.toggle('reussie', e.points === 1); c.classList.toggle('ratee', e.points !== 1);
-        c._msg.className = 'quiz-message ' + (e.points === 1 ? 'ok' : 'ko');
+        var partiel = e.points > 0 && e.points < 1;
+        if (q.type === 'cases' && e.repondue && c._lire && c._lire.marquerCases) try { c._lire.marquerCases(); } catch (x) {}
+        c.classList.toggle('reussie', e.points === 1); c.classList.toggle('partielle', partiel); c.classList.toggle('ratee', !(e.points > 0));
+        c._msg.className = 'quiz-message ' + (e.points === 1 ? 'ok' : partiel ? 'partiel' : 'ko');
         c._msg.textContent = !e.repondue ? 'Pas de réponse : 0 point.' : e.points === 1 ? 'Juste : 1 point.'
-          : (q.type === 'exercice' && e.points > 0 ? 'En partie juste : ' + pointsTexte(e.points) + ' point.' : 'Faux : 0 point.');
+          : (partiel ? 'En partie juste : ' + pointQuestion(e.points) + '.' : 'Faux : 0 point.');
       });
       this.envoi = this.opts.note.fin(bn);
     }
@@ -3231,7 +3277,7 @@
     // TOUS les types (quiz de chapitre, 14 nov. 2026) : réponse au format de reponseAttendue(q), voir la section 2 bis
     verifierReponse: verifierReponse, reponseAttendue: reponseAttendue,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
-    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre
+    monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases, pointQuestion: pointQuestion
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

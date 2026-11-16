@@ -213,6 +213,9 @@
 .cyber math-field.quiz-champ { border-color: rgba(0, 240, 255, .45); background: #0b0d1a; color: var(--encre); }
 .cyber math-field.quiz-champ:focus-within { border-color: var(--cp-cyan); box-shadow: 0 0 0 3px rgba(0, 240, 255, .18), 0 0 16px rgba(0, 240, 255, .35); }
 .cyber math-field.quiz-champ.petit.vide { box-shadow: 0 0 10px rgba(0, 240, 255, .25); }
+/* revue finale d'un quiz noté : case juste en vert, case fausse en rouge (16 nov. 2026) */
+.cyber math-field.quiz-champ.qz-juste { border-color: var(--cp-teal); background: rgba(0, 255, 156, .08); box-shadow: 0 0 10px rgba(0, 255, 156, .35); }
+.cyber math-field.quiz-champ.qz-faux { border-color: var(--cp-rouge); background: rgba(255, 0, 60, .09); box-shadow: 0 0 10px rgba(255, 0, 60, .4); }
 .cyber .quiz-tab { border-color: rgba(234, 246, 255, .7); }
 .cyber .tab-plus { border-color: rgba(234, 246, 255, .55); color: var(--encre); background: #0b0d1a; }
 .cyber .tab-suppr { background: #0b0d1a; border-color: rgba(234, 246, 255, .45); color: var(--encre); }

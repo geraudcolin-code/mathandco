@@ -808,6 +808,21 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-tab .tcell.tval { padding: 0 4px; }
 .qv-tab .trait-choix { cursor: default; }
 .qv-tab .trait-choix::before { display: none; }
+/* Quiz TERM CH05 (16 nov. 2026) : tableau de variations avec la ligne « signe de f′(x) » (elle garde la hauteur d'un tableau
+   de signes), tableau figé dans un exercice, ligne « convexité de f » de la correction, figures dans les cartes d'un QCM */
+.quiz-var .tcell.tsg, .quiz-var .tcell.tint.tsg:not(.tx) { min-height: 48px; }
+.qv-tab.quiz-var .tcell.tsg, .qv-tab.quiz-var .tcell.tint.tsg:not(.tx) { min-height: 42px; }
+.qz-sv.fige .tab-plus, .qz-sv.fige .tab-suppr { visibility: hidden; }
+.qz-sv.fige .signe.sint::before, .qz-sv.fige .trait-choix::before { border-color: transparent; background: none; }
+.qz-sv.fige .fleche-longue { color: var(--encre); }
+.qv-tab .tcell.tcv { min-height: 42px; }
+.qv-cvx { font-weight: 600; font-size: .9em; }
+.qv-convexe { color: #00A651; }
+.qv-concave { color: #2F5FA8; }
+.qz-prop-txt img { display: block; max-width: 100%; height: auto; margin: 2px 0; }
+.qz-figures .qz-props { grid-template-columns: 1fr; }
+.quiz-enonce .qz-formule, .qv-rappel-texte .qz-formule, .qz-partie-enonce .qz-formule { text-align: center; font-size: 1.12em; margin: .5em 0; }
+.qz-figures .qz-prop-txt img { width: 100%; max-width: 520px; }
 
 /* chaînes d'équivalences : « ⟺ » dans sa colonne ; justification dans la marge, entre deux lignes, avec une flèche courbe */
 .qv-al { position: relative; }

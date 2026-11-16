@@ -1071,6 +1071,10 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
 .quiz-point.partielle { background: var(--quiz-partiel); border-color: var(--quiz-partiel); color: var(--quiz-partiel-texte); }
 .quiz-message.partiel { color: var(--quiz-partiel-encre); }
 math-field.quiz-champ.qz-juste { border-color: var(--vert); border-style: solid; background: color-mix(in srgb, var(--vert) 9%, var(--papier)); }
+/* revue finale : une case marquée s'élargit à sa réponse (une réponse longue n'est jamais coupée) */
+.quiz-cases math-field.quiz-champ.petit.qz-juste, .quiz-cases math-field.quiz-champ.petit.qz-faux { width: auto; min-width: 4.6em; max-width: 100%; }
+@media (max-width: 720px) { .quiz-cases math-field.quiz-champ.petit.qz-juste, .quiz-cases math-field.quiz-champ.petit.qz-faux { min-width: 3.8em; } }
+.quiz-cases math-field.quiz-champ.petit.large.qz-juste, .quiz-cases math-field.quiz-champ.petit.large.qz-faux { min-width: 8em; }
 .qn-note strong { font-size: 2.2rem; }
 .quiz-point.bloquee, .quiz-point:disabled { opacity: .35; cursor: not-allowed; }
 .qn-protege body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

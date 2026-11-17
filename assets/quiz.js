@@ -1188,6 +1188,7 @@
       var mfc = entree(nouveauChamp('quiz-champ petit symbole', 'Symbole de comparaison (question ' + (n + 1) + ')'));
       lc.appendChild(g); lc.appendChild(mfc); lc.appendChild(dr); zone.appendChild(lc); rendre(lc);
       lire = function () { return verifierComparer(q, mfc.value); };
+      lire.valeurs = function () { return mfc.value; };
     } else {
       var ligne = el('div', 'quiz-ligne');
       var mf = entree(nouveauChamp('quiz-champ', 'Ta réponse à la question ' + (n + 1)));
@@ -1203,6 +1204,7 @@
       lire = q.type === 'ensemble' ? function () { return verifierEnsemble(q, mf.value); }
         : q.type === 'intervalles' ? function () { return verifierIntervalles(q, mf.value); }
         : function () { return verifierExpr(q, mf.value); };
+      lire.valeurs = function () { return mf.value; };      // rapport détaillé (quiz noté) : ce que l'élève a tapé
     }
     // exercice, arbre, tableau, énoncé avec une figure : pas de mise au point automatique, le clavier virtuel cacherait
     // le haut de la figure ; il s'ouvre quand l'élève touche une case (14 nov. 2026)
@@ -1342,6 +1344,7 @@
       if (self.opts.note && r.etat !== 'lecture') r.prorata = r.etat === 'juste' ? 1 : pointsCases(q, l);   // quiz noté : part des cases justes
       return r;
     };
+    lire.valeurs = function () { return champs.map(function (mf) { return mf ? mf.value : ''; }); };   // rapport détaillé (quiz noté)
     lire.marquerCases = function () {              // revue finale du quiz noté : chaque case en vert ou en rouge
       var d = detailCases(q, champs.map(function (mf) { return mf.value; }));
       champs.forEach(function (mf, j) { if (!mf) return; mf.classList.remove('vide'); mf.classList.toggle('qz-juste', !!d[j]); mf.classList.toggle('qz-faux', !d[j]); });
@@ -1362,7 +1365,9 @@
       col.appendChild(mf); return mf;
     });
     ligne.appendChild(col); zone.appendChild(ligne);
-    return function () { return verifierCoords(q, champs.map(function (mf) { return mf.value; })); };
+    var lire = function () { return verifierCoords(q, champs.map(function (mf) { return mf.value; })); };
+    lire.valeurs = function () { return champs.map(function (mf) { return mf.value; }); };
+    return lire;
   };
 
   /* ----- tableau de signes / de variations : valeurs de x ajoutées par l'élève ----- */
@@ -1889,6 +1894,7 @@
     var k = caseDe(v);
     if (k < 0) return null;
     if (mode === 'saisie') return o.champ(k, aria);
+    if (mode === 'rapport') return o.rapport(k, aria);   // notes.html (rapport détaillé d'un quiz noté)
     if (mode === 'correction') {
       var s = el('span', 'qz-slot'), val = el('span', 'qz-val qv-e', '\\(' + o.valeur(k) + '\\)');
       val.dataset.case = k; val.dataset.tex = o.valeur(k);
@@ -3037,6 +3043,65 @@
   /* ----- QUIZ NOTÉ (M. Colin, 15 nov. 2026) : pseudo donné en classe, tirage imposé, une seule réponse par question,
      note sur 20 et corrections à la fin, résultat chiffré pour le professeur (clé publique ECDH P-256) et envoyé à
      /api/quiz-notes (Worker Cloudflare + D1). Réglage : QUIZ_CONFIG[id].note = {n, cle (JWK publique), envoi}. ----- */
+  /* RAPPORT DÉTAILLÉ (M. Colin, 17 nov. 2026 : « avoir accès à un rapport détaillé avec les questions eues par les élèves
+     et les réponses données ») : chaque question du paquet chiffré porte l'énoncé tel que l'élève l'a vu (texte + LaTeX
+     de la banque, variante générée comprise ; tableau, arbre, propositions dans l'ordre affiché, parties d'un exercice ;
+     ni correction, ni image), sa réponse (LaTeX tapé, case par case, proposition cochée…), la bonne réponse, le détail
+     case par case / question par question et le message de l'erreur repérée. notes.html le relit (clé privée). */
+  var CHAMPS_RAPPORT = ['type', 'enonce', 'enonceApres', 'prefixe', 'suffixe', 'gauche', 'droite', 'tableau', 'arbre', 'modele', 'propositions', 'figureAlt'];
+  function sansImage(x) {                       // une image (data URI) n'est jamais envoyée : « [figure] » à sa place
+    if (typeof x === 'string') return x.replace(/<img\b[^>]*>/gi, '[figure]').replace(/[ \t\r\n]+/g, ' ');   // espaces insécables gardés
+    if (Array.isArray(x)) return x.map(sansImage);
+    if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = sansImage(x[k]); return o; }
+    return x;
+  }
+  function questionRapport(q, s) {
+    var o = {};
+    CHAMPS_RAPPORT.forEach(function (k) { if (q[k] != null && q[k] !== '') o[k] = sansImage(q[k]); });
+    if (q.figure) o.figure = true;
+    if (s && s.ordre) o.ordre = s.ordre.slice();            // QCM : ordre des propositions vu par l'élève (lettres A, B…)
+    if (s && s.ordreD) o.ordreD = s.ordreD.slice();         // associer : ordre des pastilles
+    if (q.parties) o.parties = q.parties.map(function (pa, i) { return questionRapport(pa, s && s.parties && s.parties[i] && s.parties[i].s); });
+    return o;
+  }
+  function reponseRapport(x) {                  // réponse compacte : textes de 300 caractères au plus (paquet borné)
+    if (x == null) return null;
+    if (typeof x === 'string') return x.length > 300 ? x.slice(0, 300) + '…' : x;
+    if (typeof x === 'number' || typeof x === 'boolean') return x;
+    if (Array.isArray(x)) return x.slice(0, 60).map(reponseRapport);
+    return null;
+  }
+  function detailRapport(q, rep, r) {           // case par case (1 / 0) ; exercice : points, cases et message de chaque question
+    switch (q.type) {
+      case 'cases': return detailCases(q, rep || []).map(Number);
+      case 'tableau': case 'arbre': return detailGrille(q, rep || []).map(Number);
+      case 'exercice': return q.parties.map(function (pa, i) {
+        var ri = r && r.parties && r.parties[i], x = (rep || [])[i], o = { p: Math.round(pointsReponse(pa, x, ri) * 1e6) / 1e6 };
+        var c = detailRapport(pa, x, ri); if (c) o.c = c;
+        if (ri && (ri.etat === 'faux' || ri.etat === 'rate') && ri.msg) o.m = reponseRapport(ri.msg);
+        return o;
+      });
+      default: return null;
+    }
+  }
+  function rapportQuestion(d, q, e, s) {
+    if (q.famille) d.famille = q.famille;
+    d.q = questionRapport(q, s);
+    d.a = reponseRapport(reponseAttendue(q));               // bonne réponse
+    if (!e.repondue) return;
+    d.r = reponseRapport(e.brute);                          // réponse de l'élève
+    var c = detailRapport(q, e.brute, e.res); if (c) d.c = c;
+    if (q.type !== 'exercice' && e.res && e.res.etat === 'faux' && e.res.msg) d.m = reponseRapport(e.res.msg);   // erreur repérée (piège) ; exercice : par question
+  }
+  /* Le paquet est compressé (deflate-raw, octet 0 en tête) quand le navigateur sait le faire : ~10 Ko au lieu de ~45 Ko
+     pour le pire tirage (rapport de sortie envoyé par sendBeacon, limité à 64 Ko) ; sinon, JSON tel quel (« { » en tête). */
+  function compresser(u) {
+    try {
+      if (!window.CompressionStream || !window.Response || !window.Blob) return Promise.resolve(null);
+      var flux = new Blob([u]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+      return new Response(flux).arrayBuffer().then(function (b) { var z = new Uint8Array(b.byteLength + 1); z.set(new Uint8Array(b), 1); return z; }, function () { return null; });
+    } catch (e) { return Promise.resolve(null); }
+  }
   function b64(u) { u = new Uint8Array(u); var t = ''; for (var k = 0; k < u.length; k++) t += String.fromCharCode(u[k]); return btoa(t); }
   function chiffrerPourProf(jwk, obj) {
     var S = crypto.subtle, pub, eph;
@@ -3044,11 +3109,28 @@
       .then(function (k) { pub = k; return S.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveKey']); })
       .then(function (k) { eph = k; return S.deriveKey({ name: 'ECDH', public: pub }, eph.privateKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt']); })
       .then(function (cle) {
-        var iv = crypto.getRandomValues(new Uint8Array(12));
-        return S.encrypt({ name: 'AES-GCM', iv: iv }, cle, new TextEncoder().encode(JSON.stringify(obj))).then(function (ct) {
+        var iv = crypto.getRandomValues(new Uint8Array(12)), brut = new TextEncoder().encode(JSON.stringify(obj));
+        return compresser(brut).then(function (z) { return S.encrypt({ name: 'AES-GCM', iv: iv }, cle, z || brut); }).then(function (ct) {
           return S.exportKey('jwk', eph.publicKey).then(function (e) { return { epk: { x: e.x, y: e.y }, iv: b64(iv), ct: b64(ct) }; });
         });
       });
+  }
+  /* Paquet d'un quiz noté : jamais plus de 85 000 caractères (le Worker refuse au-delà de 90 000) ; s'il le fallait
+     (réponses démesurées, navigateur sans compression), le rapport est allégé : sans les énoncés (allege: 1), puis sans
+     détail (allege: 2) ; la note et les points restent. */
+  var MAX_PAQUET = 85000;
+  function allege(obj, niveau) {
+    var o = {}, k; for (k in obj) o[k] = obj[k];
+    var garde = ['ref', 'theme', 'type', 'points', 'repondue', 'famille'];
+    o.questions = (obj.questions || []).map(function (d) { var x = {}; for (var c in d) if (niveau === 1 ? c !== 'q' : garde.indexOf(c) >= 0) x[c] = d[c]; return x; });
+    o.allege = niveau; return o;
+  }
+  function chiffrerNote(jwk, obj) {
+    var taille = function (p) { return JSON.stringify(p).length + 40; };
+    return chiffrerPourProf(jwk, obj).then(function (p) {
+      if (taille(p) <= MAX_PAQUET) return p;
+      return chiffrerPourProf(jwk, allege(obj, 1)).then(function (p1) { return taille(p1) <= MAX_PAQUET ? p1 : chiffrerPourProf(jwk, allege(obj, 2)); });
+    });
   }
   var ATTENTE = 'colineaire.notes.attente';
   function lireAttente() { try { return JSON.parse(localStorage.getItem(ATTENTE) || '[]'); } catch (e) { return []; } }
@@ -3128,7 +3210,7 @@
     var obj = { quiz: cfg.id, tentative: this.tentative, statut: 'quitté', pseudo: this.pseudo, debut: this.debut.toISOString(), fin: t.toISOString(),
                 duree: Math.round((t - this.debut) / 1000), note: bilan.note, points: bilan.points, total: bilan.total, repondues: bilan.repondues,
                 questions: bilan.details };
-    chiffrerPourProf(cfg.note.cle, obj).then(function (paquet) {
+    chiffrerNote(cfg.note.cle, obj).then(function (paquet) {
       if (k !== self.version || !self.enCours()) return;
       paquet.quiz = cfg.id; self.partiel = paquet; self.partielEnvoye = false;
       try { localStorage.setItem(ENCOURS, JSON.stringify(paquet)); } catch (e) {}
@@ -3217,7 +3299,7 @@
     var obj = { quiz: cfg.id, tentative: this.tentative, statut: 'terminé', pseudo: this.pseudo, debut: this.debut.toISOString(), fin: fin.toISOString(),
                 duree: Math.round((fin - this.debut) / 1000), note: res.note, points: res.points, total: res.total, repondues: res.repondues, questions: res.details };
     var url = this.url;
-    return chiffrerPourProf(cfg.note.cle, obj).then(function (paquet) {
+    return chiffrerNote(cfg.note.cle, obj).then(function (paquet) {
       paquet.quiz = cfg.id;
       return poster(url, paquet).catch(function (e) { var l = lireAttente(); l.push(paquet); ecrireAttente(l); throw e; });
     });
@@ -3249,6 +3331,7 @@
     }
     if (r.etat === 'lecture') { ecrireMsg(c._msg, r.msg); c._msg.classList.add('info'); return; }
     e.repondue = true; e.res = r; e.rep = rep;
+    e.brute = c._saisie ? rep : (c._lire && c._lire.valeurs ? c._lire.valeurs() : null);   // rapport détaillé (17 nov. 2026)
     // au prorata (M. Colin, 16 nov. 2026) : « compléter » (cases justes), tableau et arbre (cases justes), exercice (moyenne
     // de ses questions, chacune au prorata de ses cases) ; 1 ou 0 pour les autres types
     e.points = r.etat === 'juste' ? 1 : c._saisie ? pointsReponse(q, rep, r)
@@ -3265,10 +3348,13 @@
     setTimeout(function () { try { c._bn.focus({ preventScroll: true }); } catch (x) {} }, 50);
   };
   Quiz.prototype.bilanNote = function () {        // note du moment : une question sans réponse compte 0
-    var etat = this.etat, total = etat.length, pts = 0, rep = 0;
+    var etat = this.etat, cartes = this.cartes || [], total = etat.length, pts = 0, rep = 0;
     etat.forEach(function (e) { pts += e.points || 0; if (e.repondue) rep++; });
     return { note: Math.round(pts / total * 20 * 100) / 100, points: Math.round(pts * 100) / 100, total: total, repondues: rep,
-      details: this.def.questions.map(function (q, j) { return { ref: q.ref || '', theme: q.theme || '', type: q.type, points: Math.round((etat[j].points || 0) * 1e6) / 1e6, repondue: !!etat[j].repondue }; }) };
+      details: this.def.questions.map(function (q, j) {
+        var d = { ref: q.ref || '', theme: q.theme || '', type: q.type, points: Math.round((etat[j].points || 0) * 1e6) / 1e6, repondue: !!etat[j].repondue };
+        try { rapportQuestion(d, q, etat[j], cartes[j] && cartes[j]._saisie); } catch (x) {}   // rapport détaillé : jamais bloquant
+        return d; }) };
   };
   Quiz.prototype.terminerNote = function (force) {
     var self = this, etat = this.etat, total = etat.length;
@@ -3461,7 +3547,9 @@
     verifierReponse: verifierReponse, reponseAttendue: reponseAttendue,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
     monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases, pointQuestion: pointQuestion,
-    pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse
+    pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse,
+    // rapport détaillé des quiz notés (notes.html, 17 nov. 2026) : mêmes tableaux, arbres et formules que le quiz
+    dessinerTableau: dessinerTableau, dessinerArbre: dessinerArbre, rendre: rendre, questionRapport: questionRapport, variables: variables, chiffrerNote: chiffrerNote
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

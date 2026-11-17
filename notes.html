@@ -13,9 +13,11 @@
 <link rel="stylesheet" href="assets/theme-cyber.css?v=20261116t">
 <link rel="stylesheet" href="assets/theme-pample.css?v=20261114a">
 <script src="assets/theme.js?v=20261104f"></script>
+<script src="assets/quiz.js?v=20261117r"></script>
+<script defer src="assets/mathlive/mathlive.min.js"></script>
 <style>
 .nt-outils { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 16px; }
-.nt-outils select, .nt-outils input { font: inherit; padding: 8px 10px; border: 1.5px solid var(--filet); border-radius: 10px; background: var(--fond); color: var(--encre); }
+.nt-outils select, .nt-outils input { max-width: 100%; min-width: 0; font: inherit; padding: 8px 10px; border: 1.5px solid var(--filet); border-radius: 10px; background: var(--fond); color: var(--encre); }
 .nt-table-cadre { overflow-x: auto; border: 1px solid var(--filet); border-radius: 12px; background: var(--fond); }
 .nt-table { border-collapse: collapse; width: 100%; font-size: .95rem; }
 .nt-table th, .nt-table td { padding: 9px 12px; border-bottom: 1px solid var(--filet); text-align: left; white-space: nowrap; }
@@ -25,6 +27,90 @@
 .nt-table button.nt-voir { font: inherit; font-size: .85rem; border: 1px solid var(--filet); border-radius: 8px; background: none; color: var(--bleu); padding: 3px 8px; cursor: pointer; }
 .nt-vide { padding: 24px; color: var(--gris); }
 .nt-table td.nt-quitte { color: var(--rouge); font-weight: 600; }
+/* rapport détaillé, statistiques (M. Colin, 17 nov. 2026) */
+.nt-table tr.nt-ligne { cursor: pointer; }
+.nt-table tr.nt-ligne:hover td, .nt-table tr.nt-ligne:focus-visible td { background: color-mix(in srgb, var(--bleu) 6%, transparent); }
+.nt-table tr.nt-ligne:focus-visible { outline: 2px solid var(--bleu); outline-offset: -2px; }
+.nt-onglets-barre { display: flex; gap: 6px; margin: 0 0 14px; border-bottom: 1px solid var(--filet); }
+.nt-onglet { font: inherit; font-weight: 600; border: 0; background: none; color: var(--gris); padding: 8px 12px; border-bottom: 3px solid transparent; cursor: pointer; }
+.nt-onglet.actif { color: var(--encre); border-bottom-color: var(--bleu); }
+.nt-rap-retour { margin: 0 0 14px; }
+.nt-rap-tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin: 0 0 14px; }
+.nt-rap-tete h2 { margin: 0; font-size: 1.5rem; overflow-wrap: anywhere; }
+.nt-rap-note { margin: 0; font-size: 1.3rem; font-weight: 700; }
+.nt-rap-info { margin: 0; color: var(--gris); flex-basis: 100%; }
+.nt-indispo { padding: 12px 14px; border-radius: 10px; background: var(--fond-2); color: var(--gris); }
+.nt-rap-liste, .nt-parties { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.nt-q, .nt-partie { border: 1px solid var(--filet); border-left: 6px solid var(--filet); border-radius: 12px; background: var(--fond); padding: 12px 14px; min-width: 0; }
+.nt-partie { background: transparent; padding: 10px 12px; }
+.nt-q.nt-juste, .nt-partie.nt-juste { border-left-color: var(--vert); }
+.nt-q.nt-partiel, .nt-partie.nt-partiel { border-left-color: var(--quiz-partiel); }
+.nt-q.nt-faux, .nt-partie.nt-faux { border-left-color: var(--rouge); }
+.nt-q.nt-sans, .nt-partie.nt-sans { border-left-color: var(--gris); }
+.nt-q-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 6px; }
+.nt-q-num { font-weight: 700; }
+.nt-q-ref { color: var(--gris); font-size: .9rem; flex: 1 1 auto; min-width: 0; }
+.nt-pts { font-weight: 700; font-size: .92rem; }
+.nt-pts.nt-juste { color: var(--vert); } .nt-pts.nt-partiel { color: var(--quiz-partiel-encre); } .nt-pts.nt-faux { color: var(--rouge); } .nt-pts.nt-sans { color: var(--gris); }
+.nt-enonce { margin: 4px 0 8px; overflow-wrap: anywhere; line-height: 1.75; }
+.nt-stat-faux .nt-val svg { max-width: 90px; height: auto; vertical-align: middle; }
+.nt-enonce p { margin: .35em 0; }
+.nt-figure { color: var(--gris); font-style: italic; }
+.nt-reps { display: grid; gap: 8px; min-width: 0; }
+.nt-ligne-rep { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
+.nt-etiq { font-weight: 600; color: var(--gris); font-size: .92rem; }
+.nt-erreur .nt-etiq { color: var(--rouge); }
+.nt-rien { color: var(--gris); font-style: italic; }
+.nt-val, .nt-case { display: inline-block; padding: 1px 8px; border-radius: 8px; border: 1.5px solid var(--filet); max-width: 100%; overflow-x: auto; vertical-align: middle; }
+.nt-j { border-color: var(--vert); background: color-mix(in srgb, var(--vert) 11%, var(--papier)); }
+.nt-f { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 9%, var(--papier)); }
+.nt-p { border-color: var(--quiz-partiel); background: color-mix(in srgb, var(--quiz-partiel) 10%, var(--papier)); }
+.nt-bon { border-color: color-mix(in srgb, var(--vert) 60%, var(--filet)); border-style: dashed; }
+.nt-case { padding: 0 6px; min-width: 2.2em; text-align: center; }
+.nt-case-vide { color: var(--gris); }
+.nt-cases { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.nt-expr { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; max-width: 100%; }
+.nt-fig { margin: 2px 0 4px; }
+.nt-props { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.nt-prop { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; border: 1.5px solid var(--filet); border-radius: 10px; padding: 6px 10px; }
+.nt-prop.nt-bonne { border-color: color-mix(in srgb, var(--vert) 60%, var(--filet)); }
+.nt-prop.nt-choisie.nt-f { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 7%, var(--papier)); }
+.nt-prop.nt-choisie.nt-j { border-color: var(--vert); background: color-mix(in srgb, var(--vert) 9%, var(--papier)); }
+.nt-lettre { font-weight: 700; width: 1.6em; height: 1.6em; border-radius: 50%; border: 1.5px solid var(--filet); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.nt-prop-txt { flex: 1 1 12em; min-width: 0; overflow-wrap: anywhere; }
+.nt-prop-txt svg { max-width: 100%; height: auto; }
+.nt-marques { display: flex; flex-wrap: wrap; gap: 4px; }
+.nt-badge { font-size: .8rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1.5px solid; }
+.nt-badge.nt-bon { border-style: solid; color: var(--vert); }
+.nt-badge.nt-f { color: var(--rouge); } .nt-badge.nt-j { color: var(--vert); }
+.nt-consigne { margin: 0; color: var(--gris); font-size: .9rem; }
+.nt-assoc { border-collapse: collapse; width: 100%; font-size: .95rem; }
+.nt-assoc th, .nt-assoc td { padding: 6px 8px; border-bottom: 1px solid var(--filet); text-align: left; }
+.nt-assoc td.nt-val { display: table-cell; border-radius: 0; border-width: 0 0 1px 0; border-bottom-color: var(--filet); }
+.nt-assoc td.nt-j { color: var(--vert); font-weight: 600; } .nt-assoc td.nt-f { color: var(--rouge); font-weight: 600; } .nt-assoc td.nt-bon { border-style: solid; }
+.nt-stats-outils { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 12px; }
+.nt-stats-outils select { font: inherit; padding: 8px 10px; border: 1.5px solid var(--filet); border-radius: 10px; background: var(--fond); color: var(--encre); max-width: 100%; }
+.nt-stats-resume { color: var(--gris); margin: 0 0 12px; }
+#stats-liste { display: grid; gap: 12px; }
+.nt-stat { border: 1px solid var(--filet); border-left: 6px solid var(--filet); border-radius: 12px; background: var(--fond); padding: 12px 14px; min-width: 0; }
+.nt-stat.nt-juste { border-left-color: var(--vert); } .nt-stat.nt-partiel { border-left-color: var(--quiz-partiel); } .nt-stat.nt-faux { border-left-color: var(--rouge); }
+.nt-stat h3 { margin: 0; font-size: 1.05rem; overflow-wrap: anywhere; }
+.nt-stat-chiffres { margin: 2px 0 6px; color: var(--gris); font-size: .9rem; }
+.nt-stat-taux { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.nt-jauge { flex: 0 1 220px; min-width: 120px; height: 10px; border-radius: 999px; background: var(--fond-2); border: 1px solid var(--filet); overflow: hidden; }
+.nt-jauge-barre { display: block; height: 100%; background: var(--vert); }
+.nt-stat.nt-partiel .nt-jauge-barre { background: var(--quiz-partiel); } .nt-stat.nt-faux .nt-jauge-barre { background: var(--rouge); }
+.nt-stat-pc { font-weight: 600; font-size: .92rem; }
+.nt-stat-sous { margin: 10px 0 4px; font-weight: 600; font-size: .92rem; }
+.nt-stat-faux { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.nt-stat-faux li { overflow-wrap: anywhere; }
+.nt-quoi { color: var(--gris); font-size: .9rem; }
+.nt-fois { font-weight: 700; }
+.nt-autres { color: var(--gris); font-size: .88rem; }
+.nt-stat-enonce { margin-top: 8px; }
+.nt-stat-enonce summary { cursor: pointer; color: var(--bleu); font-size: .92rem; }
+.nt-stat-corps { margin-top: 8px; }
+@media (max-width: 520px) { .nt-q, .nt-stat { padding: 10px; } .nt-partie { padding: 8px; } .nt-rap-liste, .nt-parties { gap: 10px; } }
 </style>
 </head>
 <body>
@@ -53,6 +139,7 @@
     </section>
     <section class="gouttiere" style="padding-bottom:40px">
       <div class="colonne">
+       <div id="nt-onglets">
         <div class="nt-outils">
           <select id="quiz" aria-label="Quiz"></select>
           <select id="vue" aria-label="Tentatives affichées">
@@ -63,14 +150,41 @@
           <input id="cherche" type="search" placeholder="Pseudo…" aria-label="Chercher un pseudo">
           <button class="bouton secondaire petit" id="actualiser" type="button">Actualiser</button>
           <button class="bouton petit" id="csv" type="button">Télécharger (CSV)</button>
+          <button class="bouton secondaire petit" id="csv-detail" type="button">Réponses détaillées (CSV)</button>
         </div>
-        <div class="nt-table-cadre"><table class="nt-table"><thead><tr>
-          <th>Pseudo</th><th>Note / 20</th><th>Questions justes</th><th>État</th><th>Date</th><th>Durée</th><th></th>
-        </tr></thead><tbody id="lignes"></tbody></table></div>
+        <div class="nt-onglets-barre" role="tablist">
+          <button class="nt-onglet actif" id="onglet-resultats" type="button" role="tab" aria-selected="true">Résultats</button>
+          <button class="nt-onglet" id="onglet-stats" type="button" role="tab" aria-selected="false">Statistiques par question</button>
+        </div>
+       </div>
+        <div id="vue-liste">
+          <div class="nt-table-cadre"><table class="nt-table"><thead><tr>
+            <th>Pseudo</th><th>Note / 20</th><th>Questions justes</th><th>État</th><th>Date</th><th>Durée</th><th></th>
+          </tr></thead><tbody id="lignes"></tbody></table></div>
+        </div>
+        <div id="vue-stats" hidden>
+          <div class="nt-stats-outils">
+            <select id="regroupe" aria-label="Regroupement">
+              <option value="question">Par question (variantes d’une même famille regroupées)</option>
+              <option value="theme">Par sous-thème</option>
+            </select>
+            <select id="tri" aria-label="Ordre">
+              <option value="ratees">Les moins réussies d’abord</option>
+              <option value="posees">Les plus posées d’abord</option>
+              <option value="banque">Ordre des banques</option>
+            </select>
+          </div>
+          <p class="nt-stats-resume" id="stats-resume"></p>
+          <div id="stats-liste"></div>
+        </div>
+        <div id="rapport" hidden>
+          <button class="bouton secondaire petit nt-rap-retour" id="rapport-retour" type="button"><span aria-hidden="true">‹</span> Retour aux résultats</button>
+          <div id="rapport-corps"></div>
+        </div>
       </div>
     </section>
   </div>
 </main>
-<script src="assets/notes.js?v=20261116c"></script>
+<script src="assets/notes.js?v=20261117r"></script>
 </body>
 </html>

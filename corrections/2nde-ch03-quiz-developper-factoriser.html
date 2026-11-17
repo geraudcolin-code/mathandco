@@ -43,7 +43,7 @@ function charger(src){ return new Promise(function (ok, ko) { var s = document.c
 function demarrer(DATA){
   window.QUIZ = Object.assign(window.QUIZ || {}, DATA.quiz);
   window.QUIZ_CONFIG = Object.assign(window.QUIZ_CONFIG || {}, DATA.config);
-  charger('../assets/quiz.js?v=20261117a').then(function () { return charger('../assets/mathlive/mathlive.min.js'); });
+  charger('../assets/quiz.js?v=20261117r').then(function () { return charger('../assets/mathlive/mathlive.min.js'); });
 }
 function octets(b64){ const t = atob(b64), u = new Uint8Array(t.length); for (let k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
 async function dechiffrer(mdp){

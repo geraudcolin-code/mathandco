@@ -57,6 +57,7 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOSSIER = os.path.join(RACINE, 'corrections')
 ITER = 600_000
 BALISE = '<script src="../assets/deverrou.js?v=3" data-mathandco></script>'
+BALISE_POLY = '<script src="../assets/cours-croix.js?v=1"></script>'   # polys : croix ✕ de la règle du cours
 
 # Classes, dans l'ordre d'affichage : préfixe du nom de fichier -> (identifiant, nom affiché)
 # Noms affichés (21 oct., M. Colin) : « Première spécialité », « Première spécifique », « Terminale spécialité » ;
@@ -328,6 +329,9 @@ def ajouter(chemins, mdp, mdp_prof):
         if 'data-mathandco' not in page:
             i = page.rfind('</body>')
             page = page[:i] + BALISE + page[i:] if i >= 0 else page + BALISE
+        if info['fichier'].endswith('-poly-a-trous.html') and 'cours-croix.js' not in page:   # croix de la règle du cours
+            i = page.rfind('</body>')                                                      # (M. Colin, 17 nov. 2026)
+            page = page[:i] + BALISE_POLY + page[i:] if i >= 0 else page + BALISE_POLY
         cible = os.path.join(DOSSIER, info['fichier'])
         open(cible, 'w', encoding='utf-8').write(page)
         rechiffrer_page(cible, [mdp, mdp_prof], vers(titre))

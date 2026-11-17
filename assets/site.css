@@ -808,6 +808,28 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-tab .tcell.tval { padding: 0 4px; }
 .qv-tab .trait-choix { cursor: default; }
 .qv-tab .trait-choix::before { display: none; }
+/* Quiz TERM CH05 (16 nov. 2026) : tableau de variations avec la ligne « signe de f′(x) » (elle garde la hauteur d'un tableau
+   de signes), tableau figé dans un exercice, ligne « convexité de f » de la correction, figures dans les cartes d'un QCM */
+.quiz-var .tcell.tsg, .quiz-var .tcell.tint.tsg:not(.tx) { min-height: 48px; }
+.qv-tab.quiz-var .tcell.tsg, .qv-tab.quiz-var .tcell.tint.tsg:not(.tx) { min-height: 42px; }
+.qz-sv.fige .tab-plus, .qz-sv.fige .tab-suppr { visibility: hidden; }
+.qz-sv.fige .signe.sint::before, .qz-sv.fige .trait-choix::before { border-color: transparent; background: none; }
+.qz-sv.fige .fleche-longue { color: var(--encre); }
+.qv-tab .tcell.tcv { min-height: 42px; }
+.qv-cvx { font-weight: 600; font-size: .9em; }
+.qv-convexe { color: #00A651; }
+.qv-concave { color: #2F5FA8; }
+@media (max-width: 520px) { .qv-cvx { font-size: .74em; letter-spacing: -.01em; } .qv-tab .tcell.tcv.tint { padding: 0; }
+  .qv-avec-cvx .tcell.tlab { max-width: 5.2em; font-size: .86em; padding: 0 5px; } .qv-avec-cvx .tcell.tval { padding: 0 2px; } }
+.qz-prop-txt img { display: block; max-width: 100%; height: auto; margin: 2px 0; }
+.qz-figures .qz-props { grid-template-columns: 1fr; }
+.quiz-enonce .qz-formule, .qv-rappel-texte .qz-formule, .qz-partie-enonce .qz-formule { text-align: center; font-size: 1.12em; margin: .5em 0; }
+.qz-figures .qz-prop-txt img { width: 100%; max-width: 520px; }
+/* figure en deux versions (TERM CH05, 17 nov. 2026 : paires de courbes) : côte à côte sur un grand écran, l'une sous l'autre
+   sous 520 px, pour des graduations lisibles sur téléphone */
+.qz-prop-txt img.qz-ecran-etroit, .quiz-enonce img.qz-ecran-etroit { display: none; }
+@media (max-width: 520px) { .qz-prop-txt img.qz-ecran-large, .quiz-enonce img.qz-ecran-large { display: none; }
+  .qz-prop-txt img.qz-ecran-etroit, .quiz-enonce img.qz-ecran-etroit { display: block; max-width: 340px; } }
 
 /* chaînes d'équivalences : « ⟺ » dans sa colonne ; justification dans la marge, entre deux lignes, avec une flèche courbe */
 .qv-al { position: relative; }
@@ -1003,6 +1025,7 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
 .qz-cours { margin: 6px -24px 18px; }
 .qz-cours-b { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 0; color: var(--gris); }
 .qz-cours img { display: block; width: 100%; height: auto; background: #fff; box-shadow: 0 6px 14px rgba(0, 0, 0, .24); }
+.qz-cours-etroit .qz-cours-loupe { justify-content: flex-start; }   /* capture étroite (échelle uniforme) : « Agrandir » sous elle */
 .qz-cours-loupe { display: flex; align-items: center; justify-content: flex-end; gap: 5px; padding: 8px 24px 0; font: 600 .74rem/1.2 var(--f-texte); color: var(--gris); }
 .qz-cours-loupe svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .qz-cours-b:focus-visible { outline: 3px solid var(--bleu); outline-offset: 2px; }

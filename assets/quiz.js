@@ -378,7 +378,7 @@
     if (!q.pieges) return '';
     var c = canon(expr);
     for (var i = 0; i < q.pieges.length; i++) {
-      try { if (canon(analyser(q.pieges[i].si)) === c) return q.pieges[i].msg; } catch (e) {}
+      try { if (canon(lireTeX(q, q.pieges[i].si)) === c) return q.pieges[i].msg; } catch (e) {}
     }
     return '';
   }
@@ -425,10 +425,38 @@
     return latex;
   }
 
+  /* Nombre e (quiz TERM CH05, 16 nov. 2026) : avec l'option nombreE d'une question (ou d'une case), la lettre e tapée
+     par l'élève (clavier de l'ordinateur, onglet abc) est le nombre d'Euler, comme la touche e^□ de l'onglet f(x)
+     (\mathrm{e}) ; sans l'option, rien ne change (e reste une lettre). */
+  function avecE(n) {
+    if (!n || typeof n !== 'object') return n;
+    if (n.t === 'var' && n.n === 'e') return { t: 'num', v: Math.E, cst: 'e' };
+    var c = {}; for (var x in n) c[x] = (x === 'a' || x === 'b') ? avecE(n[x]) : n[x];
+    return c;
+  }
+  function lireTeX(q, latex) { var a = analyser(latex); return q && q.nombreE ? avecE(a) : a; }
+  /* Réponse en toutes lettres « aucun » (quiz TERM CH05 : « s'il n'y a pas de point d'inflexion, écrire aucun ») :
+     question avec l'option aucun: true, ou attendu: 'aucun'. Le mot tapé (lettres, \text{…}, \mathrm{…}) est reconnu. */
+  function motTape(latex) {
+    var t = String(latex || '').replace(/\\(text|mathrm|textrm|operatorname|mathit)\s*/g, '').replace(/\\[,;:! ]|~|\s|[{}]/g, '');
+    return /^[a-zA-ZÀ-ÿ]{3,}$/.test(t) ? t.toLowerCase() : '';
+  }
+  function verifierAucun(q, latex) {           // null : la question n'attend pas de mot ; sinon le résultat
+    var attAucun = String(q.attendu).trim() === 'aucun';
+    if (!q.aucun && !attAucun) return null;
+    if (q.gauche) latex = String(latex || '').replace(new RegExp('^\\s*' + q.gauche + '\\s*=\\s*'), '');   // « x = aucun » (TERM CH05, 17 nov. 2026)
+    var mot = motTape(latex);
+    if (/^aucune?s?$/.test(mot)) return attAucun ? { etat: 'juste' } : { etat: 'faux', msg: q.indiceAucun || q.indiceFaux || '' };
+    if (mot) return { etat: 'lecture', msg: 'Écris un nombre, ou le mot « aucun ».' };
+    if (!attAucun) return null;
+    try { lireTeX(q, nettoyer(q, latex)); } catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? 'Écris un nombre, ou le mot « aucun ».' : 'Je n’arrive pas à lire cette écriture.' }; }
+    return { etat: 'faux', msg: q.indiceFaux || '' };
+  }
   function verifierExpr(q, latex) {
-    var arbre;
+    var arbre, ra = verifierAucun(q, latex);
+    if (ra) return ra;
     latex = nettoyer(q, latex);
-    try { arbre = analyser(latex); }
+    try { arbre = lireTeX(q, latex); }
     catch (e) {
       return { etat: 'lecture', msg: e.message === 'vide' ? 'La réponse est incomplète : une case est restée vide.' : 'Je n’arrive pas à lire cette écriture. Vérifie les parenthèses et les cases.' };
     }
@@ -439,14 +467,14 @@
         return { etat: 'faux', msg: q.gauche ? 'Le membre de gauche doit être ' + q.gauche + '.' : 'On attend une expression, pas une équation.' };
       }
       expr = arbre.b;
-    } else if (q.gaucheObligatoire) {
-      return { etat: 'faux', msg: 'Écris une équation de la forme ' + q.gauche + ' = …' };
+    } else if (q.gaucheObligatoire) {             // option gaucheGris (TERM CH05, 17 nov. 2026) : « y = » oublié = message gris, pas une erreur
+      return { etat: q.gaucheGris ? 'lecture' : 'faux', msg: 'Écris une équation de la forme ' + q.gauche + ' = …' };
     }
     var vu = variables(expr);
     for (var v in vu) {
       if (vars.indexOf(v) < 0) return { etat: 'faux', msg: v === q.gauche ? 'Il reste ' + v + ' dans le membre de droite.' : 'Ta réponse contient la lettre ' + v + ', qui n’a rien à faire ici.' };
     }
-    var attendu = analyser(q.attendu);
+    var attendu = lireTeX(q, q.attendu);
     var egal;
     if (q.tolerance != null) {
       var va = evaluer(expr, {}), vb = evaluer(attendu, {});
@@ -483,7 +511,7 @@
   function piege(q, expr, vars) {             // erreurs classiques prévues : message dédié
     if (!q.pieges) return '';
     for (var i = 0; i < q.pieges.length; i++) {
-      try { if (equivalentes(expr, analyser(q.pieges[i].si), vars, q.positifs)) return q.pieges[i].msg; } catch (e) {}
+      try { if (equivalentes(expr, lireTeX(q, q.pieges[i].si), vars, q.positifs)) return q.pieges[i].msg; } catch (e) {}
     }
     return '';
   }
@@ -494,7 +522,7 @@
     // rien tant que tout n'est pas rempli (sinon une 1re case fausse enregistrait 0 en quiz noté, et « Remplis toutes les
     // cases » trahissait qu'elle était juste)
     for (var i0 = 0; i0 < q.cases.length; i0++) {
-      var l0 = latexs[i0], r0 = String(l0 || '').trim() ? verifierExpr({ attendu: q.cases[i0].attendu, forme: 'libre', variable: q.cases[i0].variable }, l0) : { etat: 'lecture', msg: 'vide' };
+      var l0 = latexs[i0], r0 = String(l0 || '').trim() ? verifierExpr({ attendu: q.cases[i0].attendu, forme: 'libre', variable: q.cases[i0].variable, nombreE: q.cases[i0].nombreE || q.nombreE }, l0) : { etat: 'lecture', msg: 'vide' };
       if (r0.etat === 'lecture') return { etat: 'lecture', msg: /vide/.test(r0.msg) ? 'Remplis toutes les cases.' : r0.msg };
     }
     if (q.variantes) for (var vi = 0; vi < q.variantes.length; vi++) {   // autre remplissage juste ((x − 3)² au lieu de (x + 3)², 15 nov. 2026)
@@ -505,13 +533,13 @@
       var inv = [latexs[1], latexs[0]], tout = true;
       for (var j = 0; j < 2; j++) {
         var cj = q.cases[j];
-        if (verifierExpr({ attendu: cj.attendu, forme: cj.forme || 'nombre', variable: cj.variable, tolerance: cj.tolerance, suffixe: cj.suffixe }, inv[j]).etat !== 'juste') tout = false;
+        if (verifierExpr({ attendu: cj.attendu, forme: cj.forme || 'nombre', variable: cj.variable, tolerance: cj.tolerance, suffixe: cj.suffixe, nombreE: cj.nombreE || q.nombreE }, inv[j]).etat !== 'juste') tout = false;
       }
-      if (tout && verifierExpr({ attendu: q.cases[0].attendu, forme: 'libre' }, latexs[0]).etat !== 'juste') return { etat: 'faux', msg: 'Les deux valeurs sont justes, mais inversées.' };
+      if (tout && verifierExpr({ attendu: q.cases[0].attendu, forme: 'libre', nombreE: q.cases[0].nombreE || q.nombreE }, latexs[0]).etat !== 'juste') return { etat: 'faux', msg: 'Les deux valeurs sont justes, mais inversées.' };
     }
     for (var i = 0; i < q.cases.length; i++) {
       var c = q.cases[i];
-      var sq = { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges };
+      var sq = { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, nombreE: c.nombreE || q.nombreE };
       var r = verifierExpr(sq, latexs[i]);
       if (r.etat === 'lecture') return { etat: 'lecture', msg: /vide/.test(r.msg) || !String(latexs[i] || '').trim() ? 'Remplis toutes les cases.' : r.msg };
       if (r.etat !== 'juste') {
@@ -530,7 +558,7 @@
     var rem = [q.cases.map(function (c) { return c.attendu; })].concat(q.variantes || []), mieux = null;
     rem.forEach(function (att) {
       var d = q.cases.map(function (c, j) {
-        try { return verifierExpr({ attendu: att[j], forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe }, latexs[j]).etat === 'juste'; } catch (e) { return false; }
+        try { return verifierExpr({ attendu: att[j], forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, nombreE: c.nombreE || q.nombreE }, latexs[j]).etat === 'juste'; } catch (e) { return false; }
       });
       if (!mieux || d.filter(Boolean).length > mieux.filter(Boolean).length) mieux = d;
     });
@@ -577,6 +605,7 @@
     var s = String(latex || '').replace(/^\s*S\s*=\s*/, '');
     var tk = decouper(s);
     if (tk.length === 1 && tk[0] === '\\varnothing') return [];
+    if (/^(\\mathbb\{R\}|\\R|\\Reals|ℝ)$/.test(tk.join(''))) return [{ a: -Infinity, b: Infinity, fa: false, fb: false }];   // ℝ (quiz TERM CH05)
     if (!tk.length) throw new Erreur('vide');
     var parts = [[]];
     tk.forEach(function (t) { if (t === '\\cup') parts.push([]); else parts[parts.length - 1].push(t); });
@@ -635,22 +664,29 @@
 
   /* ----- tableaux de signes et de variations : état lu dans le tableau ----- */
   function verifierTableau(q, e) {
+    if (e && e.erreur) return { etat: 'lecture', msg: e.erreur };
     var b = q.bornes || [-Infinity, Infinity];
     if (!(Math.abs(e.gauche - b[0]) < 1e-9 || e.gauche === b[0]) || !(Math.abs(e.droite - b[1]) < 1e-9 || e.droite === b[1]))
       return { etat: 'faux', msg: q.bornes ? 'Les extrémités de la ligne des x sont les bornes de l’intervalle d’étude.' : 'Regarde les extrémités de la ligne des x.' };
     var vals = e.valeurs;
     var tous = [e.gauche].concat(vals, [e.droite]);
     for (var i = 1; i < tous.length; i++) if (!(tous[i] > tous[i - 1])) return { etat: 'faux', msg: 'Les valeurs de x doivent être rangées dans l’ordre croissant.' };
-    var att = q.valeurs;
+    var att = q.valeurs.map(nbTableau);
     var memes = vals.length === att.length && vals.every(function (v, i) { return Math.abs(v - att[i]) < 1e-9; });
     if (!memes) return { etat: 'faux', msg: q.type === 'variations' ? 'Les valeurs placées sur la ligne des x ne sont pas les bonnes (on y met les x où le sens de variation change).' : 'Les valeurs placées sur la ligne des x ne sont pas les bonnes.' };
     if (q.type === 'variations') {
+      var ls = q.ligneSigne;                        // ligne « signe de f′(x) » (quiz TERM CH05) : vérifiée avant les flèches
+      if (ls) {
+        for (var t0 = 0; t0 < att.length; t0++) if (e.traits[t0] !== ls.traits[t0]) return { etat: 'faux', msg: 'Ligne du signe : vérifie les traits sous les valeurs de x.' };
+        if (e.signes.some(function (sg) { return !sg; })) return { etat: 'faux', msg: 'Il reste des signes à placer.' };
+        for (var k0 = 0; k0 < e.signes.length; k0++) if (e.signes[k0] !== ls.signes[k0]) return { etat: 'faux', msg: 'Il y a une erreur dans les signes.' };
+      }
       if (e.fleches.some(function (f) { return !f; })) return { etat: 'faux', msg: 'Il reste des flèches à placer.' };
       for (var f = 0; f < e.fleches.length; f++) if (e.fleches[f] !== q.fleches[f]) return { etat: 'faux', msg: 'Il y a une erreur dans le sens des flèches.' };
       for (var m = 0; m < q.images.length; m++) {
         if (q.images[m] == null) continue;
         if (!isFinite(e.images[m])) return { etat: 'lecture', msg: 'Écris les images sous chaque valeur de x (au bout des flèches).' };
-        if (Math.abs(e.images[m] - q.images[m]) > 1e-9) return { etat: 'faux', msg: 'Les flèches sont justes : vérifie les valeurs écrites au bout des flèches.' };
+        if (Math.abs(e.images[m] - nbTableau(q.images[m])) > 1e-9) return { etat: 'faux', msg: 'Les flèches sont justes : vérifie les valeurs écrites au bout des flèches.' };
       }
       return { etat: 'juste' };
     }
@@ -710,7 +746,7 @@
   }
   function sansReponse(x) { return x == null || x === '' || (typeof x === 'string' && !x.trim()) || (typeof x === 'number' && x < 0); }
   function caseVerif(c) {                       // une case (tableau, arbre) vérifiée comme une question « expr »
-    return { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, positifs: c.positifs };
+    return { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, positifs: c.positifs, nombreE: c.nombreE };
   }
   function estVraiFaux(q) { return q.droite && q.droite.length === 2 && /^vrai$/i.test(String(q.droite[0]).trim()) && /^faux$/i.test(String(q.droite[1]).trim()); }
 
@@ -857,6 +893,7 @@
       case 'qcm': return Array.isArray(rep) ? !rep.length : sansReponse(rep);
       case 'vf': return rep !== true && rep !== false && sansReponse(rep);
       case 'cases': case 'tableau': case 'arbre': case 'associer': case 'coords': return !rep || !rep.length || rep.every(sansReponse);
+      case 'signes': case 'variations': return !rep || !!rep.vide;
       default: return sansReponse(rep);
     }
   }
@@ -914,9 +951,9 @@
       case 'ensemble': return q.valeurs.map(num).join(';');
       case 'coords': return q.valeurs.slice();
       case 'signes': case 'variations': {
-        var b = q.bornes || [-Infinity, Infinity];
-        return { gauche: b[0], droite: b[1], valeurs: q.valeurs.slice(), traits: q.ligne ? q.ligne.traits.slice() : [], signes: q.ligne ? q.ligne.signes.slice() : [],
-          fleches: (q.fleches || []).slice(), images: (q.images || []).slice() };
+        var b = q.bornes || [-Infinity, Infinity], lg = q.ligne || q.ligneSigne;
+        return { gauche: b[0], droite: b[1], valeurs: q.valeurs.map(nbTableau), traits: lg ? lg.traits.slice() : [], signes: lg ? lg.signes.slice() : [],
+          fleches: (q.fleches || []).slice(), images: (q.images || []).map(nbTableau) };
       }
       case 'repere':
         return q.mode === 'droite' ? (q.droite.x != null ? [[q.droite.x, 0], [q.droite.x, 1]] : [[0, q.droite.p], [3, 3 * q.droite.m + q.droite.p]])
@@ -1344,32 +1381,47 @@
     if (v === -Infinity) return '-\\infty';
     return String(Math.round(v * 1000) / 1000).replace('.', '{,}');
   }
+  /* Valeur d'une ligne des x ou d'une image donnée dans la question : un nombre, ou du LaTeX (« \frac{5}{3} », « 2\mathrm{e} »,
+     quiz TERM CH05) ; texTableau : son écriture dans le tableau de la correction. */
+  function nbTableau(v) { return v == null ? v : typeof v === 'number' ? v : valeurDe(String(v)); }
+  function texTableau(v) { return typeof v === 'number' ? nombreTeX(v) : String(v); }
   Quiz.prototype.tableau = function (q, zone) {
-    var vari = q.type === 'variations';
-    var wrap = el('div', 'quiz-tab-cadre'), tab = el('div', 'quiz-tab' + (vari ? ' quiz-var' : ''));
+    var s = saisieSV(q); zone.appendChild(s.el);
+    return function () { return verifierReponse(q, s.lire()); };
+  };
+  /* Saisie d'un tableau de signes ou de variations (question seule, ou partie d'un exercice depuis le 16 nov. 2026) ;
+     q.ligneSigne (type 'variations', quiz TERM CH05) : une ligne « signe de f′(x) » (traits et signes) entre la ligne des x
+     et celle des variations, comme dans les tableaux de M. Colin. lire() rend l'état du tableau (format de
+     reponseAttendue) ; une valeur illisible : e.erreur (message gris) ; rien de rempli : e.vide. */
+  function saisieSV(q) {
+    var vari = q.type === 'variations', ls = vari ? q.ligneSigne : null, avecSigne = !vari || !!ls;
+    var box = el('div', 'qz-sv'), wrap = el('div', 'quiz-tab-cadre'), tab = el('div', 'quiz-tab' + (vari ? ' quiz-var' : '') + (ls ? ' quiz-var-signe' : ''));
     var gauche = nouveauChamp('quiz-champ petit', 'Première valeur de la ligne x');
     var droite = nouveauChamp('quiz-champ petit', 'Dernière valeur de la ligne x');
     var racines = [];                 // { mf, trait, img }
-    var inter = [''];                 // un signe ou une flèche par intervalle
+    var inter = [''];                 // un signe (tableau de signes) ou une flèche (variations) par intervalle
+    var sgn = [''];                   // tableau de variations avec ligne de signe : un signe par intervalle
     var imgG = nouveauChamp('quiz-champ petit', 'Image de la première valeur'), imgD = nouveauChamp('quiz-champ petit', 'Image de la dernière valeur');
     var lab = el('span', null, '\\(x\\)'); rendre(lab);
     var labL = el('span', null, vari ? (q.label || 'variation de \\(f\\)') : q.ligne.label); rendre(labL);
+    var labS = ls ? el('span', null, ls.label || 'signe de \\(f\'(x)\\)') : null; if (labS) rendre(labS);
     var finiG = !q.bornes || isFinite(q.bornes[0]), finiD = !q.bornes || isFinite(q.bornes[1]);
     if (!q.bornes) finiG = finiD = false;
+    var touche = false, fige = false;
 
     function cellule(classe, contenu) { var c = el('div', 'tcell ' + (classe || '')); if (contenu) c.appendChild(contenu); tab.appendChild(c); return c; }
     function bouton(classe, texte, aria, action) {
       var b = el('button', classe, texte); b.type = 'button'; b.setAttribute('aria-label', aria);
-      b.addEventListener('click', action); return b;
+      b.addEventListener('click', function () { touche = true; action(); }); return b;
     }
     function ajouter(k) {             // nouvelle valeur entre la valeur k et la valeur k+1
       var mf = nouveauChamp('quiz-champ petit', 'Valeur de x');
       racines.splice(k, 0, { mf: mf, trait: 'pointille', img: vari ? nouveauChamp('quiz-champ petit', 'Image de cette valeur') : null });
-      inter.splice(k + 1, 0, '');
+      inter.splice(k + 1, 0, ''); sgn.splice(k + 1, 0, '');
       dessiner();
       setTimeout(function () { try { mf.focus(); } catch (e) {} }, 30);
     }
-    function retirer(k) { racines.splice(k, 1); inter.splice(k + 1, 1); dessiner(); }
+    function retirer(k) { racines.splice(k, 1); inter.splice(k + 1, 1); sgn.splice(k + 1, 1); dessiner(); }
     function position(i) {            // valeur n° i (0 = extrémité gauche) : en haut, en bas ou au milieu
       var L = inter[i - 1], R = inter[i];
       if (L === '↗' || R === '↘') return 'haut';
@@ -1378,6 +1430,30 @@
     }
     function majPositions() {
       Array.prototype.forEach.call(tab.querySelectorAll('.timg'), function (c) { c.dataset.pos = position(+c.dataset.i); });
+    }
+    function ligneSignes(T, classe) {  // traits sous les valeurs et un signe par intervalle (T : tableau des signes)
+      cellule('tval tvide' + classe);
+      for (var m = 0; m <= racines.length; m++) {
+        (function (m) {
+          var cyc = ['', '+', '−'];
+          var b = bouton('signe sint', T[m], 'Signe sur l’intervalle ' + (m + 1), function () {
+            T[m] = cyc[(cyc.indexOf(T[m]) + 1) % cyc.length]; b.textContent = T[m]; b.dataset.v = T[m];
+          });
+          b.dataset.v = T[m];
+          cellule('tint' + classe, b);
+        })(m);
+        if (m < racines.length) (function (m) {
+          var r = racines[m];
+          var t = bouton('trait-choix', '', '', function () {
+            r.trait = TRAITS[(TRAITS.indexOf(r.trait) + 1) % 3]; r.touche = true;
+            t.dataset.t = r.trait; t.dataset.touche = '1'; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
+          });
+          t.dataset.t = r.trait; if (r.touche) t.dataset.touche = '1'; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
+          t.innerHTML = '<span>0</span>';
+          cellule('tval ttrait' + classe, t);
+        })(m);
+      }
+      cellule('tval tvide' + classe);
     }
     function dessiner() {
       var n = racines.length;
@@ -1399,60 +1475,58 @@
         }
       }
       cellule('tx tval', droite);
-      // ligne du signe ou des variations
+      if (ls) { cellule('tlab tsg', labS); ligneSignes(sgn, ' tsg'); }     // ligne « signe de f′(x) »
+      // ligne du signe (tableau de signes) ou des variations
       cellule('tlab', labL);
-      if (vari) { var cg = cellule('tval timg', finiG ? imgG : null); cg.dataset.i = 0; }
-      else cellule('tval tvide');
+      if (!vari) { ligneSignes(inter, ''); return; }
+      var cg = cellule('tval timg', finiG ? imgG : null); cg.dataset.i = 0;
       for (var m = 0; m <= n; m++) {
         (function (m) {
-          var cyc = vari ? FLECHES : ['', '+', '−'];
-          var b = bouton(vari ? 'signe sint fleche' : 'signe sint', vari ? flecheLongue(inter[m]) : inter[m], (vari ? 'Sens de variation' : 'Signe') + ' sur l’intervalle ' + (m + 1), function () {
-            inter[m] = cyc[(cyc.indexOf(inter[m]) + 1) % cyc.length];
-            if (vari) b.innerHTML = flecheLongue(inter[m]); else b.textContent = inter[m];
-            b.dataset.v = inter[m];
-            if (vari) { b.setAttribute('aria-label', 'Sens de variation sur l’intervalle ' + (m + 1) + (inter[m] ? ' : ' + (inter[m] === '↗' ? 'croissante' : 'décroissante') : '')); majPositions(); }
+          var b = bouton('signe sint fleche', flecheLongue(inter[m]), 'Sens de variation sur l’intervalle ' + (m + 1), function () {
+            inter[m] = FLECHES[(FLECHES.indexOf(inter[m]) + 1) % FLECHES.length];
+            b.innerHTML = flecheLongue(inter[m]); b.dataset.v = inter[m];
+            b.setAttribute('aria-label', 'Sens de variation sur l’intervalle ' + (m + 1) + (inter[m] ? ' : ' + (inter[m] === '↗' ? 'croissante' : 'décroissante') : '')); majPositions();
           });
           b.dataset.v = inter[m];
           cellule('tint', b);
         })(m);
-        if (m < n) {
-          if (vari) { var ci = cellule('tval timg', racines[m].img); ci.dataset.i = m + 1; }
-          else (function (m) {
-            var r = racines[m];
-            var t = bouton('trait-choix', '', '', function () {
-              r.trait = TRAITS[(TRAITS.indexOf(r.trait) + 1) % 3]; r.touche = true;
-              t.dataset.t = r.trait; t.dataset.touche = '1'; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
-            });
-            t.dataset.t = r.trait; if (r.touche) t.dataset.touche = '1'; t.setAttribute('aria-label', 'Trait : ' + NOM_TRAIT[r.trait] + ' (toucher pour changer)');
-            t.innerHTML = '<span>0</span>';
-            cellule('tval ttrait', t);
-          })(m);
-        }
+        if (m < n) { var ci = cellule('tval timg', racines[m].img); ci.dataset.i = m + 1; }
       }
-      if (vari) { var cd = cellule('tval timg', finiD ? imgD : null); cd.dataset.i = n + 1; majPositions(); }
-      else cellule('tval tvide');
+      var cd = cellule('tval timg', finiD ? imgD : null); cd.dataset.i = n + 1; majPositions();
     }
     dessiner();
-    wrap.appendChild(tab); zone.appendChild(wrap);
+    wrap.appendChild(tab); box.appendChild(wrap);
     var aide = el('p', 'quiz-aide-tab', vari
-      ? 'Le bouton <b>+</b> ajoute une valeur de \\(x\\) (× la retire). Touche un rond pour tracer la flèche (montante, puis descendante), et écris les images au bout des flèches.'
+      ? 'Le bouton <b>+</b> ajoute une valeur de \\(x\\) (× la retire).' + (ls ? ' Touche une case de la ligne du signe pour y mettre + ou −, et un trait pour choisir : pointillés, trait avec un 0, ou double trait (valeur interdite).' : '') + ' Touche un rond pour tracer la flèche (montante, puis descendante), et écris les images au bout des flèches.'
       : 'Le bouton <b>+</b> ajoute une valeur de \\(x\\) (× la retire). Touche une case pour y mettre + ou −, et un trait pour choisir : pointillés, trait avec un 0, ou double trait (valeur interdite).');
-    zone.appendChild(aide); rendre(aide);
+    box.appendChild(aide); rendre(aide);
 
-    function lire(mf) { return evaluer(analyser(mf.value), {}); }
+    function lire(mf) { return evaluer(lireTeX(q, mf.value), {}); }
     function lireSiRempli(mf) { if (!mf.value) return NaN; try { return lire(mf); } catch (e) { return NaN; } }
-    return function () {
-      var e = { valeurs: [], traits: [], signes: inter.slice(), fleches: inter.slice(), images: [] };
-      try { e.gauche = lire(gauche); e.droite = lire(droite); racines.forEach(function (r) { e.valeurs.push(lire(r.mf)); e.traits.push(r.trait); }); }
-      catch (err) { return { etat: 'lecture', msg: err.message === 'vide' ? (q.bornes ? 'Remplis toutes les cases de la ligne des x.' : 'Remplis toutes les cases de la ligne des x (aux extrémités : −∞ et +∞).') : 'Une valeur de la ligne des x est illisible.' }; }
-      if (vari) {
-        e.images.push(finiG ? lireSiRempli(imgG) : null);
-        racines.forEach(function (r) { e.images.push(lireSiRempli(r.img)); });
-        e.images.push(finiD ? lireSiRempli(imgD) : null);
+    function champs() { return [gauche, droite].concat(racines.map(function (r) { return r.mf; }), vari ? [imgG, imgD].concat(racines.map(function (r) { return r.img; })) : []); }
+    return {
+      el: box,
+      lire: function () {
+        var e = { valeurs: [], traits: [], signes: (ls ? sgn : inter).slice(), fleches: vari ? inter.slice() : [], images: [] };
+        e.vide = !touche && !racines.length && champs().every(function (mf) { return !mf || !String(mf.value || '').trim(); }) && inter.every(function (x) { return !x; });
+        try { e.gauche = lire(gauche); e.droite = lire(droite); racines.forEach(function (r) { e.valeurs.push(lire(r.mf)); e.traits.push(r.trait); }); }
+        catch (err) { e.erreur = err.message === 'vide' ? (q.bornes ? 'Remplis toutes les cases de la ligne des x.' : 'Remplis toutes les cases de la ligne des x (aux extrémités : −∞ et +∞).') : 'Une valeur de la ligne des x est illisible.'; }
+        if (vari) {
+          e.images.push(finiG ? lireSiRempli(imgG) : null);
+          racines.forEach(function (r) { e.images.push(lireSiRempli(r.img)); });
+          e.images.push(finiD ? lireSiRempli(imgD) : null);
+        }
+        if (!avecSigne) e.traits = [];
+        return e;
+      },
+      marquer: function () {},
+      figer: function () {
+        fige = true; box.classList.add('fige');
+        box.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+        figerChamps(champs());
       }
-      return verifierTableau(q, e);
     };
-  };
+  }
 
   /* ----- repère : placer un point, tracer une droite (deux points), droite graduée ----- */
   var SVGNS = 'http://www.w3.org/2000/svg';
@@ -1584,7 +1658,8 @@
   function saisieQcm(q) {
     var multi = !!q.bonnes, ordre = q.propositions.map(function (_, i) { return i; });
     if (q.melanger !== false) ordre = melanger(ordre);
-    var box = el('div', 'qz-qcm' + (multi ? ' qz-multi' : '')), grille = el('div', 'qz-props'), choix = multi ? [] : null, cartes = {};
+    var figs = q.propositions.some(function (t) { return /<img\b/.test(String(t)); });   // cartes à figures (TERM CH05) : une colonne
+    var box = el('div', 'qz-qcm' + (multi ? ' qz-multi' : '') + (figs ? ' qz-figures' : '')), grille = el('div', 'qz-props'), choix = multi ? [] : null, cartes = {};
     grille.setAttribute('role', 'group'); grille.setAttribute('aria-label', multi ? 'Propositions (plusieurs réponses possibles)' : 'Propositions');
     if (multi) box.appendChild(el('p', 'qz-consigne', 'Plusieurs réponses possibles.'));
     ordre.forEach(function (i, rang) {
@@ -1704,7 +1779,12 @@
     rendre(ligne);
     mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
     entreeSuivante([mf], ctx.valider);
-    return { el: ligne, champs: [mf], lire: function () { return mf.value; },
+    var bloc = ligne;
+    if (q.type === 'intervalles') {             // partie « intervalles » (quiz TERM CH05) : l'aide du clavier, comme une question seule
+      bloc = el('div'); bloc.appendChild(ligne);
+      var ai = el('p', 'quiz-aide-tab', 'Crochets [ ], infini ∞ et réunion ∪ : onglet ≤∈ℝ du clavier (au clavier de l’ordinateur : « oo » donne ∞).'); bloc.appendChild(ai);
+    }
+    return { el: bloc, champs: [mf], lire: function () { return mf.value; },
       marquer: function (r) { mf.classList.toggle('qz-faux', r.etat === 'faux'); }, figer: function () { figerChamps([mf]); } };
   }
   function saisieCases(q, ctx) {
@@ -1797,6 +1877,7 @@
       case 'tableau': case 'arbre': return saisieGrille(q, ctx);
       case 'cases': return saisieCases(q, ctx);
       case 'exercice': return saisieExercice(q, ctx);
+      case 'signes': case 'variations': return saisieSV(q, ctx);
       default: return saisieExpr(q, ctx);
     }
   }
@@ -2552,9 +2633,13 @@
     });
     return g;
   }
-  function tableauCorrection(q, ajouter) {      // le tableau attendu, tracé pas à pas (ligne des x, puis chaque intervalle)
-    var vari = q.type === 'variations', b = q.bornes || [-Infinity, Infinity], xs = [b[0]].concat(q.valeurs, [b[1]]), n = q.valeurs.length;
-    var cadre = el('div', 'quiz-tab-cadre qv-tab-cadre'), t = el('div', 'quiz-tab qv-tab' + (vari ? ' quiz-var' : ''));
+  /* Le tableau attendu, tracé pas à pas : la ligne des x (avec les intitulés), puis, s'il y en a, la ligne du signe (les
+     traits, puis un signe par clic), la ligne des variations (l'image de départ, puis une flèche et son image par clic),
+     et (q.convexite, quiz TERM CH05) la ligne « convexité de f » : un mot par clic, convexe en vert, concave en bleu,
+     comme dans les tableaux de M. Colin. */
+  function tableauCorrection(q, ajouter) {
+    var vari = q.type === 'variations', ls = vari ? q.ligneSigne : q.ligne, b = q.bornes || [-Infinity, Infinity], xs = [b[0]].concat(q.valeurs, [b[1]]), n = q.valeurs.length;
+    var cadre = el('div', 'quiz-tab-cadre qv-tab-cadre'), t = el('div', 'quiz-tab qv-tab' + (vari ? ' quiz-var' : '') + (vari && ls ? ' quiz-var-signe' : '') + (q.convexite ? ' qv-avec-cvx' : ''));
     var cols = ['max-content'];
     for (var c = 0; c < 2 * n + 3; c++) cols.push(c % 2 === 0 ? 'auto' : 'minmax(1.8em, 1fr)');
     t.style.gridTemplateColumns = cols.join(' ');
@@ -2565,27 +2650,40 @@
     }
     var k1 = ajouter(), i, k;
     cellule('tlab tx', '\\(x\\)', k1);
-    xs.forEach(function (x, j) { cellule('tx tval', '\\(' + nombreTeX(x) + '\\)', k1); if (j < xs.length - 1) cellule('tx tint', null); });
-    cellule('tlab', vari ? (q.label || 'variation de \\(f\\)') : q.ligne.label, k1);
+    xs.forEach(function (x, j) { cellule('tx tval', '\\(' + texTableau(x) + '\\)', k1); if (j < xs.length - 1) cellule('tx tint', null); });
+    function ligneSignes(L, cls, label) {
+      cellule('tlab' + cls, label, k1);
+      var kt = ajouter();                           // les traits (0, double barre) d'abord, puis un signe par clic
+      cellule('tval tvide' + cls, null);
+      for (var i2 = 0; i2 <= n; i2++) {
+        cellule('tint' + cls, '\\(' + (L.signes[i2] === '−' ? '-' : '+') + '\\)', ajouter(), 'qv-signe');
+        if (i2 < n) {
+          var tc = cellule('tval ttrait' + cls, null), tr = el('div', 'trait-choix qv-e', '<span>0</span>');
+          tr.dataset.t = L.traits[i2]; tr.dataset.touche = '1'; tr.dataset.e = kt; tc.appendChild(tr);
+        }
+      }
+      cellule('tval tvide' + cls, null);
+    }
+    if (ls) ligneSignes(ls, vari ? ' tsg' : '', vari ? (ls.label || 'signe de \\(f\'(x)\\)') : ls.label);
     if (vari) {
+      cellule('tlab', q.label || 'variation de \\(f\\)', k1);
       var pos = function (j) { var L = q.fleches[j - 1], R = q.fleches[j]; return L === '↗' || R === '↘' ? 'haut' : L === '↘' || R === '↗' ? 'bas' : 'milieu'; };
       k = ajouter();                                // l'image de la première valeur, puis une flèche et son image par clic
       for (i = 0; i < xs.length; i++) {
         var im = q.images[i];
-        cellule('tval timg', im == null ? null : '\\(' + nombreTeX(im) + '\\)', k).dataset.pos = pos(i);
+        cellule('tval timg', im == null ? null : '\\(' + texTableau(im) + '\\)', k).dataset.pos = pos(i);
         if (i < xs.length - 1) { k = ajouter(); cellule('tint', flecheLongue(q.fleches[i]), k, 'qv-fleche'); }
       }
-    } else {
-      var kt = ajouter();                           // les traits (0, double barre) d'abord, puis un signe par clic
-      cellule('tval tvide', null);
+    }
+    if (q.convexite) {                              // ligne « convexité de f » (correction seulement)
+      cellule('tlab tcv', q.labelConvexite || 'convexité de \\(f\\)', k1);
+      cellule('tval tvide tcv', null);
       for (i = 0; i <= n; i++) {
-        cellule('tint', '\\(' + (q.ligne.signes[i] === '−' ? '-' : '+') + '\\)', ajouter(), 'qv-signe');
-        if (i < n) {
-          var tc = cellule('tval ttrait', null), tr = el('div', 'trait-choix qv-e', '<span>0</span>');
-          tr.dataset.t = q.ligne.traits[i]; tr.dataset.touche = '1'; tr.dataset.e = kt; tc.appendChild(tr);
-        }
+        var mot = String(q.convexite[i] || '');
+        cellule('tint tcv', mot, ajouter(), 'qv-cvx' + (/^convexe/.test(mot) ? ' qv-convexe' : /^concave/.test(mot) ? ' qv-concave' : ''));
+        if (i < n) cellule('tval tcv', null);
       }
-      cellule('tval tvide', null);
+      cellule('tval tvide tcv', null);
     }
     cadre.appendChild(t); return cadre;
   }
@@ -2615,21 +2713,26 @@
     f.appendChild(im); f.dataset.e = ctx.ajouter(); racine.appendChild(f);
   }
   function etapesQuestion(q, racine, ctx, titre) {
-    etapesFigure(q, racine, ctx);
-    var fig = (q.type === 'arbre' && q.arbre) || (q.type === 'tableau' && q.tableau) ? figureACompleter(q, racine, ctx, titre) : null;
-    etapesTexte(q.dev ? '' : q.correction || '', racine, ctx, fig);
+    var aComp = (q.type === 'arbre' && q.arbre) || (q.type === 'tableau' && q.tableau);
+    if (!aComp) etapesFigure(q, racine, ctx);
+    var fig = aComp ? figureACompleter(q, racine, ctx, titre) : null;
+    if (aComp) etapesFigure(q, racine, ctx);       // tableau à compléter ET figure de lecture (TERM CH05) : le tableau en tête, collé en haut
+    // « trace le tableau » (M. Colin, 12 nov. 2026) : à la fin, ou à l'étape du marqueur <!--tableau--> (16 nov. 2026)
+    // q.tableauCorrection (quiz TERM CH05) : le tableau de signes / de variations d'une question d'un autre type (lecture
+    // graphique, intervalles…), tracé de même ({type: 'signes' | 'variations', valeurs, ligne | ligneSigne, fleches, images, convexite})
+    var srcT = q.tableauCorrection || ((q.type === 'variations' && q.fleches) || (q.type === 'signes' && q.ligne) ? q : null);
+    var pose = false, tab = srcT ? function () { if (!pose) { pose = true; racine.appendChild(tableauCorrection(srcT, ctx.ajouter)); } } : null;
+    etapesTexte(q.dev ? '' : q.correction || '', racine, ctx, fig, tab);
     if (q.dev) racine.appendChild(etapesDev(q.dev, ctx.ajouter, ctx.trans, ctx.majs));   // développement pas à pas (M. Colin, 14 nov. 2026)
-    if ((q.type === 'variations' && q.fleches) || (q.type === 'signes' && q.ligne)) {   // « trace le tableau » (M. Colin, 12 nov. 2026)
-      racine.appendChild(tableauCorrection(q, ctx.ajouter));
-    }
+    if (tab) tab();
     if (fig) fig.finir(ctx.n());
   }
-  var RE_ETAPES = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]|<!--\s*(cours|v)\s*:\s*([\s\S]*?)\s*-->/g;
-  var RE_MARQUEUR = /<!--\s*(?:cours|v)\s*:/;
-  function etapesTexte(html, racine, ctx, fig) {
+  var RE_ETAPES = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]|<!--\s*(cours|v|tableau)\s*(?::\s*([\s\S]*?))?\s*-->/g;
+  var RE_MARQUEUR = /<!--\s*(?:(?:cours|v)\s*:|tableau\s*-->)/;
+  function etapesTexte(html, racine, ctx, fig, tab) {
     if (RE_MARQUEUR.test(html))                   // un marqueur glissé DANS un paragraphe le coupe en deux
       html = html.replace(/<p>([\s\S]*?)<\/p>/g, function (tout, c) {
-        return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v)\s*:[\s\S]*?-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
+        return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v)\s*:[\s\S]*?-->|<!--\s*tableau\s*-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
       }).replace(/<p>\s*<\/p>/g, '');
     var re = new RegExp(RE_ETAPES.source, 'g'), m, dernier = 0;
     function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ctx.ajouter()); racine.appendChild(b); } }
@@ -2642,6 +2745,7 @@
         else { var b = el('div', 'qv-disp'); morceau(b, '\\[' + m[2] + '\\]', ctx.ajouter()); racine.appendChild(b); }
       }
       else if (m[3] === 'cours') captureCours(m[4], racine, ctx);
+      else if (m[3] === 'tableau') { if (tab) tab(); }
       else if (fig) fig.ecrire(m[4].split(',').map(function (x) { return parseInt(x, 10); }).filter(function (x) { return x >= 0; }), Math.max(1, ctx.n()));
       dernier = re.lastIndex;
     }
@@ -2677,7 +2781,12 @@
     var src = window.QUIZ_COURS && window.QUIZ_COURS[cle];
     if (!src) return;
     var f = el('figure', 'qz-cours qv-e'), b = el('button', 'qz-cours-b'), im = el('img'), nom = nomCours(cle);
-    im.src = src; im.alt = nom; im.decoding = 'async';
+    im.alt = nom; im.decoding = 'async';
+    /* Échelle UNIFORME (TERM CH05, 17 nov. 2026) : avec window.QUIZ_COURS_REF (largeur en pixels d'une capture pleine
+       largeur), une capture plus étroite (cadre d'une demi-page du livret) garde la même échelle au lieu d'être agrandie. */
+    var ref = +window.QUIZ_COURS_REF || 0;
+    if (ref) { im.onload = function () { if (im.naturalWidth && im.naturalWidth < ref) { im.style.width = (100 * im.naturalWidth / ref).toFixed(2) + '%'; f.classList.add('qz-cours-etroit'); } }; }
+    im.src = src;
     b.type = 'button'; b.title = 'Agrandir'; b.setAttribute('aria-label', 'Agrandir : ' + nom);
     b.appendChild(im);                           // l'invitation à agrandir est SOUS la capture : rien par-dessus le texte du cours
     b.appendChild(el('span', 'qz-cours-loupe', '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg><span>Agrandir</span>'));
@@ -3226,6 +3335,13 @@
     this.afficher();
   }
   Reglages.prototype.banque = function (id) { var d = (window.QUIZ || {})[id]; return d ? d.questions.length : 0; };
+  /* Nombre de questions qu'un tirage peut vraiment servir (TERM CH05, relecture du 17 nov. 2026) : une seule question
+     par famille (q.famille) ; sans familles (Automatismes), c'est la taille des banques. */
+  Reglages.prototype.servables = function (ch) {
+    var vues = {}, n = 0;
+    ch.forEach(function (id) { var d = (window.QUIZ || {})[id]; if (d) d.questions.forEach(function (q) { if (!q.famille) n++; else if (!vues[q.famille]) { vues[q.famille] = 1; n++; } }); });
+    return n;
+  };
   Reglages.prototype.afficher = function () {
     var self = this, cfg = this.cfg, r = this.racine;
     fermerVolet(); if (volet) volet.languette.hidden = true;
@@ -3276,19 +3392,19 @@
   };
   Reglages.prototype.choisis = function () { var self = this; return this.cfg.themes.filter(function (id) { return self.coches[id] && (window.QUIZ || {})[id]; }); };
   Reglages.prototype.maj = function () {
-    var self = this, ch = this.choisis(), dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0);
+    var self = this, ch = this.choisis(), dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0), serv = this.servables(ch);
     var tous = ch.length === this.cfg.themes.length;
     this.bTout.textContent = tous ? 'Tout décocher' : 'Tout cocher';
     this.bLancer.disabled = !ch.length;
     this.resume.classList.toggle('alerte', !ch.length);
     this.resume.innerHTML = !ch.length ? 'Coche au moins un thème.'
-      : '<strong>' + Math.min(this.n, dispo) + ' questions</strong> tirées au hasard parmi ' + dispo +
+      : '<strong>' + Math.min(this.n, serv) + ' questions</strong> tirées au hasard parmi ' + dispo +
         (tous ? ', dans tous les thèmes.' : ', dans ' + (ch.length === 1 ? 'le thème choisi.' : 'les ' + ch.length + ' thèmes choisis.')) +
-        (this.n > dispo ? ' (Il n’y en a pas davantage.)' : '');
+        (this.n > serv ? (serv < dispo ? ' (Pas davantage : deux questions trop proches ne sont jamais posées ensemble.)' : ' (Il n’y en a pas davantage.)') : '');
   };
   Reglages.prototype.lancer = function () {
     var self = this, ch = this.choisis(); if (!ch.length) return;
-    var dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0), n = Math.min(this.n, dispo);
+    var n = Math.min(this.n, this.servables(ch));
     var tous = ch.length === this.cfg.themes.length;
     var def = { etiquette: this.cfg.etiquette, titre: this.cfg.titre,
       sousTitre: n + ' questions tirées au hasard' + (tous ? ' dans tous les thèmes' : ch.length === 1 ? ' : ' + ((this.cfg.noms && this.cfg.noms[ch[0]]) || window.QUIZ[ch[0]].titre).toLowerCase() : ' dans ' + ch.length + ' thèmes') + ', nouveau tirage à chaque essai.',

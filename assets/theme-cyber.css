@@ -243,3 +243,5 @@
 .cyber .qz-partie-num { color: var(--cp-cyan); font-family: var(--f-mono); }
 .cyber .qz-cours img { box-shadow: 0 0 0 1px rgba(0, 240, 255, .35), 0 8px 18px rgba(0, 0, 0, .6); }
 .cyber .qz-fig-corr.colle { box-shadow: 0 12px 14px -14px rgba(0, 240, 255, .55); }
+.cyber .qv-convexe { color: var(--cp-teal); }
+.cyber .qv-concave { color: #6fb8ff; }

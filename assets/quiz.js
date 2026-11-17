@@ -444,6 +444,7 @@
   function verifierAucun(q, latex) {           // null : la question n'attend pas de mot ; sinon le résultat
     var attAucun = String(q.attendu).trim() === 'aucun';
     if (!q.aucun && !attAucun) return null;
+    if (q.gauche) latex = String(latex || '').replace(new RegExp('^\\s*' + q.gauche + '\\s*=\\s*'), '');   // « x = aucun » (TERM CH05, 17 nov. 2026)
     var mot = motTape(latex);
     if (/^aucune?s?$/.test(mot)) return attAucun ? { etat: 'juste' } : { etat: 'faux', msg: q.indiceAucun || q.indiceFaux || '' };
     if (mot) return { etat: 'lecture', msg: 'Écris un nombre, ou le mot « aucun ».' };
@@ -466,8 +467,8 @@
         return { etat: 'faux', msg: q.gauche ? 'Le membre de gauche doit être ' + q.gauche + '.' : 'On attend une expression, pas une équation.' };
       }
       expr = arbre.b;
-    } else if (q.gaucheObligatoire) {
-      return { etat: 'faux', msg: 'Écris une équation de la forme ' + q.gauche + ' = …' };
+    } else if (q.gaucheObligatoire) {             // option gaucheGris (TERM CH05, 17 nov. 2026) : « y = » oublié = message gris, pas une erreur
+      return { etat: q.gaucheGris ? 'lecture' : 'faux', msg: 'Écris une équation de la forme ' + q.gauche + ' = …' };
     }
     var vu = variables(expr);
     for (var v in vu) {
@@ -2780,7 +2781,12 @@
     var src = window.QUIZ_COURS && window.QUIZ_COURS[cle];
     if (!src) return;
     var f = el('figure', 'qz-cours qv-e'), b = el('button', 'qz-cours-b'), im = el('img'), nom = nomCours(cle);
-    im.src = src; im.alt = nom; im.decoding = 'async';
+    im.alt = nom; im.decoding = 'async';
+    /* Échelle UNIFORME (TERM CH05, 17 nov. 2026) : avec window.QUIZ_COURS_REF (largeur en pixels d'une capture pleine
+       largeur), une capture plus étroite (cadre d'une demi-page du livret) garde la même échelle au lieu d'être agrandie. */
+    var ref = +window.QUIZ_COURS_REF || 0;
+    if (ref) { im.onload = function () { if (im.naturalWidth && im.naturalWidth < ref) { im.style.width = (100 * im.naturalWidth / ref).toFixed(2) + '%'; f.classList.add('qz-cours-etroit'); } }; }
+    im.src = src;
     b.type = 'button'; b.title = 'Agrandir'; b.setAttribute('aria-label', 'Agrandir : ' + nom);
     b.appendChild(im);                           // l'invitation à agrandir est SOUS la capture : rien par-dessus le texte du cours
     b.appendChild(el('span', 'qz-cours-loupe', '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5M10.5 8v5M8 10.5h5"/></svg><span>Agrandir</span>'));
@@ -3329,6 +3335,13 @@
     this.afficher();
   }
   Reglages.prototype.banque = function (id) { var d = (window.QUIZ || {})[id]; return d ? d.questions.length : 0; };
+  /* Nombre de questions qu'un tirage peut vraiment servir (TERM CH05, relecture du 17 nov. 2026) : une seule question
+     par famille (q.famille) ; sans familles (Automatismes), c'est la taille des banques. */
+  Reglages.prototype.servables = function (ch) {
+    var vues = {}, n = 0;
+    ch.forEach(function (id) { var d = (window.QUIZ || {})[id]; if (d) d.questions.forEach(function (q) { if (!q.famille) n++; else if (!vues[q.famille]) { vues[q.famille] = 1; n++; } }); });
+    return n;
+  };
   Reglages.prototype.afficher = function () {
     var self = this, cfg = this.cfg, r = this.racine;
     fermerVolet(); if (volet) volet.languette.hidden = true;
@@ -3379,19 +3392,19 @@
   };
   Reglages.prototype.choisis = function () { var self = this; return this.cfg.themes.filter(function (id) { return self.coches[id] && (window.QUIZ || {})[id]; }); };
   Reglages.prototype.maj = function () {
-    var self = this, ch = this.choisis(), dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0);
+    var self = this, ch = this.choisis(), dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0), serv = this.servables(ch);
     var tous = ch.length === this.cfg.themes.length;
     this.bTout.textContent = tous ? 'Tout décocher' : 'Tout cocher';
     this.bLancer.disabled = !ch.length;
     this.resume.classList.toggle('alerte', !ch.length);
     this.resume.innerHTML = !ch.length ? 'Coche au moins un thème.'
-      : '<strong>' + Math.min(this.n, dispo) + ' questions</strong> tirées au hasard parmi ' + dispo +
+      : '<strong>' + Math.min(this.n, serv) + ' questions</strong> tirées au hasard parmi ' + dispo +
         (tous ? ', dans tous les thèmes.' : ', dans ' + (ch.length === 1 ? 'le thème choisi.' : 'les ' + ch.length + ' thèmes choisis.')) +
-        (this.n > dispo ? ' (Il n’y en a pas davantage.)' : '');
+        (this.n > serv ? (serv < dispo ? ' (Pas davantage : deux questions trop proches ne sont jamais posées ensemble.)' : ' (Il n’y en a pas davantage.)') : '');
   };
   Reglages.prototype.lancer = function () {
     var self = this, ch = this.choisis(); if (!ch.length) return;
-    var dispo = ch.reduce(function (s, id) { return s + self.banque(id); }, 0), n = Math.min(this.n, dispo);
+    var n = Math.min(this.n, this.servables(ch));
     var tous = ch.length === this.cfg.themes.length;
     var def = { etiquette: this.cfg.etiquette, titre: this.cfg.titre,
       sousTitre: n + ' questions tirées au hasard' + (tous ? ' dans tous les thèmes' : ch.length === 1 ? ' : ' + ((this.cfg.noms && this.cfg.noms[ch[0]]) || window.QUIZ[ch[0]].titre).toLowerCase() : ' dans ' + ch.length + ' thèmes') + ', nouveau tirage à chaque essai.',

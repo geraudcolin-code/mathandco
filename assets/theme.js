@@ -1,7 +1,7 @@
 /* Styles du site : classique (défaut depuis le 3 nov. 2026), « Cyberpunk × Matrice », « Pamplemousse » (4 nov. 2026)
-   et « Braquage » (18 nov. 2026, ambiance Vice City d'après les affiches « Braquage de math »).
+   et « Event » (18 nov. 2026, style « Braquage » en interne, ambiance Vice City d'après les affiches « Braquage de math »).
    Se charge dans <head> (pas d'éclair au chargement). ?theme=cyber | pample | classique choisit le style ; il est retenu
-   dans ce navigateur (aussi ?theme=braquage). Les boutons « Style » en bas de page permettent de changer. */
+   dans ce navigateur (aussi ?theme=event). Les boutons « Style » en bas de page permettent de changer. */
 (function () {
   var CLE = 'colineaire-theme', DEFAUT = 'classique';
   var lire = function () { try { return localStorage.getItem(CLE); } catch (e) { return null; } };
@@ -9,7 +9,7 @@
   var MODES = ['classique', 'cyber', 'pample', 'braq'];
   var p = new URLSearchParams(location.search).get('theme');
   if (p === 'pamplemousse') p = 'pample';
-  if (p === 'braquage' || p === 'gta') p = 'braq';
+  if (p === 'event' || p === 'braquage' || p === 'gta') p = 'braq';
   if (MODES.indexOf(p) >= 0) ecrire(p);
   var racine = document.documentElement;
   var mode = lire(); if (MODES.indexOf(mode) < 0) mode = DEFAUT;
@@ -102,7 +102,7 @@
     if (!pied) return;
     var groupe = document.createElement('span'); groupe.className = 'theme-choix'; groupe.setAttribute('role', 'group'); groupe.setAttribute('aria-label', 'Style du site');
     groupe.appendChild(document.createTextNode('Style '));
-    var NOMS = { classique: 'Classique', cyber: 'Cyberpunk', pample: 'Pamplemousse', braq: 'Braquage' }, boutons = {};
+    var NOMS = { classique: 'Classique', cyber: 'Cyberpunk', pample: 'Pamplemousse', braq: 'Event' }, boutons = {};
     MODES.forEach(function (m) {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'theme-bascule'; b.textContent = NOMS[m];
       b.addEventListener('click', function () { choisir(m); });

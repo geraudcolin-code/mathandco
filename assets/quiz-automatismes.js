@@ -20,6 +20,7 @@
   }
   var ECH = R`\text{on échange les membres}`, RAC = R`\sqrt{\phantom{x}}\text{ car }`;
   var TPN = 'Un produit est nul si et seulement si l’un de ses facteurs est nul :';
+  var SIGNES_PRODUIT = 'Un étage par facteur : le signe d’un facteur affine est donné par son coefficient directeur ; puis le signe du produit, par la règle des signes :';   // tableau à trois étages (M. Colin, 18 nov. 2026)
   function quiz(id, titre, theme, questions) {
     questions.forEach(function (q) { q.theme = theme; });
     Q[id] = { etiquette: 'Automatismes · 2nde et 1re', titre: titre, questions: questions };   // une BANQUE par thème
@@ -403,10 +404,12 @@
       correction: p(R`\(f(x)\) s’annule quand :`) + res(['4x+3', '0'], ['4x', '-3', '-3'], ['x', R`-\dfrac34`, R`\div4`]) + p(R`Le coefficient directeur \(4\) est positif : \(f(x)\) est négatif avant \(-\dfrac34\), positif après.`) },
     { type: 'signes', enonce: p(R`Construire sur \(\mathbb R\) le tableau de signes de la fonction \(A:x\longmapsto(x+5)(x+8)\).`), valeurs: [-8, -5],
       ligne: { label: R`signe de \(A(x)\)`, traits: ['zero', 'zero'], signes: ['+', '−', '+'] },
-      correction: p(R`\(A(x)\) s’annule en \(-8\) et en \(-5\). C’est un polynôme du second degré de coefficient \(a=1>0\) : il est du signe de \(a\) à l’extérieur des racines, du signe contraire entre elles.`) },
+      facteurs: [{ tex: 'x+5', a: 1, b: 5 }, { tex: 'x+8', a: 1, b: 8 }],
+      correction: p('Chaque facteur s’annule une fois :') + res(['x+5', '0'], ['x', '-5', '-5']) + res(['x+8', '0'], ['x', '-8', '-8']) + p(SIGNES_PRODUIT) },
     { type: 'signes', enonce: p(R`Construire sur \(\mathbb R\) le tableau de signes de la fonction \(f:x\longmapsto(2x-4)(-x+1)\).`), valeurs: [1, 2],
       ligne: { label: R`signe de \(f(x)\)`, traits: ['zero', 'zero'], signes: ['−', '+', '−'] },
-      correction: p('Chaque facteur s’annule une fois :') + res(['2x-4', '0'], ['2x', '4', '+4'], ['x', R`\dfrac42=2`, R`\div2`]) + res(['-x+1', '0'], ['-x', '-1', '-1'], ['x', '1', R`\div(-1)`]) + p(R`En développant, le coefficient de \(x^2\) est \(2\times(-1)=-2<0\) : \(f(x)\) est négatif à l’extérieur des racines \(1\) et \(2\), positif entre elles.`) }
+      facteurs: [{ tex: '2x-4', a: 2, b: -4 }, { tex: '-x+1', a: -1, b: 1 }],
+      correction: p('Chaque facteur s’annule une fois :') + res(['2x-4', '0'], ['2x', '4', '+4'], ['x', R`\dfrac42=2`, R`\div2`]) + res(['-x+1', '0'], ['-x', '-1', '-1'], ['x', '1', R`\div(-1)`]) + p(SIGNES_PRODUIT) }
   ]);
 
   /* ===================================================================== */

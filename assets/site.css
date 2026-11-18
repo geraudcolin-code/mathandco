@@ -541,7 +541,7 @@ math-field.quiz-champ.petit::part(virtual-keyboard-toggle) { display: none; }
 .trait-choix[data-touche="1"]::before { border-style: solid; border-width: 1.5px; border-color: var(--filet); background: transparent; }
 .trait-choix::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
 .trait-choix[data-t="pointille"]::after { background: repeating-linear-gradient(to bottom, var(--encre) 0 5px, transparent 5px 10px) center / 1.5px 100% no-repeat; }
-.trait-choix[data-t="zero"]::after { background: linear-gradient(var(--encre), var(--encre)) center / 1.5px 100% no-repeat; }
+.trait-choix[data-t="zero"]::after, .trait-choix[data-t="trait"]::after { background: linear-gradient(var(--encre), var(--encre)) center / 1.5px 100% no-repeat; }
 .trait-choix[data-t="double"]::after { background: linear-gradient(var(--encre), var(--encre)) calc(50% - 3px) 0 / 1.5px 100% no-repeat,
   linear-gradient(var(--encre), var(--encre)) calc(50% + 3px) 0 / 1.5px 100% no-repeat; }
 .trait-choix span { position: relative; z-index: 1; visibility: hidden; background: var(--papier); line-height: 1.1; padding: 1px 3px; }
@@ -1111,3 +1111,10 @@ math-field.quiz-champ.qz-juste { border-color: var(--vert); border-style: solid;
   border: 2px solid var(--rouge, #D62828); box-shadow: 0 18px 50px rgba(0, 0, 0, .35); text-align: center; }
 .qn-voile-boite p { margin: 0 0 14px; }
 .qn-voile-titre { font-size: 1.25rem; font-weight: 700; color: var(--rouge, #D62828); }
+
+/* tableau de signes d'un produit (M. Colin, 18 nov. 2026) : un étage par facteur, justifié par son coefficient directeur,
+   puis l'étage du produit (règle des signes) ; la justification en orange sous l'étiquette */
+.qv-tab .qv-tnote { display: block; margin-top: 2px; color: #ED7D31; font-size: .78em; line-height: 1.25; font-weight: 600; }
+.qv-tab .tcell.tlab.tnote { flex-direction: column; align-items: flex-start; justify-content: center; max-width: 9.5em; padding-top: 4px; padding-bottom: 4px; }
+.qv-tab .tcell.tlab.tx { max-width: none; }   /* l'étiquette « x » occupe toute la colonne, même élargie par une justification */
+@media (max-width: 600px) { .qv-tab .tcell.tlab.tnote { max-width: 6.2em; } .qv-tab .qv-tnote { font-size: .7em; } }

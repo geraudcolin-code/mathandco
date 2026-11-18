@@ -2907,8 +2907,9 @@
      en ligne et remonte sur la boucle à chaque fin de tour ») : <!--code--> recopie le programme de l'énoncé (le premier
      <pre class="qz-code">, celui de l'énoncé commun pour une partie d'exercice) dans le volet, collé en haut tant que la
      hauteur le permet ; dans une question « tableau » (tableau d'état), il est posé au-dessus du tableau. <!--py:k--> : à
-     l'étape du dernier bloc construit avant le marqueur, la flèche se pose sur la ligne k (1 = première ; 0 : plus de
-     flèche) ; elle GLISSE d'une ligne à l'autre et la ligne lue est surlignée. */
+     la PREMIÈRE étape du dernier bloc construit avant le marqueur (le paragraphe ou le calcul qui parle de cette ligne), la
+     flèche se pose sur la ligne k (1 = première ; 0 : plus de flèche) ; elle GLISSE d'une ligne à l'autre et la ligne lue
+     est surlignée. */
   var RE_CODE = /<pre class="qz-code"[\s\S]*?<\/pre>/;
   function codeDe(q) { var m = RE_CODE.exec(String((q && q.enonce) || '')); return m ? m[0] : ''; }
   function programmeCorrection(html, ctx) {
@@ -2936,21 +2937,26 @@
       html = html.replace(/<p>([\s\S]*?)<\/p>/g, function (tout, c) {
         return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v|py)\s*:[\s\S]*?-->|<!--\s*(?:tableau|graphique|code)\s*-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
       }).replace(/<p>\s*<\/p>/g, '');
-    var re = new RegExp(RE_ETAPES.source, 'g'), m, dernier = 0;
-    function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ctx.ajouter()); racine.appendChild(b); } }
+    // debut : première étape du dernier bloc construit (paragraphe, calcul) ; <!--py:k--> écrit APRÈS un bloc pose la flèche
+    // sur la ligne k dès la PREMIÈRE étape de ce bloc (« Ligne 3 : … » : la flèche y est quand la phrase commence)
+    var re = new RegExp(RE_ETAPES.source, 'g'), m, dernier = 0, debut = 0;
+    function bloc0() { var d = ctx.n() + 1; return function () { if (ctx.n() >= d) debut = d; }; }
+    function libre(t) { t = t.trim(); if (t) { var f0 = bloc0(), b = el('div', 'qv-p'); morceau(b, t, ctx.ajouter()); racine.appendChild(b); f0(); } }
     while ((m = re.exec(html))) {
       libre(html.slice(dernier, m.index));
-      if (m[1] != null) racine.appendChild(etapesParagraphe(m[1], ctx.ajouter, ctx.trans));
+      var f1 = bloc0();
+      if (m[1] != null) { racine.appendChild(etapesParagraphe(m[1], ctx.ajouter, ctx.trans)); f1(); }
       else if (m[2] != null) {
         var a = m[2].match(/^\s*\\begin\{aligned\}([\s\S]*)\\end\{aligned\}\s*$/);
         if (a) racine.appendChild(etapesAligne(a[1], ctx.ajouter, ctx.trans));
         else { var b = el('div', 'qv-disp'); morceau(b, '\\[' + m[2] + '\\]', ctx.ajouter()); racine.appendChild(b); }
+        f1();
       }
       else if (m[3] === 'cours') captureCours(m[4], racine, ctx);
       else if (m[3] === 'tableau') { if (tab) tab(); }
       else if (m[3] === 'graphique') { if (gr) gr(); }
       else if (m[3] === 'code') { if (code) code.poser(); }
-      else if (m[3] === 'py') { if (code) code.ligne(Math.max(1, ctx.n()), parseInt(m[4], 10) || 0); }
+      else if (m[3] === 'py') { if (code) code.ligne(Math.max(1, debut || ctx.n()), parseInt(m[4], 10) || 0); }
       else if (fig) fig.ecrire(m[4].split(',').map(function (x) { return parseInt(x, 10); }).filter(function (x) { return x >= 0; }), Math.max(1, ctx.n()));
       dernier = re.lastIndex;
     }
@@ -2970,7 +2976,9 @@
   function collerFigure(b) {                    // collée en haut du volet pendant qu'on la complète, si la hauteur le permet
     var corps = b.closest('.qv-corps'); if (!corps) return;
     var h = b.offsetHeight;
-    b.classList.toggle('colle', h > 0 && h <= corps.clientHeight * 0.46);
+    // un programme seul (TERM CH02) reste collé jusqu'à 60 % de la hauteur : sur téléphone, la flèche qui glisse reste visible
+    var lim = b.querySelector('.qz-code-corr') && !b.querySelector('.qz-tab-cadre, svg, img') ? 0.6 : 0.46;
+    b.classList.toggle('colle', h > 0 && h <= corps.clientHeight * lim);
   }
   /* Intitulé d'une capture du cours (texte de remplacement, titre de l'agrandissement) : window.QUIZ_COURS_NOMS[clé]
      quand la page le donne (« Remarque : incompatibles et indépendants (p. 51) ») ; sinon déduit de la clé : « Définition 1 »,

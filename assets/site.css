@@ -1138,6 +1138,8 @@ math-field.quiz-champ.qz-juste { border-color: var(--vert); border-style: solid;
   transition: transform .5s var(--courbe), height .3s, opacity .3s; pointer-events: none; z-index: 2; }
 .qz-code-corr.qz-py-actif .qz-py-fleche, .qz-code-corr.qz-py-actif .qz-py-bande { opacity: 1; }
 .qz-fig-corr > .qz-code-corr + .qz-tab-cadre { margin-top: 8px; }
+/* téléphone : le programme du volet resserré, pour rester collé en haut pendant qu'on lit la correction (la flèche visible) */
+@media (max-width: 520px) { .qz-code-corr .qz-code { font-size: .8rem; line-height: 1.42; padding-top: 5px; padding-bottom: 5px; } }
 @media (prefers-reduced-motion: reduce) { .qz-py-fleche, .qz-py-bande { transition: none; } }
 /* code dans une phrase (formule de tableur, ligne ou appel de fonction) ; .qz-c-cadre : la réponse encadrée d'une correction */
 .qz-c { font: 500 .93em 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace; padding: 1px 5px; border-radius: 5px;

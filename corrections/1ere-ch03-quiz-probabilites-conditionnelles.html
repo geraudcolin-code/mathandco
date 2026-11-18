@@ -45,7 +45,7 @@ function demarrer(DATA){
   window.QUIZ_CONFIG = Object.assign(window.QUIZ_CONFIG || {}, DATA.config);
   window.QUIZ_COURS = Object.assign(window.QUIZ_COURS || {}, DATA.cours || {});
   window.QUIZ_COURS_NOMS = Object.assign(window.QUIZ_COURS_NOMS || {}, DATA.coursNoms || {});
-  charger('../assets/quiz.js?v=20261117r').then(function () { return charger('../assets/mathlive/mathlive.min.js'); });
+  charger('../assets/quiz.js?v=20261118a').then(function () { return charger('../assets/mathlive/mathlive.min.js'); });
 }
 function octets(b64){ const t = atob(b64), u = new Uint8Array(t.length); for (let k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
 async function dechiffrer(mdp){

@@ -4,9 +4,12 @@
    RAPPORT DÉTAILLÉ (M. Colin, 17 nov. 2026) : un clic sur un élève ouvre son rapport, question par question (énoncé tel
    qu'il l'a vu, sa réponse, la bonne réponse, les points ; vert / orange / rouge comme dans la revue finale du quiz) ;
    statistiques par question (réussite, mauvaises réponses les plus fréquentes) ; CSV des réponses.
-   SÉCURITÉ : la clé publique étant publique, n'importe qui peut fabriquer un paquet. Rien de ce qu'il contient n'est mis
-   dans la page sans passer par sur() (balises et attributs autorisés seulement, commandes LaTeX à lien retirées) ou par
-   textContent. */
+   SÉCURITÉ (relecture du 18 nov. 2026) : la clé publique étant publique, n'importe qui peut fabriquer un paquet. Rien de
+   ce qu'il contient n'entre dans la page sans passer par sur() (balises et attributs SVG d'une liste blanche, puis LISTE
+   BLANCHE de commandes LaTeX sur la chaîne finale) ou par textContent dans un élément « nt-brut », que MathLive ne rend
+   jamais ; toute formule passe par texSur() ; paquets bornés (2 Mo décompressés, 100 questions) ; une question illisible
+   n'empêche pas d'afficher les autres. notes.html porte en plus une politique de sécurité (CSP) : aucune requête vers
+   l'extérieur, hors polices et statistiques du site. */
 (function () {
   'use strict';
   // un quiz noté = son identifiant (clé de QUIZ_CONFIG dans la page du quiz, envoyé en clair au Worker et répété dans le
@@ -25,26 +28,49 @@
         .then(function (c) { return S.importKey('jwk', JSON.parse(new TextDecoder().decode(c)), { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveKey']); });
     });
   }
-  // paquet compressé (rapport détaillé, 17 nov. 2026) : octet 0 puis deflate-raw ; ancien paquet : JSON (« { » en tête)
+  // paquet compressé (rapport détaillé, 17 nov. 2026) : octet 0 puis deflate-raw ; ancien paquet : JSON (« { » en tête).
+  // Au plus 2 Mo une fois décompressé (un vrai paquet en fait quelques dizaines de Ko) : au-delà, ignoré et signalé.
+  var PLAFOND = 2 * 1024 * 1024, MAX_QUESTIONS = 100, ignores = 0;
   function texteClair(u) {
-    if (u[0] !== 0) return JSON.parse(new TextDecoder().decode(u));
-    var flux = new Blob([u.subarray(1)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-    return new Response(flux).text().then(JSON.parse);
+    if (u[0] !== 0) { if (u.length > PLAFOND) throw new Error('trop gros'); return JSON.parse(new TextDecoder().decode(u)); }
+    var lecteur = new Blob([u.subarray(1)]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader(), morceaux = [], n = 0;
+    function suite() {
+      return lecteur.read().then(function (x) {
+        if (x.done) return;
+        n += x.value.length;
+        if (n > PLAFOND) { try { lecteur.cancel(); } catch (e) {} throw new Error('trop gros'); }
+        morceaux.push(x.value); return suite();
+      });
+    }
+    return suite().then(function () {
+      var tout = new Uint8Array(n), k = 0; morceaux.forEach(function (m) { tout.set(m, k); k += m.length; });
+      return JSON.parse(new TextDecoder().decode(tout));
+    });
+  }
+  function valide(o) {                           // la forme attendue d'un résultat ; sinon le paquet est ignoré (et compté)
+    if (!o || typeof o !== 'object' || Array.isArray(o) || typeof o.pseudo !== 'string' || typeof o.quiz !== 'string') return null;
+    if (o.questions != null && (!Array.isArray(o.questions) || o.questions.length > MAX_QUESTIONS)) return null;
+    o.questions = (o.questions || []).filter(function (d) { return d && typeof d === 'object' && !Array.isArray(d); });
+    ['note', 'points', 'total', 'repondues', 'duree'].forEach(function (k) { if (typeof o[k] !== 'number' || !isFinite(o[k])) o[k] = 0; });
+    ['tentative', 'statut', 'debut', 'fin'].forEach(function (k) { if (o[k] != null && typeof o[k] !== 'string') o[k] = String(o[k]); });
+    o.questions.forEach(function (d) { if (typeof d.points !== 'number' || !isFinite(d.points)) d.points = 0; d.repondue = d.repondue === true;
+      ['ref', 'theme', 'type', 'famille'].forEach(function (k) { if (d[k] != null && typeof d[k] !== 'string') d[k] = String(d[k]); }); });
+    return o;
   }
   function lire(p) {
     return S.importKey('jwk', { kty: 'EC', crv: 'P-256', x: p.epk.x, y: p.epk.y, ext: true }, { name: 'ECDH', namedCurve: 'P-256' }, false, [])
       .then(function (pub) { return S.deriveKey({ name: 'ECDH', public: pub }, cle, { name: 'AES-GCM', length: 256 }, false, ['decrypt']); })
       .then(function (k) { return S.decrypt({ name: 'AES-GCM', iv: octets(p.iv) }, k, octets(p.ct)); })
       .then(function (c) { return texteClair(new Uint8Array(c)); })
-      .then(function (o) { return o && typeof o === 'object' && typeof o.pseudo === 'string' ? o : null; }, function () { return null; });   // paquet illisible : ignoré
+      .then(function (o) { o = valide(o); if (!o) ignores++; return o; }, function () { ignores++; return null; });   // paquet illisible ou démesuré : ignoré, compté
   }
   function charger() {
     var id = $('quiz').value;
-    donnees = []; fermerRapport(); afficher();     // rien de l'ancien quiz pendant le chargement (CSV compris)
+    donnees = []; ignores = 0; fermerRapport(); afficher();     // rien de l'ancien quiz pendant le chargement (CSV compris)
     $('resume').textContent = 'Chargement…';
     return fetch('/api/quiz-notes?quiz=' + encodeURIComponent(id), { cache: 'no-store' }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status); return r.json();
-    }).then(function (l) { return Promise.all(l.map(function (x) { return lire(x.paquet); })); })
+    }).then(function (l) { return Promise.all((Array.isArray(l) ? l : []).map(function (x) { return x && x.paquet && x.paquet.epk ? lire(x.paquet) : (ignores++, null); })); })
       .then(function (l) { if (id !== $('quiz').value) return;   // un autre quiz a été choisi entre-temps
         donnees = uneParTentative(l.filter(function (r) { return r && r.quiz === id; })); afficher(); },
         function () { if (id !== $('quiz').value) return; donnees = []; afficher(); $('resume').textContent = 'Les résultats n’ont pas pu être chargés (connexion ?).'; });
@@ -52,7 +78,7 @@
   // Une tentative quittée envoie son rapport à la sortie (et parfois plusieurs fois, si l'élève est revenu) : on ne garde
   // que le dernier paquet de chaque tentative, le résultat final s'il existe.
   function uneParTentative(l) {
-    var m = {}, seules = [];
+    var m = Object.create(null), seules = [];
     l.forEach(function (r) {
       if (!r.tentative) { seules.push(r); return; }
       var a = m[r.tentative];
@@ -89,7 +115,7 @@
     var f = $('cherche').value.trim().toLowerCase(), v = $('vue').value;
     var l = donnees.filter(function (r) { return !f || cleP(r).indexOf(f) >= 0; });
     if (v !== 'toutes') {
-      var m = {};
+      var m = Object.create(null);
       l.forEach(function (r) {
         var k = cleP(r), a = m[k];
         if (!a || (v === 'meilleure' ? r.note > a.note || (r.note === a.note && r.fin > a.fin) : r.fin > a.fin)) m[k] = r;
@@ -103,52 +129,110 @@
   var BALISES = { P: 'p', BR: 'br', I: 'i', B: 'b', STRONG: 'strong', EM: 'em', SUP: 'sup', SUB: 'sub', SPAN: 'span', U: 'u', SMALL: 'small' };
   var JETES = { SCRIPT: 1, STYLE: 1, TEMPLATE: 1, NOSCRIPT: 1, IFRAME: 1, OBJECT: 1, EMBED: 1, TEXTAREA: 1, SELECT: 1, TITLE: 1 };
   var SVG_B = ['svg', 'g', 'path', 'text', 'tspan', 'line', 'circle', 'ellipse', 'rect', 'polygon', 'polyline'];
-  var SVG_A = ['viewBox', 'width', 'height', 'd', 'x', 'y', 'dx', 'dy', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'rx', 'ry', 'points', 'transform',
-               'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'font-size', 'font-style', 'font-weight', 'font-family', 'text-anchor', 'role', 'aria-label', 'style'];
-  // commandes MathLive qui font un lien, une classe, un style ou des données : retirées (le reste du LaTeX est affiché)
-  function texSur(t) { return String(t == null ? '' : t).replace(/\\(href|url|class|cssId|htmlData|htmlId|htmlStyle|style|data|includegraphics|unicode|mathtip|texttip|toggle)(?![a-zA-Z])/g, ' '); }
+  // attributs SVG : valeurs simples seulement (nombres, chemins, couleurs nommées ou #hex) ; PAS d'attribut style (un
+  // style de la banque est traduit en attributs de présentation, propriété par propriété : voir styleSvg)
+  var SVG_NUM = /^[-+0-9.eE%\s]*$/, SVG_A = {
+    viewBox: /^[-0-9.eE\s,]*$/, width: SVG_NUM, height: SVG_NUM, x: SVG_NUM, y: SVG_NUM, dx: SVG_NUM, dy: SVG_NUM, x1: SVG_NUM, y1: SVG_NUM,
+    x2: SVG_NUM, y2: SVG_NUM, cx: SVG_NUM, cy: SVG_NUM, r: SVG_NUM, rx: SVG_NUM, ry: SVG_NUM, points: /^[-0-9.eE\s,]*$/, d: /^[-0-9.eE\s,a-zA-Z]*$/,
+    transform: /^(?:\s*(?:translate|scale|rotate|matrix)\([-0-9.eE\s,]*\)\s*)*$/, role: /^[a-z]*$/, 'aria-label': /^[^<>"\\]*$/ };
+  var SVG_P = { fill: 1, stroke: 1, 'stroke-width': 1, 'stroke-dasharray': 1, 'font-size': 1, 'font-style': 1, 'font-weight': 1, 'font-family': 1, 'text-anchor': 1 };
+  var SVG_V = /^[#a-zA-Z0-9.,%\s'-]{0,60}$/;       // pas de parenthèse : ni url(), ni image-set(), ni var()
+  function styleSvg(x) {                          // attributs de présentation + style de la banque → attributs vérifiés
+    var p = {};
+    Object.keys(SVG_P).forEach(function (k) { var v = x.getAttribute(k); if (v != null) p[k] = v; });
+    String(x.getAttribute('style') || '').split(';').forEach(function (d) {
+      var i = d.indexOf(':'); if (i < 0) return;
+      var k = d.slice(0, i).trim().toLowerCase(); if (SVG_P[k]) p[k] = d.slice(i + 1).trim();
+    });
+    return Object.keys(p).filter(function (k) { return SVG_V.test(p[k]) && !/url|image|expression/i.test(p[k]); })
+      .map(function (k) { return ' ' + k + '="' + esc(p[k]) + '"'; }).join('');
+  }
+  // LaTeX : LISTE BLANCHE de commandes (celles des banques et du clavier mathématique) ; toute autre commande perd sa barre
+  // oblique (« \htmlStyle » devient le texte « htmlStyle ») ; environnements permis seulement ; « ^^ » (caractère codé)
+  // ramené à « ^ ». Appliquée à la chaîne FINALE de sur() et à toute formule passée à maths().
+  var TEX_OK = Object.create(null);
+  ('frac dfrac tfrac sqrt left right times cdot div pm mp le ge leq geq leqslant geqslant lt gt ne neq approx sim equiv infty in notin ' +
+   'ni cup cap emptyset varnothing subset subseteq supset supseteq forall exists neg land lor to rightarrow leftarrow Rightarrow Leftarrow ' +
+   'Leftrightarrow iff mapsto longmapsto implies mathbb mathrm mathit mathbf mathcal mathord mathbin mathrel mathop operatorname text textrm textit textbf ' +
+   'exponentialE imaginaryI differentialD placeholder overline underline overrightarrow vec hat widehat bar dot ddot tilde ' +
+   'ldots cdots dots vdots ddots quad qquad big Big bigg Bigg bigl bigr Bigl Bigr displaystyle textstyle scriptstyle ' +
+   'lbrack rbrack lbrace rbrace langle rangle lvert rvert vert Vert mid parallel perp angle circ degree prime ast star ' +
+   'binom dbinom tbinom ln log exp sin cos tan lim sum prod int min max percent colon cancel not ' +
+   'alpha beta gamma delta epsilon varepsilon zeta eta theta vartheta iota kappa lambda mu nu xi pi varpi rho varrho sigma ' +
+   'varsigma tau upsilon phi varphi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega begin end').split(' ').forEach(function (c) { TEX_OK[c] = 1; });
+  var ENV_OK = { aligned: 1, cases: 1, matrix: 1, pmatrix: 1, bmatrix: 1, array: 1 };
+  var SIGNES_OK = ',;:! {}()[]%_&#|\\';
+  function texSur(t) {
+    t = String(t == null ? '' : t);
+    t = t.replace(/\\([a-zA-Z]+|[\s\S])/g, function (m, c, k, s) {
+      if (c.length === 1 && !/[a-zA-Z]/.test(c)) return SIGNES_OK.indexOf(c) >= 0 ? m : c;
+      if (c === 'begin' || c === 'end') { var e = /^\s*\{([a-zA-Z]+)\*?\}/.exec(s.slice(k + m.length)); return e && ENV_OK[e[1]] ? m : ' ' + c; }
+      return TEX_OK[c] ? m : ' ' + c;                // l'espace empêche de recoller un nom à la commande permise qui précède
+    });
+    for (var i = 0; i < 20 && /\^\s*\^/.test(t); i++) t = t.replace(/\^\s*\^/g, '^');
+    return t;
+  }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var memoSur = new Map();
   function sur(html) {
     if (html == null || html === '') return '';
     html = String(html);
     if (memoSur.has(html)) return memoSur.get(html);
-    var doc = new DOMParser().parseFromString('<!DOCTYPE html><body>' + html, 'text/html'), out = enfants(doc.body);   // document inerte : rien ne s'exécute ni ne se charge
+    var doc = new DOMParser().parseFromString('<!DOCTYPE html><body>' + html, 'text/html'), out = texSur(enfants(doc.body));   // document inerte : rien ne s'exécute ni ne se charge ; LaTeX filtré sur la chaîne FINALE (un commentaire ou une balise au milieu d'une commande ne la sauve pas)
     if (memoSur.size > 5000) memoSur.clear();
     memoSur.set(html, out);
     return out;
   }
   function enfants(n) { var s = ''; for (var x = n.firstChild; x; x = x.nextSibling) s += noeud(x); return s; }
   function noeud(x) {
-    if (x.nodeType === 3) return esc(texSur(x.nodeValue));
+    if (x.nodeType === 3) return esc(x.nodeValue);
     if (x.nodeType !== 1 || JETES[x.tagName]) return '';
     if (x.namespaceURI === 'http://www.w3.org/2000/svg') {       // schéma vectoriel d'une proposition (1ère CH03) : dessin seul
       var t = x.localName; if (SVG_B.indexOf(t) < 0) return '';
       var a = t === 'svg' ? ' class="qz-schema"' : '';
-      SVG_A.forEach(function (k) {
-        var v = x.getAttribute(k); if (v == null) return;
-        if (/url\s*\(|javascript:|expression|@import|[<>"\\]/i.test(v)) return;
+      Object.keys(SVG_A).forEach(function (k) {
+        var v = x.getAttribute(k); if (v == null || v.length > 2000 || !SVG_A[k].test(v)) return;
         a += ' ' + k + '="' + esc(v) + '"';
       });
+      a += styleSvg(x);
       return '<' + t + a + '>' + enfants(x) + '</' + t + '>';
     }
     var b = BALISES[x.tagName];
     if (b === 'br') return '<br>';
     return b ? '<' + b + '>' + enfants(x) + '</' + b + '>' : enfants(x);
   }
-  function nettoyerQ(o) {                       // question du paquet : toutes ses chaînes passées par sur()
+  function nettoyerQ(o, prof) {                 // question du paquet : toutes ses chaînes passées par sur() ; forme vérifiée
+    prof = prof || 0; if (prof > 12) return null;
     if (typeof o === 'string') return sur(o);
-    if (typeof o === 'number' || typeof o === 'boolean') return o;
-    if (Array.isArray(o)) return o.map(nettoyerQ);
-    if (o && typeof o === 'object') { var r = {}; for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k) && /^[a-zA-Z]+$/.test(k)) r[k] = nettoyerQ(o[k]); return r; }
+    if (typeof o === 'number') return isFinite(o) ? o : null;
+    if (typeof o === 'boolean') return o;
+    if (Array.isArray(o)) return o.slice(0, 200).map(function (x) { return nettoyerQ(x, prof + 1); });
+    if (o && typeof o === 'object') {
+      var r = {}; for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k) && /^[a-zA-Z]+$/.test(k) && k !== 'constructor') r[k] = nettoyerQ(o[k], prof + 1);
+      ['propositions', 'gauche', 'droite', 'parties', 'ordre', 'ordreD'].forEach(function (k) { if (r[k] != null && !Array.isArray(r[k]) && !(k === 'gauche' || k === 'droite') ) delete r[k]; });
+      if (r.type === 'associer') { if (!Array.isArray(r.gauche)) r.gauche = []; if (!Array.isArray(r.droite)) r.droite = []; }
+      if (r.type === 'comparer') { if (typeof r.gauche !== 'string') r.gauche = ''; if (typeof r.droite !== 'string') r.droite = ''; }
+      if (r.tableau != null && !(r.tableau && Array.isArray(r.tableau.lignes) && r.tableau.lignes.every(Array.isArray))) delete r.tableau;
+      if (r.arbre != null && !(r.arbre && Array.isArray(r.arbre.branches))) delete r.arbre;
+      if (r.type === 'exercice' && !Array.isArray(r.parties)) r.parties = [];
+      if (typeof r.type !== 'string') r.type = '';
+      return r;
+    }
     return null;
   }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }   // html : constante ou sortie de sur()
-  function tx(tag, cls, t) { var e = document.createElement(tag); if (cls) e.className = cls; e.textContent = t == null ? '' : String(t); return e; }
-  function maths(latex, cls) { return tx('span', cls, '\\(' + texSur(latex) + '\\)'); }
+  // texte brut (pseudo, repère, thème, réponse non mathématique…) : classe « nt-brut », jamais rendu par MathLive
+  function tx(tag, cls, t) { var e = document.createElement(tag); e.className = 'nt-brut' + (cls ? ' ' + cls : ''); e.textContent = t == null ? '' : String(t); return e; }
+  function maths(latex, cls) {                    // une formule : LaTeX filtré (liste blanche), délimiteurs retirés
+    var e = document.createElement('span'); if (cls) e.className = cls;
+    e.textContent = '\\(' + texSur(String(latex == null ? '' : latex).slice(0, 2000)).replace(/\\[()\[\]]/g, '') + '\\)';
+    return e;
+  }
   function C() { return window.ColineaireQuiz || null; }
+  var RENDU = { ignoreClass: '(^|\\s)(tex2jax_ignore|ML__latex|nt-brut)(\\s|$)', asciiMath: { delimiters: { inline: [], display: [] } },
+                TeX: { processEnvironments: false, delimiters: { inline: [['\\(', '\\)']], display: [['\\[', '\\]']] } } };
   function rendreM(e) {                          // formules rendues comme dans le quiz (MathLive), dès qu'il est chargé
-    var f = function () { var c = C(); if (c && c.rendre) c.rendre(e); };
+    var f = function () { try { window.MathLive.renderMathInElement(e, RENDU); } catch (x) {} };
     if (window.MathLive && window.MathLive.renderMathInElement) f();
     else if (window.customElements) customElements.whenDefined('math-field').then(f);
   }
@@ -170,7 +254,10 @@
     return texLisible(doc.body.textContent).replace(/(\s*\/\s*)+$/, '').replace(/^\s*\/\s*/, '').replace(/\s*\/\s*\/\s*/g, ' / ');
   }
   var LETTRES = 'ABCDEFGH';
-  function ordreQcm(q) { return q.ordre && q.ordre.length === (q.propositions || []).length ? q.ordre : (q.propositions || []).map(function (_, i) { return i; }); }
+  function ordreQcm(q) {                          // ordre affiché à l'élève (rapport allégé : l'ordre seul, sans les propositions)
+    var o = Array.isArray(q.ordre) ? q.ordre : null, p = Array.isArray(q.propositions) ? q.propositions : null;
+    return o && (!p || o.length === p.length) ? o : (p || []).map(function (_, i) { return i; });
+  }
   function lettreDe(q, i) { var r = ordreQcm(q).indexOf(i); return r >= 0 ? LETTRES[r] : '?'; }
   function choix(q, i) { return lettreDe(q, i) + '. ' + texteBrut((q.propositions || [])[i]); }
   function avantCase(s, k) {                     // texte du modèle entre la case précédente et la case k (un {k} dans \( \) n'est pas une case)
@@ -204,7 +291,7 @@
         return (Array.isArray(r) ? r : []).map(function (v, k) { return (q.type === 'coords' ? '' : nomCase(q, k) + ' : ') + texLisible(v) + (c ? (c[k] ? ' ✓' : ' ✗') : ''); }).join(' | ');
       case 'qcm': return (Array.isArray(r) ? r : [r]).map(function (i) { return choix(q, +i); }).join(' ; ');
       case 'vf': return r === true ? 'Vrai' : r === false ? 'Faux' : String(r);
-      case 'associer': return (q.gauche || []).map(function (g, i) { return texteBrut(g) + ' → ' + (r[i] == null ? '?' : texteBrut((q.droite || [])[r[i]])) + (c ? (c[i] ? ' ✓' : ' ✗') : ''); }).join(' | ');
+      case 'associer': if (!Array.isArray(r)) return String(r); return (Array.isArray(q.gauche) ? q.gauche : r).map(function (g, i) { return (Array.isArray(q.gauche) ? texteBrut(g) : String(i + 1)) + ' → ' + (r[i] == null ? '?' : Array.isArray(q.droite) ? texteBrut(q.droite[r[i]]) : String(r[i])) + (c ? (c[i] ? ' ✓' : ' ✗') : ''); }).join(' | ');
       case 'exercice': return (Array.isArray(r) ? r : []).map(function (x, i) { var pa = (q.parties || [])[i] || {}; return (i + 1) + '. ' + texteReponse(pa, x, c && c[i] && c[i].c); }).join(' || ');
       default: return typeof r === 'string' ? texLisible(r) : JSON.stringify(r);
     }
@@ -212,13 +299,14 @@
   // message du quiz qui NOMME une erreur (piège, forme, totaux…) ; les messages qui ne font que compter sont omis
   var GENERIQUE = /\(en rouge\)|^Ce n’est pas la bonne réponse|^La case|^L(?:a|es) questions? \d|cochées? (?:est|sont) fausses?|^Il manque au moins une bonne réponse/;
   function erreurUtile(m) { return m && !GENERIQUE.test(String(m)) ? m : ''; }
-  function detailAssocier(d) { return (d.a || []).map(function (x, i) { return +((d.r || [])[i]) === x ? 1 : 0; }); }
+  function detailAssocier(d) { var r = Array.isArray(d.r) ? d.r : []; return (Array.isArray(d.a) ? d.a : []).map(function (x, i) { return +r[i] === x ? 1 : 0; }); }
 
   /* ======================= Tableau des résultats ======================= */
   function afficher() {
     var l = selection(), tb = $('lignes');
-    var pseudos = {}; donnees.forEach(function (r) { pseudos[cleP(r)] = 1; });
-    $('resume').textContent = donnees.length + ' tentative' + (donnees.length > 1 ? 's' : '') + ' · ' + Object.keys(pseudos).length + ' pseudo' + (Object.keys(pseudos).length > 1 ? 's' : '');
+    var pseudos = Object.create(null); donnees.forEach(function (r) { pseudos[cleP(r)] = 1; });
+    $('resume').textContent = donnees.length + ' tentative' + (donnees.length > 1 ? 's' : '') + ' · ' + Object.keys(pseudos).length + ' pseudo' + (Object.keys(pseudos).length > 1 ? 's' : '')
+      + (ignores ? ' · ' + ignores + ' paquet' + (ignores > 1 ? 's' : '') + ' illisible' + (ignores > 1 ? 's' : '') + ' ou démesuré' + (ignores > 1 ? 's' : '') + ' ignoré' + (ignores > 1 ? 's' : '') : '');
     tb.innerHTML = '';
     if (!l.length) { var tr0 = document.createElement('tr'); tr0.innerHTML = '<td colspan="7" class="nt-vide">Aucun résultat pour l’instant.</td>'; tb.appendChild(tr0); }
     l.forEach(function (r) {
@@ -255,7 +343,10 @@
     else if (!avec) z.appendChild(tx('p', 'nt-indispo', r.allege === 2 ? 'Détail non disponible pour cette tentative (paquet trop gros) : repère et points de chaque question seulement.'
       : 'Détail non disponible pour cette tentative (résultat envoyé avant le rapport détaillé) : repère et points de chaque question seulement.'));
     var liste = el('ol', 'nt-rap-liste');
-    qs.forEach(function (d, i) { liste.appendChild(carteQuestion(d || {}, i)); });
+    qs.forEach(function (d, i) {                   // une question illisible n'empêche pas d'afficher les autres
+      var li; try { li = carteQuestion(d || {}, i); } catch (e) { li = el('li', 'nt-q nt-sans'); li.appendChild(tx('p', 'nt-q-num', 'Question ' + (i + 1) + ' : détail illisible.')); }
+      liste.appendChild(li);
+    });
     z.appendChild(liste);
     rendreM(z);
     window.scrollTo({ top: $('tableau').offsetTop - 70, behavior: 'smooth' });
@@ -269,9 +360,10 @@
     h.appendChild(tx('span', 'nt-q-ref', [d.ref, d.theme].filter(Boolean).join(' · ')));
     h.appendChild(pastille(d));
     li.appendChild(h);
-    if (!d.q) {
-      if (d.repondue && d.r != null) li.appendChild(tx('p', 'nt-ligne-rep', 'Réponse de l’élève : ' + texteReponse({ type: d.type }, d.r, d.c)));
-      if (d.a != null) li.appendChild(tx('p', 'nt-ligne-rep', 'Bonne réponse : ' + texteReponse({ type: d.type }, d.a)));
+    if (!d.q || typeof d.q !== 'object') {
+      var q0 = { type: d.type, ordre: Array.isArray(d.ordre) ? d.ordre : null };   // rapport allégé : l'ordre des lettres d'un QCM est gardé
+      if (d.repondue && d.r != null) li.appendChild(tx('p', 'nt-ligne-rep', 'Réponse de l’élève : ' + texteReponse(q0, d.r, d.c)));
+      if (d.a != null) li.appendChild(tx('p', 'nt-ligne-rep', 'Bonne réponse : ' + texteReponse(q0, d.a)));
       return li;
     }
     var q = nettoyerQ(d.q);
@@ -423,8 +515,8 @@
         break;
       case 'qcm': { var l = (Array.isArray(r) ? r : [r]).map(Number).sort(); ajout('p' + l.join(','), l.join(','), false, quoi, l.map(function (i) { return (q.propositions || [])[i] || '?'; }).join(' ; ')); break; }
       case 'vf': ajout(String(r), r ? 'Vrai' : 'Faux', false, quoi); break;
-      case 'associer': { var det = detailAssocier(d); (q.gauche || []).forEach(function (g, i) { if (det[i] || r[i] == null) return; ajout('d' + r[i], texteBrut((q.droite || [])[r[i]]), false, pre + texteBrut(g)); }); break; }
-      case 'exercice': (q.parties || []).forEach(function (pa, i) {
+      case 'associer': { if (!Array.isArray(r)) break; var det = detailAssocier(d); (Array.isArray(q.gauche) ? q.gauche : []).forEach(function (g, i) { if (det[i] || r[i] == null) return; ajout('d' + r[i], texteBrut((Array.isArray(q.droite) ? q.droite : [])[r[i]]), false, pre + texteBrut(g)); }); break; }
+      case 'exercice': if (!Array.isArray(r)) break; (Array.isArray(q.parties) ? q.parties : []).forEach(function (pa, i) {
         var xi = (Array.isArray(c) ? c : [])[i] || {};
         out = out.concat(mauvaises(pa, { repondue: true, points: typeof xi.p === 'number' ? xi.p : 0, r: r[i], c: xi.c, m: xi.m }, pre + 'question ' + (i + 1)));
       }); break;
@@ -434,22 +526,24 @@
   }
   function natur(a, b) { return String(a).localeCompare(String(b), 'fr', { numeric: true }); }
   function statistiques() {
-    var z = $('stats-liste'), mode = $('regroupe').value, tri = $('tri').value, l = selection(), G = {}, ordre = [], fam = {};
+    var z = $('stats-liste'), mode = $('regroupe').value, tri = $('tri').value, l = selection(), G = Object.create(null), ordre = [], fam = Object.create(null);
     z.innerHTML = '';
     donnees.forEach(function (r) { (r.questions || []).forEach(function (d) { if (d && d.famille && d.ref) fam[d.ref] = d.famille; }); });
     l.forEach(function (r) {
       (r.questions || []).forEach(function (d) {
-        if (!d) return;
-        var fa = d.famille || fam[d.ref], k = mode === 'theme' ? 't:' + (d.theme || '?') : fa ? 'f:' + fa : 'r:' + (d.ref || d.theme || '?');
-        var g = G[k];
-        if (!g) { g = G[k] = { k: k, n: 0, eleves: {}, rep: 0, pts: 0, faux: {}, ex: null, refs: {}, theme: d.theme || '' }; ordre.push(k); }
-        g.n++; g.eleves[cleP(r)] = 1; g.refs[d.ref || '?'] = 1;
-        if (d.repondue) { g.rep++; g.pts += +d.points || 0; }
-        if (!g.ex && d.q) g.ex = d;
-        if (d.q) mauvaises(nettoyerQ(d.q), d, '').forEach(function (m) {
-          var f = g.faux[m.cle] || (g.faux[m.cle] = { n: 0, ec: {}, latex: m.latex, quoi: m.quoi, html: m.html });
-          f.n++; f.ec[m.texte] = (f.ec[m.texte] || 0) + 1;
-        });
+        try {                                      // une question malformée est passée, les autres comptent
+          if (!d) return;
+          var fa = d.famille || fam[d.ref], k = mode === 'theme' ? 't:' + (d.theme || '?') : fa ? 'f:' + fa : 'r:' + (d.ref || d.theme || '?');
+          var g = G[k];
+          if (!g) { g = G[k] = { k: k, n: 0, eleves: Object.create(null), rep: 0, pts: 0, faux: Object.create(null), ex: null, refs: Object.create(null), theme: d.theme || '' }; ordre.push(k); }
+          g.n++; g.eleves[cleP(r)] = 1; g.refs[d.ref || '?'] = 1;
+          if (d.repondue) { g.rep++; g.pts += +d.points || 0; }
+          if (!g.ex && d.q && typeof d.q === 'object') g.ex = d;
+          if (d.q && typeof d.q === 'object') mauvaises(nettoyerQ(d.q), d, '').forEach(function (m) {
+            var f = g.faux[m.cle] || (g.faux[m.cle] = { n: 0, ec: Object.create(null), latex: m.latex, quoi: m.quoi, html: m.html });
+            f.n++; f.ec[m.texte] = (f.ec[m.texte] || 0) + 1;
+          });
+        } catch (e) {}
       });
     });
     var gs = ordre.map(function (k) { return G[k]; });
@@ -459,7 +553,10 @@
       : function (a, b) { return (a.taux < 0) - (b.taux < 0) || a.taux - b.taux || b.n - a.n || natur(a.titre, b.titre); });
     $('stats-resume').textContent = gs.length ? gs.length + (mode === 'theme' ? ' sous-thème' : ' question') + (gs.length > 1 ? 's' : '') + ' · ' + l.length + ' tentative' + (l.length > 1 ? 's' : '') + ' (sélection en cours)' : '';
     if (!gs.length) { z.appendChild(tx('p', 'nt-vide', 'Aucun résultat pour l’instant.')); return; }
-    gs.forEach(function (g) { z.appendChild(carteStat(g, mode)); });
+    gs.forEach(function (g) {
+      var c; try { c = carteStat(g, mode); } catch (e) { c = el('section', 'nt-stat nt-sans'); c.appendChild(tx('p', '', g.titre + ' : détail illisible.')); }
+      z.appendChild(c);
+    });
     rendreM(z);
   }
   function titreGroupe(g, mode) {
@@ -479,7 +576,7 @@
     var jauge = el('div', 'nt-jauge'), barre = el('span', 'nt-jauge-barre');
     barre.style.width = Math.max(0, Math.round(g.taux * 100)) + '%'; jauge.appendChild(barre);
     var tj = el('div', 'nt-stat-taux'); tj.appendChild(jauge);
-    tj.appendChild(tx('span', 'nt-stat-pc', g.taux < 0 ? 'pas de réponse' : 'réussite ' + Math.round(g.taux * 100) + ' % (points moyens ' + virgule(Math.round(g.taux * 100) / 100) + ')'));
+    tj.appendChild(tx('span', 'nt-stat-pc', g.taux < 0 ? 'pas de réponse' : 'réussite ' + Math.round(g.taux * 100) + ' % (points moyens sur les réponses données : ' + virgule(Math.round(g.taux * 100) / 100) + ')'));
     c.appendChild(tj);
     var fx = Object.keys(g.faux).map(function (k) { return g.faux[k]; }).sort(function (a, b) { return b.n - a.n; });
     if (fx.length) {
@@ -491,7 +588,7 @@
         li.appendChild(f.html != null ? el('span', 'nt-val nt-f', f.html) : f.latex ? maths(ec[0], 'nt-val nt-f') : tx('span', 'nt-val nt-f', ec[0]));
         li.appendChild(tx('span', 'nt-fois', ' × ' + f.n));
         if (ec.length > 1 && f.html == null) {
-          var autres = tx('span', 'nt-autres', ' (aussi écrit ');
+          var autres = el('span', 'nt-autres'); autres.appendChild(document.createTextNode(' (aussi écrit '));   // pas « nt-brut » : les formules y sont rendues
           ec.slice(1, 4).forEach(function (e, j) { if (j) autres.appendChild(document.createTextNode(', ')); autres.appendChild(f.latex ? maths(e) : tx('span', '', e)); });
           autres.appendChild(document.createTextNode(ec.length > 4 ? '…)' : ')'));
           li.appendChild(autres);
@@ -506,9 +603,9 @@
       det.appendChild(sm);
       det.addEventListener('toggle', function () {
         if (!det.open || det._fait) return; det._fait = true;
-        var q = nettoyerQ(g.ex.q), cont = el('div', 'nt-stat-corps');
-        cont.appendChild(enonce(q));
-        cont.appendChild(reponses(q, { repondue: false, points: 0, r: null, a: g.ex.a }));
+        var cont = el('div', 'nt-stat-corps');
+        try { var q = nettoyerQ(g.ex.q); cont.appendChild(enonce(q)); cont.appendChild(reponses(q, { repondue: false, points: 0, r: null, a: g.ex.a })); }
+        catch (e) { cont.appendChild(tx('p', '', 'Détail illisible.')); }
         det.appendChild(cont); rendreM(cont);
       });
       c.appendChild(det);
@@ -517,7 +614,10 @@
   }
 
   /* ======================= CSV ======================= */
-  function cellule(x) { return '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"'; }
+  // cellule CSV : une cellule qui commence par = + - @, une tabulation ou un retour chariot reçoit une apostrophe (Excel
+  // n'y voit jamais de formule : « -x+3 », « =HYPERLINK(…) »)
+  function cellule(x) { x = String(x == null ? '' : x); if (/^[=+\-@\t\r]/.test(x)) x = "'" + x; return '"' + x.replace(/"/g, '""') + '"'; }
+  function decimal(x) { return virgule(Math.round((+x || 0) * 10000) / 10000); }
   function telecharger(nom, lignes) {
     var blob = new Blob(['\ufeff' + lignes.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nom;
@@ -533,28 +633,36 @@
     var lignes = [tete.join(';')].concat(l.map(function (r) {
       var c = [r.pseudo, virgule(r.note), justes(r), etat(r), dateFr(r.debut), dateFr(r.fin), r.duree], qs = r.questions || [], j;
       for (j = 0; j < n; j++) c.push(qs[j] ? (qs[j].ref || qs[j].theme) + ' : ' + pts(qs[j].points) : '');
-      for (j = 0; j < n; j++) { var d = qs[j]; c.push(!d ? '' : !d.q ? '' : !d.repondue ? '(pas de réponse)' : texteReponse(nettoyerQ(d.q), d.r, d.c)); }
+      for (j = 0; j < n; j++) {
+        var d = qs[j], t = '';
+        try { t = !d ? '' : !d.repondue ? '(pas de réponse)' : texteReponse(d.q && typeof d.q === 'object' ? nettoyerQ(d.q) : { type: d.type, ordre: d.ordre }, d.r, d.c); }
+        catch (e) { t = '(illisible)'; }
+        c.push(t);
+      }
       return c.map(cellule).join(';');
     }));
     telecharger('resultats-' + $('quiz').value + '-' + new Date().toISOString().slice(0, 10) + '.csv', lignes);
   }
   // CSV détaillé : une ligne par question (et par question d'un exercice) : énoncé, réponse, bonne réponse, points
   function csvDetail() {
-    var tete = ['pseudo', 'fin', 'etat', 'numero', 'repere', 'theme', 'type', 'enonce', 'reponse_eleve', 'bonne_reponse', 'points', 'erreur_reperee'];
+    // numéro « Q5.2 » et points « 2/3 pt » : du texte, jamais une date pour Excel ; points_decimaux : le nombre (0,6667)
+    var tete = ['pseudo', 'fin', 'etat', 'numero', 'repere', 'theme', 'type', 'enonce', 'reponse_eleve', 'bonne_reponse', 'points', 'erreur_reperee', 'points_decimaux'];
     var lignes = [tete.join(';')];
     selection().forEach(function (r) {
       (r.questions || []).forEach(function (d, i) {
         if (!d) return;
-        var q = d.q ? nettoyerQ(d.q) : null;
-        function en(qq) { return qq ? texteBrut(qq.enonce) + (qq.tableau ? ' [tableau]' : '') + (qq.arbre ? ' [arbre]' : '') + (qq.modele && qq.type === 'cases' ? ' [' + texteBrut(String(qq.modele).replace(/\{\d+\}/g, '…')) + ']' : '') + (qq.propositions ? ' [' + ordreQcm(qq).map(function (j, x) { return LETTRES[x] + '. ' + texteBrut(qq.propositions[j]); }).join(' ; ') + ']' : '') : 'détail non disponible'; }
-        var base = [r.pseudo, dateFr(r.fin), etat(r)];
-        lignes.push(base.concat([i + 1, d.ref || '', d.theme || '', d.type || '', en(q), !q ? '' : d.repondue ? (q.type === 'exercice' ? '' : texteReponse(q, d.r, d.c)) : '(pas de réponse)',
-          q && q.type !== 'exercice' ? texteReponse(q, d.a) : '', pts(d.points), d.repondue && erreurUtile(d.m) ? texteBrut(d.m) : '']).map(cellule).join(';'));
-        if (q && q.type === 'exercice') (q.parties || []).forEach(function (pa, j) {
-          var x = (Array.isArray(d.c) ? d.c : [])[j] || {};
-          lignes.push(base.concat([(i + 1) + '.' + (j + 1), d.ref || '', d.theme || '', pa.type, en(pa), d.repondue ? texteReponse(pa, (d.r || [])[j], x.c) : '(pas de réponse)',
-            texteReponse(pa, (d.a || [])[j]), d.repondue ? pts(x.p || 0) : '0', d.repondue && erreurUtile(x.m) ? texteBrut(x.m) : '']).map(cellule).join(';'));
-        });
+        var base = [r.pseudo, dateFr(r.fin), etat(r)], ptsT = function (x) { return pts(x) + ' pt'; };
+        try {                                      // une question malformée : une ligne « illisible », les autres restent
+          var q = d.q && typeof d.q === 'object' ? nettoyerQ(d.q) : null, q0 = q || { type: d.type, ordre: d.ordre };
+          var en = function (qq) { return qq ? texteBrut(qq.enonce) + (qq.tableau ? ' [tableau]' : '') + (qq.arbre ? ' [arbre]' : '') + (qq.modele && qq.type === 'cases' ? ' [' + texteBrut(String(qq.modele).replace(/\{\d+\}/g, '…')) + ']' : '') + (Array.isArray(qq.propositions) ? ' [' + ordreQcm(qq).map(function (j, x) { return LETTRES[x] + '. ' + texteBrut(qq.propositions[j]); }).join(' ; ') + ']' : '') : 'détail non disponible'; };
+          lignes.push(base.concat(['Q' + (i + 1), d.ref || '', d.theme || '', d.type || '', en(q), d.repondue ? (q0.type === 'exercice' ? '' : texteReponse(q0, d.r, d.c)) : '(pas de réponse)',
+            q0.type !== 'exercice' ? texteReponse(q0, d.a) : '', ptsT(d.points), d.repondue && erreurUtile(d.m) ? texteBrut(d.m) : '', decimal(d.points)]).map(cellule).join(';'));
+          if (q && q.type === 'exercice') (Array.isArray(q.parties) ? q.parties : []).forEach(function (pa, j) {
+            var x = (Array.isArray(d.c) ? d.c : [])[j] || {}, px = d.repondue ? +x.p || 0 : 0;
+            lignes.push(base.concat(['Q' + (i + 1) + '.' + (j + 1), d.ref || '', d.theme || '', pa.type, en(pa), d.repondue ? texteReponse(pa, (Array.isArray(d.r) ? d.r : [])[j], x.c) : '(pas de réponse)',
+              texteReponse(pa, (Array.isArray(d.a) ? d.a : [])[j]), ptsT(px), d.repondue && erreurUtile(x.m) ? texteBrut(x.m) : '', decimal(px)]).map(cellule).join(';'));
+          });
+        } catch (e) { lignes.push(base.concat(['Q' + (i + 1), d.ref || '', d.theme || '', d.type || '', '(illisible)', '', '', ptsT(d.points), '', decimal(d.points)]).map(cellule).join(';')); }
       });
     });
     telecharger('reponses-' + $('quiz').value + '-' + new Date().toISOString().slice(0, 10) + '.csv', lignes);

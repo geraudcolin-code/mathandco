@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Résultats des quiz notés, Colinéaire</title>
 <meta name="robots" content="noindex, nofollow">
+<!-- défense supplémentaire (relecture du 18 nov. 2026) : un paquet fabriqué ne peut faire charger aucune ressource extérieure -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
 <link rel="icon" href="assets/icone.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +15,7 @@
 <link rel="stylesheet" href="assets/theme-cyber.css?v=20261116t">
 <link rel="stylesheet" href="assets/theme-pample.css?v=20261114a">
 <script src="assets/theme.js?v=20261104f"></script>
-<script src="assets/quiz.js?v=20261117r"></script>
+<script src="assets/quiz.js?v=20261118a"></script>
 <script defer src="assets/mathlive/mathlive.min.js"></script>
 <style>
 .nt-outils { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 16px; }
@@ -54,6 +56,7 @@
 .nt-pts.nt-juste { color: var(--vert); } .nt-pts.nt-partiel { color: var(--quiz-partiel-encre); } .nt-pts.nt-faux { color: var(--rouge); } .nt-pts.nt-sans { color: var(--gris); }
 .nt-enonce { margin: 4px 0 8px; overflow-wrap: anywhere; line-height: 1.75; }
 .nt-stat-faux .nt-val svg { max-width: 90px; height: auto; vertical-align: middle; }
+#rapport-corps svg.qz-schema, #stats-liste svg.qz-schema { max-width: 100%; height: auto; overflow: hidden; }
 .nt-enonce p { margin: .35em 0; }
 .nt-figure { color: var(--gris); font-style: italic; }
 .nt-reps { display: grid; gap: 8px; min-width: 0; }
@@ -165,7 +168,7 @@
         <div id="vue-stats" hidden>
           <div class="nt-stats-outils">
             <select id="regroupe" aria-label="Regroupement">
-              <option value="question">Par question (variantes d’une même famille regroupées)</option>
+              <option value="question">Par question (familles regroupées)</option>
               <option value="theme">Par sous-thème</option>
             </select>
             <select id="tri" aria-label="Ordre">
@@ -185,6 +188,6 @@
     </section>
   </div>
 </main>
-<script src="assets/notes.js?v=20261117r"></script>
+<script src="assets/notes.js?v=20261118a"></script>
 </body>
 </html>

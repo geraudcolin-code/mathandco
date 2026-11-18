@@ -17,8 +17,8 @@ export default {
       const t = await req.text();
       // rapport détaillé (17 nov. 2026) : énoncés, réponses et bonnes réponses dans le paquet. Mesuré sur le pire tirage de
       // 1ère CH03 (les 20 questions les plus longues) : ~10 000 caractères compressé (11 200 avec des réponses de 300
-      // caractères), ~45 000 sans compression (vieux navigateurs) ; quiz.js n'envoie jamais plus de 85 000 (rapport allégé
-      // au-delà). Limite à 90 000 : marge, et sous les 100 Ko d'une requête D1 (une ligne D1 : 2 Mo)
+      // caractères), ~45 000 sans compression (vieux navigateurs) ; quiz.js n'envoie jamais plus de 60 000 (limite de
+      // sendBeacon : 64 Kio ; rapport allégé au-delà). Limite à 90 000 : marge, et sous les 100 Ko d'une requête D1 (une ligne D1 : 2 Mo)
       if (t.length > 90000) return json({ erreur: 'trop long' }, 413);
       let o; try { o = JSON.parse(t); } catch (e) { return json({ erreur: 'illisible' }, 400); }
       if (!o || !QUIZ.test(o.quiz || '') || typeof o.ct !== 'string' || typeof o.iv !== 'string' || !o.epk || typeof o.epk.x !== 'string')

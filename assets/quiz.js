@@ -3115,14 +3115,18 @@
         });
       });
   }
-  /* Paquet d'un quiz noté : jamais plus de 85 000 caractères (le Worker refuse au-delà de 90 000) ; s'il le fallait
-     (réponses démesurées, navigateur sans compression), le rapport est allégé : sans les énoncés (allege: 1), puis sans
+  /* Paquet d'un quiz noté : jamais plus de 60 000 caractères (sendBeacon et fetch keepalive, qui portent le rapport de
+     sortie, refusent au-delà de 64 Kio ; le Worker accepte 90 000) ; s'il le fallait (réponses démesurées, navigateur sans
+     compression), le rapport est allégé : sans les énoncés (allege: 1, l'ordre des lettres d'un QCM gardé), puis sans
      détail (allege: 2) ; la note et les points restent. */
-  var MAX_PAQUET = 85000;
+  var MAX_PAQUET = 60000;
   function allege(obj, niveau) {
     var o = {}, k; for (k in obj) o[k] = obj[k];
     var garde = ['ref', 'theme', 'type', 'points', 'repondue', 'famille'];
-    o.questions = (obj.questions || []).map(function (d) { var x = {}; for (var c in d) if (niveau === 1 ? c !== 'q' : garde.indexOf(c) >= 0) x[c] = d[c]; return x; });
+    o.questions = (obj.questions || []).map(function (d) {
+      var x = {}; for (var c in d) if (niveau === 1 ? c !== 'q' : garde.indexOf(c) >= 0) x[c] = d[c];
+      if (niveau === 1 && d.q && d.q.ordre) x.ordre = d.q.ordre;   // réponse d'un QCM lisible (« B. ») sans l'énoncé
+      return x; });
     o.allege = niveau; return o;
   }
   function chiffrerNote(jwk, obj) {

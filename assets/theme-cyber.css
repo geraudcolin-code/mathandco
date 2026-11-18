@@ -245,3 +245,10 @@
 .cyber .qz-fig-corr.colle { box-shadow: 0 12px 14px -14px rgba(0, 240, 255, .55); }
 .cyber .qv-convexe { color: var(--cp-teal); }
 .cyber .qv-concave { color: #6fb8ff; }
+/* quiz TERM CH02 (18 nov. 2026) : programme Python, démonstration en blocs, bouton « Aucune » à coins vifs */
+.cyber .qz-code { border-radius: 0; box-shadow: 0 0 0 1px rgba(0, 240, 255, .35); }
+.cyber .qz-c { background: #0b0d1a; color: var(--cp-cyan); border-color: rgba(0, 240, 255, .35); border-radius: 0; }
+.cyber .qz-c.qz-c-cadre { border-color: var(--cp-rose, #ff2a6d); background: #0b0d1a; }
+.cyber .qz-blocs-demo, .cyber .qz-blocs-ligne, .cyber .qz-blocs-mot, .cyber .qz-blocs-place, .cyber .qz-bloc, .cyber .qz-blocs-cap, .cyber .qz-aucun { border-radius: 0; }
+.cyber .qz-aucun { background: #0b0d1a; border-color: var(--cp-cyan); color: var(--cp-cyan); }
+.cyber .qz-blocs-place.active { box-shadow: 0 0 0 1px var(--cp-cyan), 0 0 14px rgba(0, 240, 255, .35); }

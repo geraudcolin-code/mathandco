@@ -1111,3 +1111,84 @@ math-field.quiz-champ.qz-juste { border-color: var(--vert); border-style: solid;
   border: 2px solid var(--rouge, #D62828); box-shadow: 0 18px 50px rgba(0, 0, 0, .35); text-align: center; }
 .qn-voile-boite p { margin: 0 0 14px; }
 .qn-voile-titre { font-size: 1.25rem; font-weight: 700; color: var(--rouge, #D62828); }
+
+/* ===== Quiz TERM CH02 « Suites » (18 nov. 2026) : programme Python, bouton « Aucune », démonstration en blocs ===== */
+/* programme Python dans un énoncé (charte § 8 : répété dans chaque question qui s'en sert) : chasse fixe, numéros de ligne,
+   mots-clés colorés comme dans le livret de M. Colin ; fond blanc dans les trois styles, comme les figures */
+.qz-code { position: relative; display: block; margin: 10px 0 12px; padding: 9px 14px 9px 6px; max-width: 100%; box-sizing: border-box; overflow-x: auto;
+  background: #fff; color: #1d2433; border: 1px solid #c3ccda; border-radius: 10px; box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+  font: 500 1rem/1.62 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre; text-align: left;
+  counter-reset: qzpy; tab-size: 4; -webkit-text-size-adjust: 100%; }
+.qz-code code { font: inherit; color: inherit; background: none; padding: 0; white-space: inherit; }
+.qz-py-ligne::before { counter-increment: qzpy; content: counter(qzpy); display: inline-block; width: 1.5em; margin-right: .75em; padding-right: .45em;
+  text-align: right; color: #8b95a7; border-right: 2px solid #1d2433; font-weight: 400; }
+.qz-py-kw { color: #1f3f9f; font-weight: 700; }
+.qz-py-nb { color: #0b7a7e; }
+.qz-py-op { color: #b4442a; }
+.qz-py-fn { font-weight: 700; }
+.qz-py-ch { color: #2e7d32; }
+.qz-py-cm { color: #6f7889; font-style: italic; }
+@media (max-width: 520px) { .qz-code { font-size: .88rem; padding-right: 8px; } }
+/* correction : le programme recopié, une flèche qui GLISSE de ligne en ligne, la ligne lue surlignée */
+.qz-code-corr { position: relative; }
+.qz-code-corr .qz-code { margin: 0 0 4px; padding-left: 24px; }
+.qz-py-fleche { position: absolute; left: 6px; top: -7px; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent;
+  border-left: 12px solid #D62828; opacity: 0; transition: transform .5s var(--courbe), opacity .3s; z-index: 3; pointer-events: none; }
+.qz-py-bande { position: absolute; left: 2px; right: 2px; top: 0; height: 0; border-radius: 4px; background: rgba(255, 205, 0, .3); opacity: 0;
+  transition: transform .5s var(--courbe), height .3s, opacity .3s; pointer-events: none; z-index: 2; }
+.qz-code-corr.qz-py-actif .qz-py-fleche, .qz-code-corr.qz-py-actif .qz-py-bande { opacity: 1; }
+.qz-fig-corr > .qz-code-corr + .qz-tab-cadre { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .qz-py-fleche, .qz-py-bande { transition: none; } }
+/* code dans une phrase (formule de tableur, ligne ou appel de fonction) ; .qz-c-cadre : la réponse encadrée d'une correction */
+.qz-c { font: 500 .93em 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace; padding: 1px 5px; border-radius: 5px;
+  background: #f1f4f9; color: #1d2433; border: 1px solid #d5dbe6; white-space: nowrap; }
+.qz-c.qz-c-cadre { border: 2px solid #D62828; background: #fff; padding: 2px 7px; }
+/* QCM aux propositions longues (formules qui ne passent pas à la ligne) : une proposition par ligne */
+.qz-une-colonne .qz-props { grid-template-columns: 1fr; }
+/* « Aucune » : écrit le mot dans le cadre (suite sans limite, pas de raison), comme le bouton de kwyk */
+.qz-aucun { min-height: 44px; padding: 6px 16px; border: 2px solid var(--bleu); border-radius: 999px; background: var(--papier); color: var(--bleu);
+  font: 600 1rem var(--f-texte); cursor: pointer; transition: background-color .2s, transform .15s; }
+@media (hover: hover) { .qz-aucun:hover:not(:disabled) { background: var(--bleu-fond); } }
+.qz-aucun:active:not(:disabled) { transform: scale(.97); }
+.qz-aucun:disabled { opacity: .5; cursor: default; }
+.quiz-ligne .qz-aucun { margin-left: 4px; }
+/* graphique de conclusion d'une correction (nuage de points d'une limite) */
+.qv-fig.qv-fig-fin { margin: 10px 0 6px; }
+.qv-fig.qv-fig-fin img { max-height: 340px; }
+/* démonstration en BLOCS (façon kwyk) : mots de liaison en vert, blocs bruns (propriété, théorème, définition), bleus
+   (affirmation sur la suite), violets (inégalité) ; une place vide en pointillés « à remplir », la place prête entourée */
+.qz-blocs { display: grid; gap: 14px; }
+.qz-blocs-cap { justify-self: start; margin: 0 0 4px; padding: 4px 14px 5px; border-radius: 14px 14px 4px 4px; background: #74762a; color: #fff;
+  font: 600 .95rem var(--f-texte); }
+.qz-blocs-cap-pal { background: var(--fond-2); color: var(--gris); border-radius: 10px; }
+.qz-blocs-demo, .qz-blocs-palette { display: grid; gap: 6px; min-width: 0; }
+.qz-blocs-demo { padding: 10px; border: 2px solid var(--filet); border-radius: 16px; }
+.qz-blocs-ligne { display: grid; grid-template-columns: 7.4em minmax(0, 1fr); align-items: center; gap: 8px; padding: 3px; border: 2px solid transparent;
+  border-radius: 12px; transition: border-color .2s, background-color .2s; }
+.qz-blocs-ligne.qz-blocs-etape { margin-top: 10px; }
+.qz-blocs-mot { align-self: stretch; display: flex; align-items: center; padding: 6px 10px; border-radius: 10px; background: #2f7d32; color: #fff;
+  font: 600 1rem/1.2 var(--f-texte); }
+.qz-blocs-place { min-width: 0; min-height: 46px; padding: 6px 12px; border: 2px dashed var(--quiz-afaire, var(--bleu)); border-radius: 10px;
+  background: var(--quiz-afaire-fond, var(--bleu-fond)); color: var(--encre); font: 500 1.04rem/1.3 var(--f-texte); text-align: left; cursor: pointer;
+  overflow-x: auto; transition: box-shadow .2s, background-color .2s; }
+.qz-blocs-place.active { border-style: solid; box-shadow: 0 0 0 3px color-mix(in srgb, var(--quiz-afaire, var(--bleu)) 32%, transparent); }
+.qz-blocs-place.remplie { border-style: solid; border-color: transparent; color: #fff; }
+.qz-blocs-place.remplie.active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bleu) 45%, transparent); }
+.qz-blocs-liste { display: flex; flex-wrap: wrap; gap: 8px; }
+.qz-bloc { min-height: 44px; max-width: 100%; padding: 6px 14px; border: 0; border-radius: 10px; color: #fff; font: 500 1.04rem/1.3 var(--f-texte);
+  text-align: left; cursor: pointer; overflow-x: auto; box-shadow: 0 2px 0 rgba(0, 0, 0, .18); transition: transform .15s, opacity .2s; }
+.qz-bloc:active:not(:disabled) { transform: translateY(1px) scale(.985); }
+.qz-bloc:disabled { opacity: .55; cursor: default; }
+.qz-bloc-prop, .qz-blocs-place.remplie.qz-bloc-prop { background: #8a5a3c; }
+.qz-bloc-fait, .qz-blocs-place.remplie.qz-bloc-fait { background: #2f5f8f; }
+.qz-bloc-ineg, .qz-blocs-place.remplie.qz-bloc-ineg { background: #6a3f9e; }
+.qz-blocs-ligne.qz-faux { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 7%, transparent); }
+.qz-blocs-ligne.qz-faux .qz-blocs-place { box-shadow: 0 0 0 3px var(--rouge); }
+.qz-blocs-ligne.qz-juste .qz-blocs-place { box-shadow: 0 0 0 3px var(--vert); }
+.qz-blocs-place:disabled { cursor: default; }
+@media (max-width: 720px) {
+  .qz-blocs-demo { padding: 8px 6px; }
+  .qz-blocs-ligne { grid-template-columns: 6.1em minmax(0, 1fr); gap: 6px; }
+  .qz-blocs-mot { padding: 5px 7px; font-size: .92rem; }
+  .qz-blocs-place, .qz-bloc { font-size: .98rem; padding: 5px 10px; }
+}

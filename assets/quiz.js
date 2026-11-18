@@ -1070,8 +1070,9 @@
     rejouer(voile, 'actif');
     rejouer(document.querySelector('main') || document.body, 'quiz-secoue');
     if (navigator.vibrate) try { navigator.vibrate([60, 40, 60]); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent('quiz:faux')); } catch (e) {}       // pour les styles (ex. « Braquage »)
   }
-  function signalerJuste() { preparerRetours(); rejouer(coche, 'actif'); }
+  function signalerJuste() { preparerRetours(); rejouer(coche, 'actif'); try { document.dispatchEvent(new CustomEvent('quiz:juste')); } catch (e) {} }
 
   /* ======================= 5. Le quiz ======================= */
   function el(tag, classe, html) { var e = document.createElement(tag); if (classe) e.className = classe; if (html != null) e.innerHTML = html; return e; }

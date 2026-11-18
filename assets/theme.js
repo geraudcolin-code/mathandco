@@ -7,6 +7,10 @@
   var lire = function () { try { return localStorage.getItem(CLE); } catch (e) { return null; } };
   var ecrire = function (v) { try { localStorage.setItem(CLE, v); } catch (e) {} };
   var MODES = ['classique', 'cyber', 'pample', 'braq'];
+  // « Event » ne s'ouvre qu'à la sortie : 19 nov. 2026, 00:00 heure de Paris (= 18 nov. 23:00 UTC), demande de M. Colin.
+  // Avant, le bouton n'apparaît pas et ce style est ignoré (le choix déjà retenu revient tout seul à la sortie).
+  var SORTIE_EVENT = Date.UTC(2026, 10, 18, 23, 0, 0);
+  if (Date.now() < SORTIE_EVENT) MODES = MODES.filter(function (m) { return m !== 'braq'; });
   var p = new URLSearchParams(location.search).get('theme');
   if (p === 'pamplemousse') p = 'pample';
   if (p === 'event' || p === 'braquage' || p === 'gta') p = 'braq';

@@ -20,10 +20,9 @@
     if (hero) affiche(hero, null, 'euler', 'bq-affiche-hero');
     var form = document.querySelector('.porte form');
     if (form) affiche(form.parentNode, form, 'pythagore', 'bq-affiche-porte');
-    if (/libre\.html/.test(location.pathname)) {
-      var tete = document.querySelector('.biblio-tete');
-      if (tete) affiche(tete, null, 'pythagore', 'bq-affiche-tete');
-    }
+    // en-tête de bibliothèque (espace élèves une fois entré — utile quand le mot de passe est retenu —, accès libre, professeur)
+    var tete = document.querySelector('.biblio-tete');
+    if (tete) affiche(tete, null, 'pythagore', 'bq-affiche-tete');
   }
 
   function vol() {

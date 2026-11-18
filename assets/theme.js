@@ -36,7 +36,7 @@
   function braquage() {
     if (window.__braquage) { window.__braquage.demarrer(); return; }
     if (document.getElementById('script-braq')) return;
-    var sc = document.createElement('script'); sc.id = 'script-braq'; sc.src = BASE + 'theme-braquage.js?v=20261118a'; sc.defer = true;
+    var sc = document.createElement('script'); sc.id = 'script-braq'; sc.src = BASE + 'theme-braquage.js?v=20261118b'; sc.defer = true;
     document.head.appendChild(sc);
   }
   if (mode === 'braq') document.addEventListener('DOMContentLoaded', braquage);

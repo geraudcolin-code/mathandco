@@ -177,6 +177,7 @@
   function sur(html) {
     if (html == null || html === '') return '';
     html = String(html);
+    if (html.length > 20000) html = html.slice(0, 20000) + ' […]';   // énoncé démesuré (paquet fabriqué) : coupé avant l'analyse et le rendu
     if (memoSur.has(html)) return memoSur.get(html);
     var doc = new DOMParser().parseFromString('<!DOCTYPE html><body>' + html, 'text/html'), out = texSur(enfants(doc.body));   // document inerte : rien ne s'exécute ni ne se charge ; LaTeX filtré sur la chaîne FINALE (un commentaire ou une balise au milieu d'une commande ne la sauve pas)
     if (memoSur.size > 5000) memoSur.clear();

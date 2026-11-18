@@ -2657,8 +2657,9 @@
     var k1 = ajouter(), i, k;
     cellule('tlab tx', '\\(x\\)', k1);
     xs.forEach(function (x, j) { cellule('tx tval', '\\(' + texTableau(x) + '\\)', k1); if (j < xs.length - 1) cellule('tx tint', null); });
-    function ligneSignes(L, cls, label) {
-      cellule('tlab' + cls, label, k1);
+    function ligneSignes(L, cls, label, note) {
+      var lab = cellule('tlab' + cls + (note ? ' tnote' : ''), label, note ? ajouter() : k1);   // avec une justification : l'étiquette à son clic,
+      if (note) { var e = el('span', 'qv-e qv-tnote', note); e.dataset.e = ajouter(); lab.appendChild(e); }   // puis la justification
       var kt = ajouter();                           // les traits (0, double barre) d'abord, puis un signe par clic
       cellule('tval tvide' + cls, null);
       for (var i2 = 0; i2 <= n; i2++) {
@@ -2670,7 +2671,21 @@
       }
       cellule('tval tvide' + cls, null);
     }
-    if (ls) ligneSignes(ls, vari ? ' tsg' : '', vari ? (ls.label || 'signe de \\(f\'(x)\\)') : ls.label);
+    // produit de facteurs affines (M. Colin, 18 nov. 2026) : un étage par facteur, signe justifié par son coefficient
+    // directeur, puis l'étage du produit, justifié par la règle des signes. q.facteurs = [{tex, a, b}] pour ax + b.
+    var fac = !vari && ls && q.facteurs;
+    if (fac) q.facteurs.forEach(function (F) {
+      var L = { signes: [], traits: [] }, fx = function (x) { return F.a * x + F.b; };
+      for (var j = 0; j <= n; j++) {
+        var lo = xs[j], hi = xs[j + 1];
+        if (!isFinite(lo)) lo = isFinite(hi) ? hi - 1 : -1;
+        if (!isFinite(hi)) hi = isFinite(lo) ? lo + 1 : 1;
+        L.signes.push(fx((lo + hi) / 2) < 0 ? '−' : '+');
+        if (j < n) L.traits.push(Math.abs(fx(q.valeurs[j])) < 1e-9 ? 'zero' : 'trait');
+      }
+      ligneSignes(L, ' tfac', 'signe de \\(' + F.tex + '\\)', 'coefficient directeur \\(' + nombreTeX(F.a) + (F.a > 0 ? '>' : '<') + '0\\)');
+    });
+    if (ls) ligneSignes(ls, vari ? ' tsg' : '', vari ? (ls.label || 'signe de \\(f\'(x)\\)') : ls.label, fac ? 'règle des signes' : null);
     if (vari) {
       cellule('tlab', q.label || 'variation de \\(f\\)', k1);
       var pos = function (j) { var L = q.fleches[j - 1], R = q.fleches[j]; return L === '↗' || R === '↘' ? 'haut' : L === '↘' || R === '↗' ? 'bas' : 'milieu'; };

@@ -92,6 +92,7 @@ CHAPITRES = {
     ('terminale', 6): 'Continuité des fonctions',
     ('terminale', 7): 'Produit scalaire dans l’espace, orthogonalité, distances',
     ('terminale', 8): 'Fonction logarithme népérien',
+    ('terminale', 9): 'Représentations paramétriques et équations cartésiennes',
     ('terminale', 10): 'Combinatoire et dénombrement',
     ('terminale', 11): 'Primitives et équations différentielles',
     ('terminale', 15): 'Concentration et loi des grands nombres',

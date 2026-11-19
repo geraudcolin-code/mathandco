@@ -15,6 +15,11 @@ Site des corrections animées de mathématiques (GitHub Pages).
   s'ouvrir. Une correction ajoutée arrive fermée. `admin.html` (Espace professeur) ouvre / ferme les corrections et publie
   `acces.json` par l'API GitHub avec la clé personnelle du professeur ; en ligne de commande :
   `python3 outils/construire.py ouvrir 2nde-ch03-exercice-5` (ou `fermer`, motifs avec `*` acceptés).
+- `notes-modes.json` (19 nov. 2026) : quiz de chapitre NOTÉS (les autres sont en entraînement) et, pour chaque quiz,
+  l'identifiant de ses résultats et son intitulé dans notes.html. Public (ce n'est pas un secret), lu par `assets/quiz.js`
+  dans la page du quiz ; `admin.html` le change (interrupteur « Entraînement / Noté ») ; en ligne de commande :
+  `python3 outils/construire.py noter term-ch02-quiz-suites` (ou `entrainer`). Absent ou illisible : chaque page de quiz
+  garde le mode inscrit dans sa page chiffrée.
 
 ## Devoirs surveillés (espace élèves)
 

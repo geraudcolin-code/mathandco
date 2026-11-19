@@ -27,6 +27,39 @@
 (function () {
   'use strict';
 
+  /* ----- MODE D'UN QUIZ DE CHAPITRE : ENTRAÎNEMENT OU NOTÉ (M. Colin, 19 nov. 2026, charte § 11.2 septies) -----
+     Le professeur bascule chaque quiz de chapitre depuis l'Espace professeur (admin.html) ; l'état est le fichier PUBLIC
+     notes-modes.json, à la racine du site : {"notes": [noms des pages notées, sans .html], "quiz": {page: {id, titre}}}.
+     Seulement sur une page de quiz réservée aux élèves (<html data-mc-type="quiz">) : quiz présent dans « notes » (par le
+     nom de sa page, ou par sa clé de QUIZ_CONFIG) → quiz NOTÉ, 20 questions, clé publique de assets/notes-cle.json ;
+     absent → ENTRAÎNEMENT, même si la page chiffrée contient une config « note ». REPLI : fichier absent ou illisible →
+     la page fait ce que dit sa charge chiffrée (config « note » présente ou non), comme avant le 19 nov. 2026. */
+  var RACINE_SITE = (function () {
+    try { var src = document.currentScript && document.currentScript.src; if (src) return new URL('../', src).href; } catch (e) {}
+    return null;
+  })();
+  var PAGE_QUIZ = document.documentElement.getAttribute('data-mc-type') === 'quiz';
+  function lireJson(chemin) {
+    return fetch(RACINE_SITE + chemin + '?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error(chemin); return r.json(); });
+  }
+  var MODES = (PAGE_QUIZ && RACINE_SITE && window.fetch)            // lu tout de suite, pendant le chargement de MathLive
+    ? lireJson('notes-modes.json').then(function (j) { return j && Array.isArray(j.notes) ? j.notes : null; }).catch(function () { return null; })
+    : Promise.resolve(null);
+  function pageCourante() { try { return decodeURIComponent(location.pathname.split('/').pop() || '').replace(/\.html$/, ''); } catch (e) { return ''; } }
+  // -> promesse : 'note' | 'entrainement' | 'indisponible' (noté demandé, mais aucune clé publique pour chiffrer les résultats)
+  function reglerMode(cfg, notes) {
+    if (!notes) return Promise.resolve(cfg.note ? 'note' : 'entrainement');          // repli : la charge décide
+    if (notes.indexOf(pageCourante()) < 0 && notes.indexOf(cfg.id) < 0) { delete cfg.note; return Promise.resolve('entrainement'); }
+    var ancienne = cfg.note || {};
+    return lireJson('assets/notes-cle.json').then(function (d) { return d.pub; }, function () { return null; }).then(function (cle) {
+      cle = (cle && cle.x && cle.y) ? cle : ancienne.cle;
+      if (!cle) { delete cfg.note; return 'indisponible'; }
+      cfg.note = { n: 20, envoi: ancienne.envoi || '/api/quiz-notes', cle: cle };     // 20 questions : nombre fixe (M. Colin)
+      return 'note';
+    });
+  }
+
   /* ======================= 1. Lecture du LaTeX produit par MathLive ======================= */
   function Erreur(msg) { this.message = msg; }
 
@@ -3897,7 +3930,8 @@
     majTuiles();
     var quiz = document.querySelectorAll('.quiz[data-quiz], .quiz[data-quiz-config]');
     if (!quiz.length) return;
-    preparerMathLive().then(function () {
+    Promise.all([preparerMathLive(), MODES]).then(function (res) {
+      var notes = res[1];
       // un champ MathLive créé dans un bloc masqué ne prend pas le focus : on construit le quiz quand il devient visible
       Array.prototype.forEach.call(quiz, function (r) {
         var cfg = r.dataset.quizConfig && (window.QUIZ_CONFIG || {})[r.dataset.quizConfig];
@@ -3905,10 +3939,19 @@
         if (!def && !cfg) return;
         if (cfg) cfg.id = r.dataset.quizConfig;
         function lancer() { if (r._quiz) return; r._quiz = cfg ? (cfg.note ? new QuizNote(r, cfg) : new Reglages(r, cfg)) : new Quiz(r, def); }
-        if (r.getClientRects().length) { lancer(); return; }
-        if (!window.ResizeObserver) { lancer(); return; }
-        var ro = new ResizeObserver(function () { if (r.getClientRects().length) { ro.disconnect(); lancer(); } });
-        ro.observe(r);
+        function attendre() {
+          if (r.getClientRects().length) { lancer(); return; }
+          if (!window.ResizeObserver) { lancer(); return; }
+          var ro = new ResizeObserver(function () { if (r.getClientRects().length) { ro.disconnect(); lancer(); } });
+          ro.observe(r);
+        }
+        if (!cfg || !PAGE_QUIZ) { attendre(); return; }
+        reglerMode(cfg, notes).then(function (mode) {           // quiz de chapitre : mode lu dans notes-modes.json
+          r.dataset.quizMode = mode; r.dataset.quizModeSource = notes ? 'notes-modes' : 'page';
+          if (mode !== 'indisponible') { attendre(); return; }
+          r.innerHTML = '';
+          r.appendChild(el('p', 'quiz-message ko', 'Le quiz noté n’a pas pu se charger. Vérifie ta connexion, puis recharge la page.'));
+        });
       });
     });
   }

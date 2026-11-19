@@ -13,9 +13,14 @@
 (function () {
   'use strict';
   // un quiz noté = son identifiant (clé de QUIZ_CONFIG dans la page du quiz, envoyé en clair au Worker et répété dans le
-  // paquet chiffré) ; les résultats d'un quiz ne se mêlent jamais à ceux d'un autre
+  // paquet chiffré) ; les résultats d'un quiz ne se mêlent jamais à ceux d'un autre.
+  // LISTE DES QUIZ (19 nov. 2026, bascule Entraînement / Noté de l'Espace professeur) : les quiz de chapitre connus
+  // ci-dessous, PLUS ceux du fichier public notes-modes.json (« quiz » : {page: {id, titre}}, tenu par
+  // outils/construire.py ajouter et par admin.html) : un nouveau quiz de chapitre apparaît sans retoucher cette table.
   var QUIZ = [{ id: '1ere-ch03-quiz', titre: 'Première spécialité · Chapitre 3 · Probabilités conditionnelles et indépendance' },
-              { id: '2nde-ch03-devfact', titre: 'Seconde · Chapitre 3 · Développer et factoriser' }];
+              { id: '2nde-ch03-devfact', titre: 'Seconde · Chapitre 3 · Développer et factoriser' },
+              { id: 'term-ch02-quiz', titre: 'Terminale spécialité · Chapitre 2 · Suites : rappels, récurrence et limites' },
+              { id: 'term-ch05-quiz', titre: 'Terminale spécialité · Chapitre 5 · Compléments sur la dérivation' }];
   var S = crypto.subtle, cle = null, donnees = [], onglet = 'resultats', ouvert = null;
   var $ = function (id) { return document.getElementById(id); };
   function octets(b) { var t = atob(b), u = new Uint8Array(t.length); for (var k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
@@ -687,7 +692,17 @@
       cle = k; $('porte').hidden = true; $('tableau').hidden = false; return charger();
     }, function () { m.textContent = auto ? '' : 'Mot de passe incorrect.'; });
   }
-  QUIZ.forEach(function (q) { var o = document.createElement('option'); o.value = q.id; o.textContent = q.titre; $('quiz').appendChild(o); });
+  var ID_QUIZ = /^[a-z0-9-]{3,60}$/;                 // même filtre que le Worker
+  function ajouterQuiz(q) {
+    if (!q || typeof q.id !== 'string' || !ID_QUIZ.test(q.id)) return;
+    if (Array.prototype.some.call($('quiz').options, function (o) { return o.value === q.id; })) return;
+    var o = document.createElement('option'); o.value = q.id; o.textContent = String(q.titre || q.id).slice(0, 200); $('quiz').appendChild(o);
+  }
+  QUIZ.forEach(ajouterQuiz);
+  fetch('notes-modes.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    var m = j && j.quiz; if (!m || typeof m !== 'object') return;
+    Object.keys(m).sort().forEach(function (page) { ajouterQuiz(m[page]); });
+  }).catch(function () {});
   $('formulaire').addEventListener('submit', function (e) { e.preventDefault(); entrer($('mdp').value); });
   $('quiz').addEventListener('change', charger); $('actualiser').addEventListener('click', charger);
   $('vue').addEventListener('change', afficher); $('cherche').addEventListener('input', afficher);

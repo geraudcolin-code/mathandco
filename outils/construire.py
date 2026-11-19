@@ -8,6 +8,9 @@ Usage
   python3 outils/construire.py fermer <motif> [...]                     les referme
      motif : nom de fichier sans .html, éventuellement avec * (ex. 1ere-ch03-exercice-5, 2nde-ch03-*)
   python3 outils/construire.py cle                                      réécrit assets/cle.js
+  python3 outils/construire.py noter <motif> [...]                      passe des quiz de chapitre en QUIZ NOTÉ (notes-modes.json)
+  python3 outils/construire.py entrainer <motif> [...]                  les repasse en quiz d'entraînement
+     (noter / entrainer : sans mot de passe, le mode est une information publique)
 
 DEUX MOTS DE PASSE (27 octobre), jamais écrits dans le dépôt (il est public) :
 - celui des ÉLÈVES (variable MATHANDCO_MDP, sinon demandé au clavier) chiffre les corrections OUVERTES et le catalogue ;
@@ -37,6 +40,14 @@ Ce que fait le script
   [CLASSE]CHxx_Correction_ExerciceN = exercice ; [CLASSE]CHxx_DM_Correction_ExerciceN (ou DM1_,
   DM2_…) = devoir maison, rangé dans le bloc « Devoirs maison » (prune) du chapitre ; [CLASSE]CHxx_DS…_Correction_ExerciceN
   = devoir surveillé.
+- MODE DES QUIZ DE CHAPITRE (M. Colin, 19 nov. 2026) : notes-modes.json, à la racine, PUBLIC, dit quels quiz de
+  chapitre sont NOTÉS ({"notes": [noms de pages sans .html], "quiz": {page: {"id": clé de QUIZ_CONFIG, "titre":
+  « Seconde · Chapitre 3 · Développer et factoriser »}}}). La page du quiz le lit (assets/quiz.js) : présent dans
+  « notes » → quiz noté (20 questions, clé publique de assets/notes-cle.json), absent → entraînement ; fichier absent ou
+  illisible → ce que dit la page chiffrée (config « note »). M. Colin bascule depuis admin.html (interrupteur
+  « Entraînement / Noté ») ; Claude avec « noter » / « entrainer ». notes.html lit « quiz » pour proposer chaque quiz.
+  « ajouter » d'un quiz l'inscrit dans « quiz » ; à sa PREMIÈRE inscription seulement, il entre dans « notes » si sa page
+  porte une config « note » (constante NOTE de construire_page.py) : ensuite, seul l'interrupteur décide.
 - « catalogue » : déchiffre chaque correction avec le mot de passe pour lire son titre (« Exercice 7 Sens de
   variation »), range tout par classe puis chapitre, chiffre ce catalogue (AES-256-GCM, même procédé que les
   corrections) dans assets/catalogue.js et met à jour les cartes « classes » de la page d'accueil.
@@ -345,6 +356,8 @@ def ajouter(chemins, mdp, mdp_prof):
         cible = os.path.join(DOSSIER, info['fichier'])
         open(cible, 'w', encoding='utf-8').write(page)
         rechiffrer_page(cible, [mdp, mdp_prof], vers(titre))
+        if info['type'] == 'quiz':
+            inscrire_quiz(cible, info, [mdp, mdp_prof])
         print('ajouté :', titre, '->', 'corrections/' + info['fichier'], '(ouverte)' if vers(titre) == mdp else '(fermée)')
         voisin = os.path.splitext(ch)[0] + '.pdf'               # corrigé PDF posé à côté de la page, de même nom
         if os.path.exists(voisin) and voisin not in pdfs and os.path.splitext(os.path.basename(voisin))[0] == titre:
@@ -468,6 +481,67 @@ def catalogue(mdp, mdp_prof=None):
 
 
 FICHIER_ACCES = os.path.join(RACINE, 'acces.json')
+FICHIER_MODES = os.path.join(RACINE, 'notes-modes.json')
+
+
+def lire_modes():
+    if not os.path.exists(FICHIER_MODES):
+        return [], {}
+    d = json.load(open(FICHIER_MODES, encoding='utf-8'))
+    return list(d.get('notes', [])), dict(d.get('quiz', {}))
+
+
+def ecrire_modes(notes, quiz):
+    """même forme que assets/admin.js (corpsModes)"""
+    import datetime
+    d = {'maj': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'), 'notes': sorted(set(notes)),
+         'quiz': {k: {'id': quiz[k]['id'], 'titre': quiz[k]['titre']} for k in sorted(quiz)}}
+    open(FICHIER_MODES, 'w', encoding='utf-8').write(json.dumps(d, ensure_ascii=False, indent=1) + '\n')
+
+
+def inscrire_quiz(chemin, info, mdps):
+    """quiz de chapitre ajouté : identifiant (clé de QUIZ_CONFIG) et intitulé dans notes-modes.json ; mode initial
+    (première inscription seulement) = celui de la page (config « note » présente : noté)"""
+    page = open(chemin, encoding='utf-8').read()
+    d = None
+    for k in [x for x in mdps if x]:
+        try:
+            d = dechiffrer(page, k)
+            break
+        except Exception:
+            continue
+    if not d:
+        raise SystemExit(f'Quiz illisible : {os.path.basename(chemin)}')
+    config = (d.get('data') or {}).get('config') or {}
+    m = re.search(r'data-quiz-config="([a-z0-9-]+)"', d.get('body', ''))
+    qid = m.group(1) if m else next(iter(config), None)
+    if not qid:
+        return
+    nom_classe = next(n for c, (i, n) in CLASSES.items() if i == info['classe'])
+    titre = ' · '.join(x for x in (nom_classe, f"Chapitre {info['chapitre']}", d.get('titre', '')) if x)
+    notes, quiz = lire_modes()
+    page_id = info['fichier'][:-5]
+    if page_id not in quiz and (config.get(qid) or {}).get('note'):
+        notes.append(page_id)
+    quiz[page_id] = {'id': qid, 'titre': titre}
+    ecrire_modes(notes, quiz)
+    print(f'quiz : {page_id} ({qid}) —', 'NOTÉ' if page_id in notes else 'entraînement', '(notes-modes.json)')
+
+
+def basculer_mode(motifs, noter):
+    import fnmatch
+    noms = sorted(f[:-5] for f in os.listdir(DOSSIER) if f.endswith('.html') and '-quiz' in f)
+    notes, quiz = lire_modes()
+    ens = set(notes)
+    for m in motifs:
+        m = m[:-5] if m.endswith('.html') else m
+        vus = [n for n in noms if fnmatch.fnmatch(n, m)]
+        if not vus:
+            raise SystemExit(f'Aucun quiz ne correspond à « {m} ».')
+        for n in vus:
+            (ens.add if noter else ens.discard)(n)
+            print(('noté : ' if noter else 'entraînement : ') + n + ('' if n in quiz else ' (absent de « quiz » : notes.html ne le proposera pas ; refaire « ajouter »)'))
+    ecrire_modes(ens, quiz)
 
 
 def lire_acces():
@@ -503,9 +577,12 @@ def basculer(motifs, ouvrir_, mdp, mdp_prof):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2 or sys.argv[1] not in ('ajouter', 'catalogue', 'ouvrir', 'fermer', 'cle'):
+    if len(sys.argv) < 2 or sys.argv[1] not in ('ajouter', 'catalogue', 'ouvrir', 'fermer', 'cle', 'noter', 'entrainer'):
         print(__doc__)
         sys.exit(1)
+    if sys.argv[1] in ('noter', 'entrainer'):          # aucun mot de passe : le mode d'un quiz est public
+        basculer_mode(sys.argv[2:], sys.argv[1] == 'noter')
+        sys.exit(0)
     mdp, mdp_prof = mot_de_passe(), mot_de_passe_prof()
     if mdp == mdp_prof:
         raise SystemExit('Les deux mots de passe doivent être différents.')

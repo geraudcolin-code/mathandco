@@ -106,6 +106,7 @@ CHAPITRES = {
     ('terminale', 9): 'Représentations paramétriques et équations cartésiennes',
     ('terminale', 10): 'Combinatoire et dénombrement',
     ('terminale', 11): 'Primitives et équations différentielles',
+    ('terminale', 12): 'Succession d’épreuves indépendantes, schéma de Bernoulli',
     ('terminale', 13): 'Calcul intégral',
     ('terminale', 14): 'Sommes de variables aléatoires',
     ('terminale', 15): 'Concentration et loi des grands nombres',

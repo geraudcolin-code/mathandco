@@ -889,7 +889,21 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   box-shadow: 3px 5px 14px rgba(51, 51, 51, .25); color: #222; font-size: .86em; line-height: 1.5; transform: rotate(-1.2deg); }
 .qv-note-t { font-size: .6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7D6A12; }
 .qv-note .ML__latex { font-size: 1.05em; }
-@media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe { animation: none; stroke-dasharray: none; opacity: 1; } .qv-sub, .qv-sub.vu { transition: none; } }
+/* quiz TERM CH02 (19 nov. 2026) : mot de liaison devant un membre de gauche (hérédité : « On a : », « c-à-d », « c-à-d (d’après HR) »)
+   dans sa colonne ; sur téléphone, « (d’après HR) » passe sous « c-à-d » (le calcul garde sa place) ; flèches « ×N » rouges
+   étiquetées (numérateur par-dessus, dénominateur par-dessous) */
+.qv-dev-x { grid-template-columns: max-content max-content 1.7em minmax(0, 1fr); }
+.qv-dev-x .qv-dlx { text-align: right; white-space: nowrap; padding-right: .45em; font: 500 .9em/1.25 var(--f-texte); color: var(--encre); }
+.qv-dev-x .qv-dl0 .qv-dlx { display: none; }
+.qv-dpx .qv-dhr { color: #C25E14; font-weight: 700; }
+.qv-sait { color: #1E8449; font-weight: 700; }   /* hérédité : « ce que l’on sait » (vert), « ce que l’on veut » (rouge), charte § 3 */
+.qv-veut { color: #C0392B; font-weight: 700; }
+@media (max-width: 520px) { .qv-dev-x .qv-dlx { white-space: normal; max-width: 5.4em; font-size: .84em; } }
+.qv-dl.avec-fl-bas2 { padding-bottom: 2.4em; }
+.qv-dfl.fois { color: #D62828; }
+.qv-dfl-lab { fill: #D62828; font: 700 15px var(--f-texte); }
+.qv-dfl.trace .qv-dfl-lab { opacity: 0; animation: qv-pointe .15s .75s forwards; }
+@media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe, .qv-dfl.trace .qv-dfl-lab { animation: none; stroke-dasharray: none; opacity: 1; } .qv-sub, .qv-sub.vu { transition: none; } }
 
 /* ===== Quiz de chapitre : QCM, vrai / faux, associer, tableau à double entrée, arbre pondéré, exercice (1ère CH03, 14 nov. 2026) =====
    Classes préfixées « qz- » ; mêmes jetons que le reste des quiz : --quiz-afaire (à remplir), --rouge (erreur), --vert (réussite). */

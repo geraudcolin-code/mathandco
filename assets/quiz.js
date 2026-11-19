@@ -2730,13 +2730,18 @@
   function etapesDev(d, ajouter, trans, majs) {
     var g = el('div', 'qv-dev'), P = {}, N = {}, C = [], ouverts = {}, fl = [], barres = [], cadres = [], ligneDe = {}, SUB = {};
     var gauche = d.g || {}, avecG = Object.keys(gauche).length > 0;   // membres de gauche (lignes « 9 = 3² », « 2ab = … »)
+    // mot de liaison devant un membre de gauche (quiz TERM CH02, 19 nov. 2026, hérédité selon la charte § 4 : « On a : uₖ₊₁ = … »,
+    // « c-à-d (d’après HR) uₖ₊₁ = … », « c-à-d uₖ₊₁ = … ») : g[ligne].x, texte dans sa propre colonne, qui vient avec le membre
+    var avecX = Object.keys(gauche).some(function (c) { return gauche[c].x; });
     if (avecG) g.classList.add('qv-dev-g');
+    if (avecX) g.classList.add('qv-dev-x');
     d.l.forEach(function (L, i) {
       var aEg = i > 0 || !!gauche[i];
       var row = el('div', 'qv-dl' + (aEg ? '' : ' qv-dl0')), eg = el('span', 'qv-deg' + (aEg ? ' qv-e' : ''), aEg ? '\\(=\\)' : ''), c = el('span', 'qv-dc');
       if (avecG) {
-        var lg = el('span', 'qv-dlg');
-        if (gauche[i]) { var sl = el('span', 'qv-dp qv-e', '\\(' + gauche[i].t + '\\)'); sl.dataset.ligne = i; sl.dataset.gauche = '1'; P[gauche[i].i] = sl; lg.appendChild(sl); }
+        var lg = el('span', 'qv-dlg'), sx = null;
+        if (avecX) { var lx = el('span', 'qv-dlx'); if (gauche[i] && gauche[i].x) { sx = el('span', 'qv-dpx qv-e', gauche[i].x); lx.appendChild(sx); } row.appendChild(lx); }
+        if (gauche[i]) { var sl = el('span', 'qv-dp qv-e', '\\(' + gauche[i].t + '\\)'); sl.dataset.ligne = i; sl.dataset.gauche = '1'; sl._x = sx; P[gauche[i].i] = sl; lg.appendChild(sl); }
         row.appendChild(lg);
       }
       row.appendChild(eg); row.appendChild(c); g.appendChild(row); C.push({ row: row, eg: eg, c: c });
@@ -2781,7 +2786,7 @@
         if (t === 'v') r.forEach(function (id) {
           var p = P[id], sb = !p && SUB[id];
           if (sb) { sb.k = k; p = sb.p; if (p.dataset.e) return; }      // un terme d'un numérateur : la fraction vient avec le premier
-          p.dataset.e = k; var L = C[+p.dataset.ligne];
+          p.dataset.e = k; if (p._x) p._x.dataset.e = k; var L = C[+p.dataset.ligne];
           if (!p.dataset.gauche && !p.dataset.just && L.eg.classList.contains('qv-e') && !L.eg.dataset.e) L.eg.dataset.e = k;
         });
         else if (t === 'n') N[r[0]].el.dataset.e = k;
@@ -2789,9 +2794,10 @@
         else if (t === 'nl') N[r[0]].l[r[1]].dataset.e = k;
         else if (t === 'h') { var o = { id: trans.length, sel: 'qv-m-' + r[0], c: r[1], pre: k, show: Infinity }; trans.push(o); ouverts[r[0]] = o; }
         else if (t === 'hx') r.forEach(function (id) { if (ouverts[id]) { ouverts[id].show = k - 1; delete ouverts[id]; } });
-        else if (t === 'f') {
-          fl.push({ de: r[0], vers: r[1], bas: r[2] === 'bas', haut2: r[2] === 'haut2', k0: k, k1: Infinity });
-          C[ligneDe[r[1]]].row.classList.add(r[2] === 'bas' ? 'avec-fl-bas' : r[2] === 'haut2' ? 'avec-fl2' : 'avec-fl');   // de la place pour la flèche
+        else if (t === 'f') {                           // ['f', de, vers, sens, étiquette] : étiquette « ×10 » en rouge au sommet (19 nov. 2026)
+          var lab = r[3] || null;
+          fl.push({ de: r[0], vers: r[1], bas: r[2] === 'bas', haut2: r[2] === 'haut2' || (!!lab && r[2] !== 'bas'), lab: lab, k0: k, k1: Infinity });
+          C[ligneDe[r[1]]].row.classList.add(r[2] === 'bas' ? (lab ? 'avec-fl-bas2' : 'avec-fl-bas') : r[2] === 'haut2' || lab ? 'avec-fl2' : 'avec-fl');   // de la place pour la flèche
         }
         else if (t === 'fx') fl.forEach(function (f) { if (f.k1 === Infinity) f.k1 = k - 1; });
         else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], id: id, k0: k }); });
@@ -2808,15 +2814,20 @@
         if (!A || !B) return;
         var x1 = (A.l + A.r) / 2 - H.left, x2 = (B.l + B.r) / 2 - H.left, s = f.bas ? 1 : -1;
         var y1 = (f.bas ? A.b + 3 : A.t - 3) - H.top, y2 = (f.bas ? B.b + 3 : B.t - 3) - H.top;
-        var h = f.haut2 ? Math.min(46, 24 + Math.abs(x2 - x1) * 0.22) : Math.min(30, 11 + Math.abs(x2 - x1) * 0.17), ym = (f.bas ? Math.max(y1, y2) : Math.min(y1, y2)) + s * h;
+        var h = f.lab ? Math.min(34, 20 + Math.abs(x2 - x1) * 0.15) : f.haut2 ? Math.min(46, 24 + Math.abs(x2 - x1) * 0.22) : Math.min(30, 11 + Math.abs(x2 - x1) * 0.17), ym = (f.bas ? Math.max(y1, y2) : Math.min(y1, y2)) + s * h;
         var neuve = !f.el;
         if (neuve) {
-          f.el = svgEl('g', { class: 'qv-dfl' + (f.bas ? ' bas' : '') + (f.haut2 ? ' bleu' : '') });
+          f.el = svgEl('g', { class: 'qv-dfl' + (f.lab ? ' fois' : f.bas ? ' bas' : f.haut2 ? ' bleu' : '') });
           f.el.appendChild(svgEl('path', { class: 'tige' })); f.el.appendChild(svgEl('path', { class: 'pointe' })); svg.appendChild(f.el);
+          if (f.lab) { f.t = svgEl('text', { class: 'qv-dfl-lab', 'text-anchor': 'middle' }); f.t.textContent = f.lab; f.el.appendChild(f.t); }
         }
-        var tige = f.el.firstChild, pointe = f.el.lastChild;
+        var tige = f.el.firstChild, pointe = f.el.childNodes[1];
         tige.setAttribute('d', 'M' + x1 + ' ' + y1 + ' C' + x1 + ' ' + ym + ',' + x2 + ' ' + ym + ',' + x2 + ' ' + y2);
         pointe.setAttribute('d', 'M' + (x2 - 5) + ' ' + (y2 + s * 7) + ' L' + x2 + ' ' + y2 + ' L' + (x2 + 5) + ' ' + (y2 + s * 7));
+        if (f.t) {                                    // l'étiquette au sommet de l'arc (sommet de la courbe de Bézier : t = 1/2)
+          var ys = 0.125 * (y1 + y2) + 0.75 * ym;
+          f.t.setAttribute('x', ((x1 + x2) / 2).toFixed(1)); f.t.setAttribute('y', (f.bas ? ys + 15 : ys - 5).toFixed(1));
+        }
         if (neuve && anime && k === f.k0) {        // la flèche se TRACE du facteur vers le terme, la pointe à l'arrivée
           var L = tige.getTotalLength ? tige.getTotalLength() : 200;
           f.el.style.setProperty('--L', L.toFixed(1)); f.el.classList.add('trace');

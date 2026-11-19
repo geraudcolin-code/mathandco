@@ -876,6 +876,7 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-sub.vu { visibility: inherit; opacity: 1; transition: opacity .45s var(--courbe), visibility 0s; }
 .qv-dl.avec-fl2 { padding-top: 2.5em; }
 .qv-dp.qv-dj { margin-left: .9em; align-self: center; max-width: 100%; color: #ED7D31; font: 700 .82em var(--f-texte); white-space: normal; }
+.qv-dev-g > .qv-dl > .qv-dp.qv-dj-dessous { grid-column: 1 / -1; justify-self: end; text-align: right; margin: .35em 0 0; }   /* sous la ligne entière */
 .qv-dfl path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .qv-dfl.trace .tige { stroke-dasharray: var(--L); stroke-dashoffset: var(--L); animation: qv-trace .8s cubic-bezier(.25, .7, .35, 1) forwards; }
 .qv-dfl.trace .pointe { opacity: 0; animation: qv-pointe .15s .75s forwards; }

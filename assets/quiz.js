@@ -2625,8 +2625,26 @@
       var ms = Array.prototype.slice.call(g.querySelectorAll('.qv-dp'));
       ms.forEach(function (x) { x.style.fontSize = ''; });
       ms.forEach(function (x) {
+        if (x.classList.contains('qv-dj')) return;                 // les justifications ensuite : elles prennent la place qui reste
         var c = x.closest('.qv-dc'), cw = c && c.clientWidth, w = x.getBoundingClientRect().width;
         if (cw && w > cw) x.style.fontSize = Math.max(0.55, cw / w * 0.97).toFixed(3) + 'em';
+      });
+      // justification « car … » au bout d'une ligne (contre-relecture du 19 nov. 2026) : passée sous la ligne, elle restait dans la
+      // colonne des membres de droite et pouvait déborder du volet sur téléphone ; dans une grille à membres de gauche, elle va alors
+      // sous la ligne entière (toute la largeur, calée à droite) ; trop large, elle rétrécit (taille de base .82em, comme la marge)
+      ms.forEach(function (x) {
+        if (!x.classList.contains('qv-dj')) return;
+        var c = x._cellule || x.closest('.qv-dc'), row = c && c.closest('.qv-dl'); if (!c || !row) return;
+        x._cellule = c;
+        if (x.parentNode !== c) c.appendChild(x);                 // remise au bout de sa ligne : la largeur a pu changer
+        x.classList.remove('qv-dj-dessous');
+        var av = x.previousElementSibling;
+        if (av && x.getBoundingClientRect().top >= av.getBoundingClientRect().bottom - 2 && row.parentNode.classList.contains('qv-dev-g')) {
+          row.appendChild(x); x.classList.add('qv-dj-dessous');
+        }
+        var box = (x.parentNode === row ? row : c).getBoundingClientRect(), w = x.scrollWidth;
+        var dispo = x.parentNode === row ? box.width - 2 : box.right - x.getBoundingClientRect().left - 2;
+        if (w > dispo + 1) x.style.fontSize = (Math.max(0.6, dispo / w) * 0.82).toFixed(3) + 'em';
       });
       g._ajuste = W;
     });

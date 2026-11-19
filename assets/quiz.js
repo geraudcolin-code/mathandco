@@ -2109,6 +2109,9 @@
   function dessinerTableau(t, mode, o) {
     o = o || {}; o.slots = o.slots || [];
     var cadre = el('div', 'qz-tab-cadre'), tab = el('table', 'qz-tab' + (t.totaux ? ' qz-avec-totaux' : '')), R = t.lignes.length;
+    // 6 colonnes ou plus (tableau d'état d'un programme : k, u et 4 tours de boucle, quiz TERM CH02, 19 nov. 2026) : sur téléphone,
+    // cases plus compactes (site.css) pour que le tableau tienne dans l'écran sans défiler
+    if (Math.max.apply(null, t.lignes.map(function (l) { return l.length; })) >= 6) tab.classList.add('qz-tab-serre');
     t.lignes.forEach(function (ligne, i) {
       var tr = el('tr'), C = ligne.length;
       ligne.forEach(function (c, j) {

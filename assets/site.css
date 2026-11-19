@@ -1096,6 +1096,15 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
   .qv-corps .qz-arbre, .qv-corps .qz-tab { font-size: .92rem; }
 }
 @media (prefers-reduced-motion: reduce) { .qz-partie-coche, .qz-prop, .qz-vf-b, .qz-pastille { transition: none; } .qz-val.neuf { animation: none; } }
+/* Tableau de 6 colonnes ou plus (classe posée par dessinerTableau : tableau d'état d'un programme, quiz TERM CH02, 19 nov. 2026) :
+   sur téléphone, cases plus compactes, pour qu'il tienne dans l'écran (iPhone 13 : 390 px, dans une partie d'exercice aussi)
+   au lieu de défiler sans que rien ne le signale ; les tableaux plus étroits ne changent pas */
+@media (max-width: 520px) {
+  .qz-tab.qz-tab-serre { font-size: .92rem; }
+  .qz-tab.qz-tab-serre th, .qz-tab.qz-tab-serre td { padding: 3px 4px; min-width: 2.6em; }
+  .qz-tab.qz-tab-serre td.qz-case { padding: 3px; }
+  .qz-tab.qz-tab-serre math-field.quiz-champ.petit.qz-champ { min-width: 2.6em; font-size: .96rem; padding: 2px 3px; }
+}
 
 /* Facteurs barrés (\cancel) des simplifications : le trait de MathLive est trop fin (≈ 1 px) pour qu'on le voie ;
    barre oblique nette, comme dans les corrections de M. Colin (15 nov. 2026) */

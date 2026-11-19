@@ -869,7 +869,13 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-dp.qv-dps { margin-left: .24em; }
 .qv-dev-fl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 1; }
 .qv-dfl { color: #D62828; }
-.qv-dfl.bas { color: #2F6FD6; }
+.qv-dfl.bas, .qv-dfl.bleu { color: #2F6FD6; }
+/* quiz TERM CH02 (18 nov. 2026, distributivité fléchée partout) : un terme d'un numérateur à son propre clic (sous-morceau,
+   place gardée), flèches bleues plus hautes au-dessus d'un numérateur, justification « HR » en orange au bout de la ligne */
+.qv-sub { visibility: hidden; opacity: 0; transition: opacity .45s var(--courbe), visibility 0s .45s; }
+.qv-sub.vu { visibility: inherit; opacity: 1; transition: opacity .45s var(--courbe), visibility 0s; }
+.qv-dl.avec-fl2 { padding-top: 2.5em; }
+.qv-dp.qv-dj { margin-left: .9em; align-self: center; max-width: 100%; color: #ED7D31; font: 700 .82em var(--f-texte); white-space: normal; }
 .qv-dfl path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .qv-dfl.trace .tige { stroke-dasharray: var(--L); stroke-dashoffset: var(--L); animation: qv-trace .8s cubic-bezier(.25, .7, .35, 1) forwards; }
 .qv-dfl.trace .pointe { opacity: 0; animation: qv-pointe .15s .75s forwards; }
@@ -883,7 +889,7 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   box-shadow: 3px 5px 14px rgba(51, 51, 51, .25); color: #222; font-size: .86em; line-height: 1.5; transform: rotate(-1.2deg); }
 .qv-note-t { font-size: .6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7D6A12; }
 .qv-note .ML__latex { font-size: 1.05em; }
-@media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe { animation: none; stroke-dasharray: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe { animation: none; stroke-dasharray: none; opacity: 1; } .qv-sub, .qv-sub.vu { transition: none; } }
 
 /* ===== Quiz de chapitre : QCM, vrai / faux, associer, tableau à double entrée, arbre pondéré, exercice (1ère CH03, 14 nov. 2026) =====
    Classes préfixées « qz- » ; mêmes jetons que le reste des quiz : --quiz-afaire (à remplir), --rouge (erreur), --vert (réussite). */
@@ -1157,40 +1163,78 @@ math-field.quiz-champ.qz-juste { border-color: var(--vert); border-style: solid;
 /* graphique de conclusion d'une correction (nuage de points d'une limite) */
 .qv-fig.qv-fig-fin { margin: 10px 0 6px; }
 .qv-fig.qv-fig-fin img { max-height: 340px; }
-/* démonstration en BLOCS (façon kwyk) : mots de liaison en vert, blocs bruns (propriété, théorème, définition), bleus
-   (affirmation sur la suite), violets (inégalité) ; une place vide en pointillés « à remplir », la place prête entourée */
-.qz-blocs { display: grid; gap: 14px; }
-.qz-blocs-cap { justify-self: start; margin: 0 0 4px; padding: 4px 14px 5px; border-radius: 14px 14px 4px 4px; background: #74762a; color: #fff;
-  font: 600 .95rem var(--f-texte); }
-.qz-blocs-cap-pal { background: var(--fond-2); color: var(--gris); border-radius: 10px; }
-.qz-blocs-demo, .qz-blocs-palette { display: grid; gap: 6px; min-width: 0; }
-.qz-blocs-demo { padding: 10px; border: 2px solid var(--filet); border-radius: 16px; }
-.qz-blocs-ligne { display: grid; grid-template-columns: 7.4em minmax(0, 1fr); align-items: center; gap: 8px; padding: 3px; border: 2px solid transparent;
-  border-radius: 12px; transition: border-color .2s, background-color .2s; }
-.qz-blocs-ligne.qz-blocs-etape { margin-top: 10px; }
-.qz-blocs-mot { align-self: stretch; display: flex; align-items: center; padding: 6px 10px; border-radius: 10px; background: #2f7d32; color: #fff;
-  font: 600 1rem/1.2 var(--f-texte); }
-.qz-blocs-place { min-width: 0; min-height: 46px; padding: 6px 12px; border: 2px dashed var(--quiz-afaire, var(--bleu)); border-radius: 10px;
-  background: var(--quiz-afaire-fond, var(--bleu-fond)); color: var(--encre); font: 500 1.04rem/1.3 var(--f-texte); text-align: left; cursor: pointer;
-  overflow-x: auto; transition: box-shadow .2s, background-color .2s; }
-.qz-blocs-place.active { border-style: solid; box-shadow: 0 0 0 3px color-mix(in srgb, var(--quiz-afaire, var(--bleu)) 32%, transparent); }
-.qz-blocs-place.remplie { border-style: solid; border-color: transparent; color: #fff; }
-.qz-blocs-place.remplie.active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bleu) 45%, transparent); }
-.qz-blocs-liste { display: flex; flex-wrap: wrap; gap: 8px; }
-.qz-bloc { min-height: 44px; max-width: 100%; padding: 6px 14px; border: 0; border-radius: 10px; color: #fff; font: 500 1.04rem/1.3 var(--f-texte);
-  text-align: left; cursor: pointer; overflow-x: auto; box-shadow: 0 2px 0 rgba(0, 0, 0, .18); transition: transform .15s, opacity .2s; }
-.qz-bloc:active:not(:disabled) { transform: translateY(1px) scale(.985); }
+/* démonstration en BLOCS FAÇON SCRATCH (M. Colin, 18 nov. 2026, 22 h 33 : « des blocs qui s'incrustent les uns dans les autres
+   comme sur Scratch ») : le titre « Démonstration » en bloc CHAPEAU ; chaque ligne (« On sait que », « or, », « donc »…) est une
+   pièce de commande verte à ENCOCHE (en haut) et à ERGOT (en bas), empilée sous la précédente (une seule pile : l'ergot entre
+   dans l'encoche) ; dans chaque ligne, un TROU de la forme des blocs ; tous les blocs ont la MÊME forme (elle ne trahit rien),
+   leur couleur garde son sens : brun propriété, bleu fait, violet inégalité ; un bloc posé s'incruste (transform seulement :
+   rien ne bouge autour). Formes : clip-path sur des pseudo-éléments (::before la pièce, ::after son liseré plus sombre). */
+.qz-blocs { --qzb-n: 6px; --qzb-x: 16px; --qzb-l: 22px; --qzb-vert: #3d8b37; --qzb-vert-l: #276222; --qzb-pill: 1.35em;
+  display: grid; gap: 18px; }
+.qz-blocs-demo { display: grid; min-width: 0; padding: 2px 0 8px; }
+/* forme d'une pièce : encoche de profondeur n entre x et x + l (en haut), ergot identique en bas */
+.qz-blocs-ligne, .qz-blocs-chapeau { --qzb-forme: polygon(0 4px, 4px 0, var(--qzb-x) 0, calc(var(--qzb-x) + var(--qzb-n)) var(--qzb-n),
+    calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) var(--qzb-n), calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) 0, calc(100% - 4px) 0,
+    100% 4px, 100% calc(100% - var(--qzb-n) - 4px), calc(100% - 4px) calc(100% - var(--qzb-n)),
+    calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) calc(100% - var(--qzb-n)), calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) 100%,
+    calc(var(--qzb-x) + var(--qzb-n)) 100%, var(--qzb-x) calc(100% - var(--qzb-n)), 4px calc(100% - var(--qzb-n)), 0 calc(100% - var(--qzb-n) - 4px)); }
+.qz-blocs-ligne::before, .qz-blocs-ligne::after, .qz-blocs-chapeau::before, .qz-blocs-chapeau::after { content: ''; position: absolute; pointer-events: none; }
+/* le chapeau : dôme en haut à gauche, ergot en bas (rien en haut à emboîter) */
+.qz-blocs-cap.qz-blocs-chapeau { position: relative; isolation: isolate; justify-self: start; min-width: min(15em, 100%); margin: 0; padding: 20px 22px calc(9px + var(--qzb-n)) 14px;
+  border-radius: 0; background: none; color: #fff; font: 700 1rem/1.2 var(--f-texte); letter-spacing: .01em; }
+.qz-blocs-chapeau::before { inset: 0; z-index: -1; background: #c88a12; border-radius: 74px 12px 0 0 / 22px 12px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--qzb-n) - 4px), calc(100% - 4px) calc(100% - var(--qzb-n)),
+    calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) calc(100% - var(--qzb-n)), calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) 100%,
+    calc(var(--qzb-x) + var(--qzb-n)) 100%, var(--qzb-x) calc(100% - var(--qzb-n)), 0 calc(100% - var(--qzb-n))); }
+.qz-blocs-chapeau::after { inset: 0 0 -2px; z-index: -2; background: #8f6008; border-radius: 74px 12px 0 0 / 22px 12px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--qzb-n) - 4px), calc(100% - 4px) calc(100% - var(--qzb-n)),
+    calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) calc(100% - var(--qzb-n)), calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) 100%,
+    calc(var(--qzb-x) + var(--qzb-n)) 100%, var(--qzb-x) calc(100% - var(--qzb-n)), 0 calc(100% - var(--qzb-n))); }
+/* une ligne = une pièce de commande (verte : les mots de liaison) ; son ergot entre dans l'encoche de la suivante */
+.qz-blocs-ligne { position: relative; isolation: isolate; display: grid; grid-template-columns: 7.2em minmax(0, 1fr); align-items: center; gap: 8px;
+  margin-top: calc(-1 * var(--qzb-n)); padding: calc(7px + var(--qzb-n)) 10px calc(7px + var(--qzb-n)) 12px; color: #fff; }
+.qz-blocs-ligne::before { inset: 0; z-index: -1; background: var(--qzb-vert); clip-path: var(--qzb-forme); transition: background-color .2s; }
+.qz-blocs-ligne::after { inset: -2px 0; z-index: -2; background: var(--qzb-vert-l); clip-path: var(--qzb-forme); }
+.qz-blocs-ligne.qz-blocs-etape::before { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .28); }   /* « On sait que » : une nouvelle étape */
+.qz-blocs-mot { display: block; padding: 0 2px; color: #fff; font: 700 1rem/1.25 var(--f-texte); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+/* le TROU : creusé dans la pièce, de la forme des blocs ; « à remplir » en pointillés */
+.qz-blocs-place { min-width: 0; min-height: 46px; padding: 6px 14px; border: 2px dashed rgba(255, 255, 255, .85); border-radius: var(--qzb-pill);
+  background: rgba(0, 0, 0, .26); box-shadow: inset 0 3px 5px rgba(0, 0, 0, .35); color: #fff; font: 500 1.04rem/1.3 var(--f-texte);
+  text-align: left; cursor: pointer; overflow-x: auto; transition: box-shadow .2s, background-color .2s, border-color .2s; }
+.qz-blocs-place:hover:not(:disabled):not(.remplie) { background: rgba(0, 0, 0, .18); }
+.qz-blocs-place.active { border-style: solid; border-color: #fff; background: color-mix(in srgb, var(--quiz-afaire, var(--bleu)) 30%, rgba(0, 0, 0, .3));
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--quiz-afaire, #fff) 70%, #fff); }
+.qz-blocs-place.remplie { border: 1px solid rgba(0, 0, 0, .3); box-shadow: 0 2px 0 rgba(0, 0, 0, .25); }
+.qz-blocs-place.remplie.active { box-shadow: 0 2px 0 rgba(0, 0, 0, .25), 0 0 0 3px #fff, 0 0 0 5px color-mix(in srgb, var(--bleu) 70%, transparent); }
+.qz-blocs-place.qz-incruste { animation: qz-incruste .42s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes qz-incruste { 0% { transform: translateY(-9px) scale(1.07); opacity: .45; } 60% { transform: translateY(1px) scale(.985); opacity: 1; }
+  100% { transform: none; } }
+/* la palette, comme celle de Scratch : un panneau clair, les blocs les uns sous les autres */
+.qz-blocs-palette { display: grid; gap: 10px; min-width: 0; padding: 10px 12px 14px; border: 1px solid var(--filet); border-radius: 10px;
+  background: color-mix(in srgb, var(--fond-2) 70%, transparent); }
+.qz-blocs-cap.qz-blocs-cap-pal { justify-self: start; margin: 0; padding: 0; border-radius: 0; background: none; color: var(--gris);
+  font: 700 .82rem var(--f-texte); letter-spacing: .06em; text-transform: uppercase; }
+.qz-blocs-liste { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 9px; }
+.qz-bloc { min-height: 44px; max-width: 100%; padding: 6px 16px; border: 1px solid rgba(0, 0, 0, .3); border-radius: var(--qzb-pill); color: #fff;
+  font: 500 1.04rem/1.3 var(--f-texte); text-align: left; cursor: pointer; overflow-x: auto; box-shadow: 0 2px 0 rgba(0, 0, 0, .25);
+  transition: transform .15s, opacity .2s, box-shadow .15s; }
+.qz-bloc:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 0 rgba(0, 0, 0, .25); }
+.qz-bloc:active:not(:disabled) { transform: translateY(1px) scale(.985); box-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
 .qz-bloc:disabled { opacity: .55; cursor: default; }
 .qz-bloc-prop, .qz-blocs-place.remplie.qz-bloc-prop { background: #8a5a3c; }
 .qz-bloc-fait, .qz-blocs-place.remplie.qz-bloc-fait { background: #2f5f8f; }
 .qz-bloc-ineg, .qz-blocs-place.remplie.qz-bloc-ineg { background: #6a3f9e; }
-.qz-blocs-ligne.qz-faux { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 7%, transparent); }
-.qz-blocs-ligne.qz-faux .qz-blocs-place { box-shadow: 0 0 0 3px var(--rouge); }
-.qz-blocs-ligne.qz-juste .qz-blocs-place { box-shadow: 0 0 0 3px var(--vert); }
+/* vérification : la ligne fausse marquée d'un liseré rouge à gauche, son trou entouré de rouge ; juste : entouré de vert */
+.qz-blocs-ligne.qz-faux::before { box-shadow: inset 7px 0 0 var(--rouge); }
+.qz-blocs-ligne.qz-faux .qz-blocs-place { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--rouge); }
+.qz-blocs-ligne.qz-juste .qz-blocs-place { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #a6ec98; }   /* vert clair : visible sur la pièce verte */
 .qz-blocs-place:disabled { cursor: default; }
 @media (max-width: 720px) {
-  .qz-blocs-demo { padding: 8px 6px; }
-  .qz-blocs-ligne { grid-template-columns: 6.1em minmax(0, 1fr); gap: 6px; }
-  .qz-blocs-mot { padding: 5px 7px; font-size: .92rem; }
-  .qz-blocs-place, .qz-bloc { font-size: .98rem; padding: 5px 10px; }
+  .qz-blocs { --qzb-x: 12px; --qzb-l: 18px; }
+  .qz-blocs-ligne { grid-template-columns: 5.6em minmax(0, 1fr); gap: 6px; padding-left: 9px; padding-right: 7px; }
+  .qz-blocs-mot { font-size: .92rem; }
+  .qz-blocs-place, .qz-bloc { font-size: .98rem; padding: 5px 12px; }
+  .qz-blocs-palette { padding: 8px 8px 12px; }
+  .qz-blocs-liste { flex-direction: column; }        /* téléphone : un bloc par ligne, comme la palette de Scratch */
 }
+@media (prefers-reduced-motion: reduce) { .qz-blocs-place.qz-incruste { animation: none; } }

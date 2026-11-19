@@ -1804,16 +1804,19 @@
      On touche une place (la première place vide est prête), puis un bloc : il s'y pose et la place vide suivante est prête ;
      un bloc sert autant de fois qu'il faut ; une place remplie se touche pour être changée, une seconde fois pour être
      vidée. Couleurs des blocs (genres, comme kwyk) : 'prop' propriété / théorème / définition (brun), 'fait' affirmation
-     sur la suite (bleu), 'ineg' inégalité (violet). Même vérification, même barème et même rapport qu'« associer ». ----- */
+     sur la suite (bleu), 'ineg' inégalité (violet). Même vérification, même barème et même rapport qu'« associer ».
+     Apparence FAÇON SCRATCH (M. Colin, 18 nov. 2026, 22 h 33) : « Démonstration » en bloc chapeau, chaque ligne une pièce de
+     commande à encoche et à ergot (une seule pile), un trou de la forme des blocs dans chaque ligne ; tous les blocs ont la
+     même forme ; un bloc posé s'incruste dans son trou (site.css : formes en clip-path). ----- */
   function saisieBlocs(q) {
     var n = q.gauche.length, rep = q.gauche.map(function () { return null; }), actif = 0, fige = false;
     var ordreD = q.droite.map(function (_, j) { return j; });
     if (q.melanger !== false) ordreD = melanger(ordreD);
     function genre(j) { var g = q.genres && q.genres[j]; return g === 'prop' || g === 'ineg' ? g : 'fait'; }
     var box = el('div', 'qz-blocs'), demo = el('div', 'qz-blocs-demo'), pal = el('div', 'qz-blocs-palette');
-    demo.appendChild(el('p', 'qz-blocs-cap', 'Démonstration'));
+    demo.appendChild(el('p', 'qz-blocs-cap qz-blocs-chapeau', 'Démonstration'));      // le bloc chapeau de la pile
     var lignes = q.gauche.map(function (g, i) {
-      var etape = i > 0 && /^on sait/i.test(texteSimple(g));
+      var etape = i > 0 && /^(on sait|initialisation|hérédité|conclusion)/i.test(texteSimple(g));   // une nouvelle étape de la démonstration
       var li = el('div', 'qz-blocs-ligne' + (etape ? ' qz-blocs-etape' : '')), mot = el('span', 'qz-blocs-mot', g), place = el('button', 'qz-blocs-place');
       place.type = 'button'; place.dataset.i = i;
       place.addEventListener('click', function () {
@@ -1848,12 +1851,20 @@
       lignes.forEach(function (l, i) {
         var j = rep[i], p = l.place;
         p.className = 'qz-blocs-place' + (j != null ? ' remplie qz-bloc-' + genre(j) : '') + (i === actif && !fige ? ' active' : '');
-        if (p._j !== j) { p._j = j; p.innerHTML = j != null ? q.droite[j] : ''; if (j != null) rendre(p); }
+        if (p._j !== j) {
+          p._j = j; p.innerHTML = j != null ? q.droite[j] : '';
+          if (j != null) {
+            rendre(p);
+            if (pret) { p.classList.add('qz-incruste'); p.addEventListener('animationend', function fin() { p.classList.remove('qz-incruste'); p.removeEventListener('animationend', fin); }); }   // le bloc s'incruste dans son trou
+          }
+        }
         p.setAttribute('aria-pressed', i === actif && !fige ? 'true' : 'false');
         p.setAttribute('aria-label', 'Place ' + (i + 1) + ', après « ' + l.nom + ' » : ' + (j != null ? texteSimple(q.droite[j]) : 'vide'));
       });
     }
+    var pret = false;                                               // pas d'animation au premier affichage
     maj();
+    pret = true;
     return {
       el: box, ordreD: ordreD,
       lire: function () { return rep.slice(); },
@@ -2566,6 +2577,18 @@
       if (g._justifs && (deborde() || margeManque())) { f = 1; g.style.fontSize = ''; g.classList.add('qv-dessous'); reduire(0.5); }
       g._ajuste = W;
     });
+    // développement pas à pas (TERM CH02) : un morceau d'un seul tenant plus large que sa ligne (une fraction dont le
+    // numérateur est développé) est réduit jusqu'à tenir ; les autres passent à la ligne entre deux morceaux
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-dev'), function (g) {
+      var W = g.clientWidth; if (!W || (g._ajuste === W && !force)) return;
+      var ms = Array.prototype.slice.call(g.querySelectorAll('.qv-dp'));
+      ms.forEach(function (x) { x.style.fontSize = ''; });
+      ms.forEach(function (x) {
+        var c = x.closest('.qv-dc'), cw = c && c.clientWidth, w = x.getBoundingClientRect().width;
+        if (cw && w > cw) x.style.fontSize = Math.max(0.55, cw / w * 0.97).toFixed(3) + 'em';
+      });
+      g._ajuste = W;
+    });
     Array.prototype.forEach.call(racine.querySelectorAll('.qv-p'), function (p) {
       var W = p.clientWidth; if (!W || (p._ajuste === W && !force)) return;
       Array.prototype.forEach.call(p.querySelectorAll('.qv-insec'), function (q) { q.style.fontSize = ''; });
@@ -2681,9 +2704,18 @@
      Une marque est posée dans le TeX d'un morceau : \class{qv-c qv-m-<id>}{…} (le cœur d'un terme, jamais son signe).
      Morceau {i, t, g} : les morceaux de même groupe g (une parenthèse entière) ne sont jamais coupés par un retour à la
      ligne (15 nov. 2026). d.g = {ligne: {i, t}} : membre de gauche d'une ligne (« 9 = 3² donc b = 3 », « 2ab = … »),
-     dans une colonne alignée, révélé par ['v', i] à son propre clic ; le « = » vient avec le premier morceau de droite. */
+     dans une colonne alignée, révélé par ['v', i] à son propre clic ; le « = » vient avec le premier morceau de droite.
+     Ajouts du quiz TERM CH02 (18 nov. 2026, distributivité fléchée partout, charte § 11.2) :
+     - SOUS-MORCEAU \class{qv-sub qv-s-<id>}{…} dans le TeX d'un morceau (un terme d'un NUMÉRATEUR, qui ne peut pas être
+       un morceau à part) : ['v', <id>] le fait apparaître à son clic ; le morceau qui le porte (la fraction, son trait et
+       son dénominateur) apparaît avec son premier sous-morceau ; ['x', <id>] le barre ;
+     - morceau {i, t, j: 1} : justification de la ligne (« HR ») en orange au bout de la ligne, à son clic, avant la ligne ;
+     - ['f', de, vers, 'haut2'] : flèche bleue PAR-DESSUS, plus haute (2ᵉ facteur dans un numérateur : par-dessous, elle
+       couperait le trait de fraction) ;
+     - ['c', ligne] sur une ligne sans membre de gauche d'un développement à membres de gauche : cadre à la taille de ce
+       qui est écrit (la cellule de la grille s'étire sur toute la largeur). */
   function etapesDev(d, ajouter, trans, majs) {
-    var g = el('div', 'qv-dev'), P = {}, N = {}, C = [], ouverts = {}, fl = [], barres = [], cadres = [], ligneDe = {};
+    var g = el('div', 'qv-dev'), P = {}, N = {}, C = [], ouverts = {}, fl = [], barres = [], cadres = [], ligneDe = {}, SUB = {};
     var gauche = d.g || {}, avecG = Object.keys(gauche).length > 0;   // membres de gauche (lignes « 9 = 3² », « 2ab = … »)
     if (avecG) g.classList.add('qv-dev-g');
     d.l.forEach(function (L, i) {
@@ -2695,8 +2727,9 @@
         row.appendChild(lg);
       }
       row.appendChild(eg); row.appendChild(c); g.appendChild(row); C.push({ row: row, eg: eg, c: c });
-      var groupes = {};                         // morceaux d'un même groupe (p.g) : jamais coupés par un retour à la ligne
+      var groupes = {}, jus = [];               // morceaux d'un même groupe (p.g) : jamais coupés par un retour à la ligne
       L.forEach(function (p, j) {
+        if (p.j) { var sj = el('span', 'qv-dp qv-dj qv-e', p.t); sj.dataset.ligne = i; sj.dataset.just = '1'; P[p.i] = sj; jus.push(sj); return; }   // « HR » : posée après le garde-fou
         var ouvrant = j && /[([]\s*$/.test(L[j - 1].t);                             // juste après « ( » ou « [ » : un signe de début de terme, pas d'opération
         var t = p.t, sg = j && !ouvrant ? /^(\\class\{[^{}]*\}\{[+-]\}|[+=-])/.exec(t) : null;   // un signe (ou un « = ») entre deux morceaux : espacé
         if (sg) t = sg[1] + '\\:' + t.slice(sg[1].length);                              // comme une opération (morceaux séparés)
@@ -2706,6 +2739,7 @@
         if (p.g) { if (!groupes[p.g]) { groupes[p.g] = el('span', 'qv-dgr'); c.appendChild(groupes[p.g]); } groupes[p.g].appendChild(s); }
         else c.appendChild(s);
         (p.t.match(/qv-m-[\w-]+/g) || []).forEach(function (m) { ligneDe[m.slice(5)] = i; });
+        (p.t.match(/qv-s-[\w-]+/g) || []).forEach(function (m) { SUB[m.slice(5)] = { p: s, k: null }; });   // termes d'un numérateur
       });
       // garde-fou (15 nov. 2026) : le dernier morceau d'une ligne n'est jamais laissé seul à la ligne : collé au précédent
       var kids = c.children, der = kids[kids.length - 1], avant = kids[kids.length - 2];
@@ -2715,6 +2749,7 @@
         else { var colle = el('span', 'qv-dgr'); c.insertBefore(colle, avant); colle.appendChild(avant); colle.appendChild(seul); }
         if (der !== seul) c.removeChild(der);
       }
+      jus.forEach(function (sj) { c.appendChild(sj); });
       var ns = (d.n || []).filter(function (x) { return x.apres === i; });
       if (ns.length) {
         var bloc = el('div', 'qv-notes');
@@ -2730,19 +2765,25 @@
       var k = ajouter();
       acts.forEach(function (a) {
         var t = a[0], r = a.slice(1);
-        if (t === 'v') r.forEach(function (id) { var p = P[id]; p.dataset.e = k; var L = C[+p.dataset.ligne]; if (!p.dataset.gauche && L.eg.classList.contains('qv-e') && !L.eg.dataset.e) L.eg.dataset.e = k; });
+        if (t === 'v') r.forEach(function (id) {
+          var p = P[id], sb = !p && SUB[id];
+          if (sb) { sb.k = k; p = sb.p; if (p.dataset.e) return; }      // un terme d'un numérateur : la fraction vient avec le premier
+          p.dataset.e = k; var L = C[+p.dataset.ligne];
+          if (!p.dataset.gauche && !p.dataset.just && L.eg.classList.contains('qv-e') && !L.eg.dataset.e) L.eg.dataset.e = k;
+        });
         else if (t === 'n') N[r[0]].el.dataset.e = k;
         else if (t === 'nx') N[r[0]].el.dataset.f = k;                     // le post-it s'en va (le suivant prend sa place)
         else if (t === 'nl') N[r[0]].l[r[1]].dataset.e = k;
         else if (t === 'h') { var o = { id: trans.length, sel: 'qv-m-' + r[0], c: r[1], pre: k, show: Infinity }; trans.push(o); ouverts[r[0]] = o; }
         else if (t === 'hx') r.forEach(function (id) { if (ouverts[id]) { ouverts[id].show = k - 1; delete ouverts[id]; } });
         else if (t === 'f') {
-          fl.push({ de: r[0], vers: r[1], bas: r[2] === 'bas', k0: k, k1: Infinity });
-          C[ligneDe[r[1]]].row.classList.add(r[2] === 'bas' ? 'avec-fl-bas' : 'avec-fl');   // de la place pour la flèche
+          fl.push({ de: r[0], vers: r[1], bas: r[2] === 'bas', haut2: r[2] === 'haut2', k0: k, k1: Infinity });
+          C[ligneDe[r[1]]].row.classList.add(r[2] === 'bas' ? 'avec-fl-bas' : r[2] === 'haut2' ? 'avec-fl2' : 'avec-fl');   // de la place pour la flèche
         }
         else if (t === 'fx') fl.forEach(function (f) { if (f.k1 === Infinity) f.k1 = k - 1; });
-        else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], k0: k }); });
-        else if (t === 'c') cadres.push(gauche[r[0]] ? { ligne: C[r[0]].row, k0: k } : { c: C[r[0]].c, k0: k });   // avec un membre de gauche : toute l'égalité encadrée
+        else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], id: id, k0: k }); });
+        // avec un membre de gauche : toute l'égalité encadrée ; une ligne sans membre de gauche d'une grille alignée : ce qui est écrit
+        else if (t === 'c') cadres.push(gauche[r[0]] ? { ligne: C[r[0]].row, k0: k } : avecG ? { ligne: C[r[0]].c, k0: k } : { c: C[r[0]].c, k0: k });
       });
     });
     var svg = svgEl('svg', { class: 'qv-dev-fl', 'aria-hidden': 'true', focusable: 'false' }); g.appendChild(svg);
@@ -2754,10 +2795,10 @@
         if (!A || !B) return;
         var x1 = (A.l + A.r) / 2 - H.left, x2 = (B.l + B.r) / 2 - H.left, s = f.bas ? 1 : -1;
         var y1 = (f.bas ? A.b + 3 : A.t - 3) - H.top, y2 = (f.bas ? B.b + 3 : B.t - 3) - H.top;
-        var h = Math.min(30, 11 + Math.abs(x2 - x1) * 0.17), ym = (f.bas ? Math.max(y1, y2) : Math.min(y1, y2)) + s * h;
+        var h = f.haut2 ? Math.min(46, 24 + Math.abs(x2 - x1) * 0.22) : Math.min(30, 11 + Math.abs(x2 - x1) * 0.17), ym = (f.bas ? Math.max(y1, y2) : Math.min(y1, y2)) + s * h;
         var neuve = !f.el;
         if (neuve) {
-          f.el = svgEl('g', { class: 'qv-dfl' + (f.bas ? ' bas' : '') });
+          f.el = svgEl('g', { class: 'qv-dfl' + (f.bas ? ' bas' : '') + (f.haut2 ? ' bleu' : '') });
           f.el.appendChild(svgEl('path', { class: 'tige' })); f.el.appendChild(svgEl('path', { class: 'pointe' })); svg.appendChild(f.el);
         }
         var tige = f.el.firstChild, pointe = f.el.lastChild;
@@ -2768,16 +2809,24 @@
           f.el.style.setProperty('--L', L.toFixed(1)); f.el.classList.add('trace');
         }
       });
+      Object.keys(SUB).forEach(function (id) {   // termes d'un numérateur : chacun à son clic (place gardée : rien ne bouge)
+        var sb = SUB[id], vu = sb.k != null && k >= sb.k;
+        Array.prototype.forEach.call(g.querySelectorAll('.qv-s-' + id), function (x) {
+          var avant = x.classList.contains('vu');
+          x.classList.toggle('vu', vu);
+          if (vu && !avant && anime && k === sb.k) { var o = calque(x, g, 'qv-eclair', 2); if (o) o.addEventListener('animationend', function () { o.remove(); }); }
+        });
+      });
       barres.forEach(function (b) {               // termes qui s'annulent : barrés en rouge
         if (k < b.k0) { if (b.o) { b.o.remove(); b.o = null; } return; }
-        b.o = calque(b.p, g, 'qv-raye', 1, b.o);
+        var e = b.p || g.querySelector('.qv-s-' + b.id); if (e) b.o = calque(e, g, 'qv-raye', 1, b.o);
       });
       cadres.forEach(function (c) {
         if (c.c) { c.c.classList.toggle('qv-cadre', k >= c.k0); return; }
         // égalité « gauche = droite » : cadre à la taille de ce qui est écrit (la ligne occupe toute la grille)
         if (k < c.k0) { if (c.o) { c.o.remove(); c.o = null; } return; }
         var u = null;                                // union de l'encre des morceaux (pas des cellules de la grille)
-        Array.prototype.forEach.call(c.ligne.querySelectorAll('.qv-dp, .qv-deg'), function (x) {
+        Array.prototype.forEach.call(c.ligne.querySelectorAll('.qv-dp:not(.qv-dj), .qv-deg'), function (x) {
           var b = boiteEncre(x); if (!b) return;
           u = u ? { l: Math.min(u.l, b.l), t: Math.min(u.t, b.t), r: Math.max(u.r, b.r), b: Math.max(u.b, b.b) } : b;
         });
@@ -2852,6 +2901,7 @@
     var ctx = { ajouter: function () { return ++n; }, n: function () { return n; }, trans: trans, majs: majs, code: codeDe(q) };
     if (q.type === 'exercice') {
       etapesFigure(q, racine, ctx);
+      ctx.devs = q.devs || null;                   // <!--dev:k--> de la correction commune
       etapesTexte(q.correction || '', racine, ctx, null);
       q.parties.forEach(function (pa, i) {
         var sec = el('section', 'qz-corr-partie'), t = el('h3', 'qz-corr-titre', 'Question ' + (i + 1));
@@ -2872,6 +2922,7 @@
   }
   function etapesQuestion(q, racine, ctx, titre) {
     var aComp = (q.type === 'arbre' && q.arbre) || (q.type === 'tableau' && q.tableau);
+    ctx.devs = q.devs || null;                     // développements fléchés de CETTE question (une partie d'exercice : les siens)
     if (!aComp) etapesFigure(q, racine, ctx);
     var src = /<!--\s*code\s*-->/.test(q.correction || '') ? (codeDe(q) || ctx.code) : '';   // le programme de l'énoncé (TERM CH02)
     var prog = src ? programmeCorrection(src, ctx) : null, progPose = false;
@@ -2930,12 +2981,12 @@
     });
     return { el: b, ligne: function (k, L) { marques.push([k, L]); } };
   }
-  var RE_ETAPES = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]|<!--\s*(cours|v|tableau|graphique|code|py)\s*(?::\s*([\s\S]*?))?\s*-->/g;
-  var RE_MARQUEUR = /<!--\s*(?:(?:cours|v|py)\s*:|(?:tableau|graphique|code)\s*-->)/;
+  var RE_ETAPES = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]|<!--\s*(cours|v|tableau|graphique|code|py|dev)\s*(?::\s*([\s\S]*?))?\s*-->/g;
+  var RE_MARQUEUR = /<!--\s*(?:(?:cours|v|py|dev)\s*:|(?:tableau|graphique|code)\s*-->)/;
   function etapesTexte(html, racine, ctx, fig, tab, gr, code) {
     if (RE_MARQUEUR.test(html))                   // un marqueur glissé DANS un paragraphe le coupe en deux
       html = html.replace(/<p>([\s\S]*?)<\/p>/g, function (tout, c) {
-        return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v|py)\s*:[\s\S]*?-->|<!--\s*(?:tableau|graphique|code)\s*-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
+        return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v|py|dev)\s*:[\s\S]*?-->|<!--\s*(?:tableau|graphique|code)\s*-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
       }).replace(/<p>\s*<\/p>/g, '');
     // debut : première étape du dernier bloc construit (paragraphe, calcul) ; <!--py:k--> écrit APRÈS un bloc pose la flèche
     // sur la ligne k dès la PREMIÈRE étape de ce bloc (« Ligne 3 : … » : la flèche y est quand la phrase commence)
@@ -2957,6 +3008,10 @@
       else if (m[3] === 'graphique') { if (gr) gr(); }
       else if (m[3] === 'code') { if (code) code.poser(); }
       else if (m[3] === 'py') { if (code) code.ligne(Math.max(1, debut || ctx.n()), parseInt(m[4], 10) || 0); }
+      else if (m[3] === 'dev') {                   // <!--dev:k--> : le développement q.devs[k], fléché, au milieu de la correction (TERM CH02)
+        var dv = (ctx.devs || [])[parseInt(m[4], 10)];
+        if (dv) { racine.appendChild(etapesDev(dv, ctx.ajouter, ctx.trans, ctx.majs)); f1(); }
+      }
       else if (fig) fig.ecrire(m[4].split(',').map(function (x) { return parseInt(x, 10); }).filter(function (x) { return x >= 0; }), Math.max(1, ctx.n()));
       dernier = re.lastIndex;
     }

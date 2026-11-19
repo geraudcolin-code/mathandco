@@ -3109,6 +3109,8 @@
     }
     var colle = h > 0 && h <= H * lim;
     b.style.top = colle && cache ? -cache + 'px' : '';
+    b.style.setProperty('--qz-cache', (colle && cache ? cache : 0) + 'px');   // le cache de la marge du haut passe au-dessus du tableau
+    b.classList.toggle('colle-haut', colle && cache > 0);
     b.classList.toggle('colle', colle);
   }
   /* Intitulé d'une capture du cours (texte de remplacement, titre de l'agrandissement) : window.QUIZ_COURS_NOMS[clé]

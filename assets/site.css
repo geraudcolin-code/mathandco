@@ -1034,6 +1034,9 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
 .qz-fig-corr { position: relative; z-index: 2; margin: 0 0 14px; padding: 2px 0 6px; background: var(--papier); }
 .qz-fig-corr.colle { position: sticky; top: 0; box-shadow: 0 12px 12px -14px rgba(0, 0, 0, .45); }
 .qz-fig-corr.colle::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 24px; background: inherit; }   /* la marge du haut du volet : rien ne passe au-dessus */
+/* collé avec un haut NÉGATIF (programme + tableau d'état trop hauts, téléphone) : le programme défile hors de vue, le cache de la
+   marge du haut se place juste au-dessus du TABLEAU et passe devant le programme (sinon son bas reste visible dans la marge) */
+.qz-fig-corr.colle.colle-haut::before { bottom: auto; top: calc(var(--qz-cache, 0px) - 24px); left: -20px; right: -20px; z-index: 4; }   /* plus large : le cadre du programme déborde un peu du bloc */
 .qz-fig-corr .qz-arbre-cadre, .qz-fig-corr .qz-tab-cadre { margin: 0; }
 .qv-corps .qz-arbre, .qv-corps .qz-tab { font-family: var(--f-texte); font-size: 1rem; }
 .qv-corps .qz-fig-corr .ML__latex, .qv-rappel .ML__latex { font-size: 1.06em; }

@@ -839,12 +839,25 @@
   }
 
   /* ----- associer : un choix de « droite » par ligne de « gauche » ----- */
+  /* Plusieurs assemblages justes (quiz TERM CH02, relecture du 19 nov. 2026 : « On sait que A et B » vaut « On sait que B et
+     A ») : q.variantes = [autre attendu, …], comme les variantes des questions à cases ; le jugement se fait contre l'assemblage
+     le plus proche de la réponse (lignes rouges et message du piège comptés par rapport à lui). */
+  function attenduAssocier(q, rep) {
+    var atts = [q.attendu].concat(q.variantes || []), mieux = q.attendu, nf = Infinity;
+    if (!rep) return mieux.slice();
+    atts.forEach(function (att) {
+      var f = 0; for (var i = 0; i < q.gauche.length; i++) if (+rep[i] !== att[i]) f++;
+      if (f < nf) { nf = f; mieux = att; }
+    });
+    return mieux.slice();
+  }
   function verifierAssocier(q, rep) {
     var n = q.gauche.length, vides = 0, faux = [], i;
     for (i = 0; i < n; i++) if (sansReponse(rep[i])) vides++;
     if (vides && q.blocs) return { etat: 'lecture', msg: vides === n ? 'Place un bloc après chaque mot de la démonstration.' : 'Il reste ' + (vides > 1 ? vides + ' places vides' : 'une place vide') + ' dans la démonstration.' };
     if (vides) return { etat: 'lecture', msg: vides === n ? 'Associe chaque ligne à une réponse.' : 'Il reste ' + (vides > 1 ? vides + ' lignes' : 'une ligne') + ' sans réponse.' };
-    for (i = 0; i < n; i++) if (+rep[i] !== q.attendu[i]) faux.push(i);
+    var att = attenduAssocier(q, rep);
+    for (i = 0; i < n; i++) if (+rep[i] !== att[i]) faux.push(i);
     if (!faux.length) return { etat: 'juste' };
     var msg = '';
     (q.messages || []).some(function (m) { if (faux.indexOf(m.g) >= 0 && +rep[m.g] === m.d) { msg = m.msg; return true; } return false; });
@@ -3348,10 +3361,13 @@
       default: return null;
     }
   }
+  function attenduRapport(q, rep) {               // bonne réponse du rapport : avec des variantes (blocs), la plus proche de la réponse
+    return q.type === 'associer' && q.variantes && rep ? attenduAssocier(q, rep) : reponseAttendue(q);
+  }
   function rapportQuestion(d, q, e, s) {
     if (q.famille) d.famille = q.famille;
     d.q = questionRapport(q, s);
-    d.a = reponseRapport(reponseAttendue(q));               // bonne réponse
+    d.a = reponseRapport(attenduRapport(q, e.repondue ? e.brute : null));   // bonne réponse
     if (!e.repondue) return;
     d.r = reponseRapport(e.brute);                          // réponse de l'élève
     var c = detailRapport(q, e.brute, e.res); if (c) d.c = c;
@@ -3815,7 +3831,7 @@
     verifierReponse: verifierReponse, reponseAttendue: reponseAttendue,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
     monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases, pointQuestion: pointQuestion,
-    pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse,
+    pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse, attenduRapport: attenduRapport,
     // rapport détaillé des quiz notés (notes.html, 17 nov. 2026) : mêmes tableaux, arbres et formules que le quiz
     dessinerTableau: dessinerTableau, dessinerArbre: dessinerArbre, rendre: rendre, questionRapport: questionRapport, variables: variables, chiffrerNote: chiffrerNote
   };

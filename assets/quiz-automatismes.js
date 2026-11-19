@@ -20,6 +20,7 @@
   }
   var ECH = R`\text{on échange les membres}`, RAC = R`\sqrt{\phantom{x}}\text{ car }`;
   var TPN = 'Un produit est nul si et seulement si l’un de ses facteurs est nul :';
+  var SIGNES_PRODUIT = 'Un étage par facteur : le signe d’un facteur affine est donné par son coefficient directeur ; puis le signe du produit, par la règle des signes :';   // tableau à trois étages (M. Colin, 18 nov. 2026)
   function quiz(id, titre, theme, questions) {
     questions.forEach(function (q) { q.theme = theme; });
     Q[id] = { etiquette: 'Automatismes · 2nde et 1re', titre: titre, questions: questions };   // une BANQUE par thème
@@ -113,10 +114,10 @@
     { type: 'expr', enonce: p('Une plaque de chocolat noir contient 30 g de sucre pour 100 g.', 'Quelle masse de sucre contient une plaque de 250 g ?'),
       suffixe: 'g', attendu: '75', forme: 'decimal',
       correction: p(R`Il y a 30 % de sucre : \(0{,}3\times250=\boxed{75}\) g.`) },
-    { type: 'expr', enonce: p(R`Un appareil a besoin d’une énergie de \(7{,}5\times10^6\) joules pour démarrer. On sait que \(1\) kWh \(=3{,}6\times10^6\) J.`, 'Convertir cette énergie en kWh, arrondie au centième.'),
-      suffixe: 'kWh', attendu: '2{,}08', tolerance: 0.0001, forme: 'decimal',
-      pieges: [{ si: R`\frac{25}{12}`, msg: 'C’est la valeur exacte : donne son arrondi au centième.' }, { si: '2{,}09', msg: 'Vérifie l’arrondi : 7,5 ÷ 3,6 = 2,083…' }],
-      correction: p(R`\(\dfrac{7{,}5\times10^6}{3{,}6\times10^6}=\dfrac{7{,}5}{3{,}6}=2{,}083\ldots\approx\boxed{2{,}08}\) kWh.`) },
+    { type: 'expr', enonce: p(R`Un appareil a besoin d’une énergie de \(9\times10^6\) joules pour démarrer. On sait que \(1\) kWh \(=3{,}6\times10^6\) J.`, 'Convertir cette énergie en kWh.'),
+      suffixe: 'kWh', attendu: '2{,}5', forme: 'decimal',
+      pieges: [{ si: '0{,}4', msg: 'Tu as divisé 3,6 par 9 : c’est l’énergie en joules qu’on divise par 3,6 × 10⁶.' }, { si: '32{,}4', msg: 'Pour passer des joules aux kWh, on divise par 3,6 × 10⁶ (on ne multiplie pas).' }],
+      correction: p(R`\(\dfrac{9\times10^6}{3{,}6\times10^6}=\dfrac{9}{3{,}6}=\dfrac{90}{36}=\dfrac52=\boxed{2{,}5}\) kWh.`) },
     { type: 'expr', enonce: p('Convertir 100 minutes en heures, sous la forme d’une fraction irréductible.'), suffixe: 'h', attendu: R`\frac53`, forme: 'fraction',
       pieges: [{ si: '1{,}4', msg: '1 h 40 min ne s’écrit pas 1,40 h : une heure compte 60 minutes, pas 100.' }],
       correction: p(R`\(100\) min \(=\dfrac{100}{60}\) h \(=\boxed{\dfrac53}\) h.`) },
@@ -403,10 +404,12 @@
       correction: p(R`\(f(x)\) s’annule quand :`) + res(['4x+3', '0'], ['4x', '-3', '-3'], ['x', R`-\dfrac34`, R`\div4`]) + p(R`Le coefficient directeur \(4\) est positif : \(f(x)\) est négatif avant \(-\dfrac34\), positif après.`) },
     { type: 'signes', enonce: p(R`Construire sur \(\mathbb R\) le tableau de signes de la fonction \(A:x\longmapsto(x+5)(x+8)\).`), valeurs: [-8, -5],
       ligne: { label: R`signe de \(A(x)\)`, traits: ['zero', 'zero'], signes: ['+', '−', '+'] },
-      correction: p(R`\(A(x)\) s’annule en \(-8\) et en \(-5\). C’est un polynôme du second degré de coefficient \(a=1>0\) : il est du signe de \(a\) à l’extérieur des racines, du signe contraire entre elles.`) },
+      facteurs: [{ tex: 'x+5', a: 1, b: 5 }, { tex: 'x+8', a: 1, b: 8 }],
+      correction: p('Chaque facteur s’annule une fois :') + res(['x+5', '0'], ['x', '-5', '-5']) + res(['x+8', '0'], ['x', '-8', '-8']) + p(SIGNES_PRODUIT) },
     { type: 'signes', enonce: p(R`Construire sur \(\mathbb R\) le tableau de signes de la fonction \(f:x\longmapsto(2x-4)(-x+1)\).`), valeurs: [1, 2],
       ligne: { label: R`signe de \(f(x)\)`, traits: ['zero', 'zero'], signes: ['−', '+', '−'] },
-      correction: p('Chaque facteur s’annule une fois :') + res(['2x-4', '0'], ['2x', '4', '+4'], ['x', R`\dfrac42=2`, R`\div2`]) + res(['-x+1', '0'], ['-x', '-1', '-1'], ['x', '1', R`\div(-1)`]) + p(R`En développant, le coefficient de \(x^2\) est \(2\times(-1)=-2<0\) : \(f(x)\) est négatif à l’extérieur des racines \(1\) et \(2\), positif entre elles.`) }
+      facteurs: [{ tex: '2x-4', a: 2, b: -4 }, { tex: '-x+1', a: -1, b: 1 }],
+      correction: p('Chaque facteur s’annule une fois :') + res(['2x-4', '0'], ['2x', '4', '+4'], ['x', R`\dfrac42=2`, R`\div2`]) + res(['-x+1', '0'], ['-x', '-1', '-1'], ['x', '1', R`\div(-1)`]) + p(SIGNES_PRODUIT) }
   ]);
 
   /* ===================================================================== */
@@ -422,10 +425,10 @@
     { type: 'expr', enonce: p(R`Le triangle \(ACB\) est rectangle en \(C\), avec \(AB=10\) cm et \(\widehat{BAC}=30^\circ\). Calculer \(BC\) (on rappelle que \(\sin30^\circ=\dfrac12\)).`), figure: FIG + 'auto-trigo1.svg', figureAlt: 'Triangle ACB rectangle en C, angle de 30° en A',
       prefixe: R`\(BC=\)`, suffixe: 'cm', attendu: '5', forme: 'reduit',
       correction: p(R`\([BC]\) est le côté opposé à l’angle \(\widehat{BAC}\) et \([AB]\) l’hypoténuse :`) + res([R`\sin\widehat{BAC}`, R`\dfrac{BC}{AB}`], [R`\dfrac12`, R`\dfrac{BC}{10}`], [R`\dfrac{10}{2}`, 'BC', R`\times10`], ['BC', R`\dfrac{10}{2}=\boxed{5}`, ECH]) + p(R`Donc \(BC=5\) cm.`) },
-    { type: 'expr', enonce: p(R`Le triangle \(RST\) est rectangle en \(S\), avec \(RS=4\) cm et \(RT=8\) cm. Déterminer la mesure de l’angle \(\widehat{SRT}\).`), figure: FIG + 'auto-trigo2.svg', figureAlt: 'Triangle RST rectangle en S',
+    { type: 'expr', enonce: p(R`Le triangle \(RST\) est rectangle en \(S\), avec \(RS=4\) cm et \(RT=8\) cm. Déterminer la mesure de l’angle \(\widehat{SRT}\) (on rappelle que \(\cos60^\circ=\dfrac12\)).`), figure: FIG + 'auto-trigo2.svg', figureAlt: 'Triangle RST rectangle en S',
       prefixe: R`\(\widehat{SRT}=\)`, suffixe: R`\(^\circ\)`, attendu: '60', forme: 'decimal',
       pieges: [{ si: '30', msg: 'Attention : RS est le côté ADJACENT à l’angle en R.' }],
-      correction: p(R`\(\cos\widehat{R}=\dfrac{RS}{RT}=\dfrac48=\dfrac12\), donc \(\widehat{SRT}=\boxed{60^\circ}\).`) },
+      correction: p(R`\(\cos\widehat{R}=\dfrac{RS}{RT}=\dfrac48=\dfrac12\) et \(\cos60^\circ=\dfrac12\), donc \(\widehat{SRT}=\boxed{60^\circ}\).`) },
     { type: 'expr', enonce: p(R`Dans le triangle \(ABC\), \(M\in[AB]\), \(N\in[AC]\) et les droites \((MN)\) et \((BC)\) sont parallèles. On donne \(AM=2\) cm, \(AB=5\) cm et \(MN=3\) cm. Calculer \(BC\).`),
       figure: FIG + 'auto-thales.svg', figureAlt: 'Configuration de Thalès', prefixe: R`\(BC=\)`, suffixe: 'cm', attendu: '7{,}5', forme: 'nombre',
       correction: p('D’après le théorème de Thalès :') + res([R`\dfrac{AM}{AB}`, R`\dfrac{MN}{BC}`], [R`\dfrac25`, R`\dfrac3{BC}`], [R`2\times BC`, R`3\times5`, R`\text{produit en croix}`], ['BC', R`\dfrac{3\times5}{2}=\boxed{7{,}5}`, R`\div2`]) + p(R`Donc \(BC=7{,}5\) cm.`) },

@@ -1,13 +1,19 @@
-/* Styles du site : classique (défaut depuis le 3 nov. 2026), « Cyberpunk × Matrice » et « Pamplemousse » (4 nov. 2026).
+/* Styles du site : classique (défaut depuis le 3 nov. 2026), « Cyberpunk × Matrice », « Pamplemousse » (4 nov. 2026)
+   et « Event » (18 nov. 2026, style « Braquage » en interne, ambiance Vice City d'après les affiches « Braquage de math »).
    Se charge dans <head> (pas d'éclair au chargement). ?theme=cyber | pample | classique choisit le style ; il est retenu
-   dans ce navigateur. Trois boutons « Style » en bas de page permettent de changer. */
+   dans ce navigateur (aussi ?theme=event). Les boutons « Style » en bas de page permettent de changer. */
 (function () {
   var CLE = 'colineaire-theme', DEFAUT = 'classique';
   var lire = function () { try { return localStorage.getItem(CLE); } catch (e) { return null; } };
   var ecrire = function (v) { try { localStorage.setItem(CLE, v); } catch (e) {} };
-  var MODES = ['classique', 'cyber', 'pample'];
+  var MODES = ['classique', 'cyber', 'pample', 'braq'];
+  // « Event » ne s'ouvre qu'à la sortie : 19 nov. 2026, 00:00 heure de Paris (= 18 nov. 23:00 UTC), demande de M. Colin.
+  // Avant, le bouton n'apparaît pas et ce style est ignoré (le choix déjà retenu revient tout seul à la sortie).
+  var SORTIE_EVENT = Date.UTC(2026, 10, 18, 23, 0, 0);
+  if (Date.now() < SORTIE_EVENT) MODES = MODES.filter(function (m) { return m !== 'braq'; });
   var p = new URLSearchParams(location.search).get('theme');
   if (p === 'pamplemousse') p = 'pample';
+  if (p === 'event' || p === 'braquage' || p === 'gta') p = 'braq';
   if (MODES.indexOf(p) >= 0) ecrire(p);
   var racine = document.documentElement;
   var mode = lire(); if (MODES.indexOf(mode) < 0) mode = DEFAUT;
@@ -15,7 +21,8 @@
 
   var POLICES = {
     cyber: 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap',
-    pample: 'https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap'
+    pample: 'https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap',
+    braq: 'https://fonts.googleapis.com/css2?family=Anton&display=swap'
   };
   function police(m) {
     if (!POLICES[m] || document.getElementById('police-' + m)) return;
@@ -30,6 +37,13 @@
     var sc = document.createElement('script'); sc.id = 'script-pample'; sc.src = BASE + 'theme-pample.js?v=20261104f'; sc.defer = true;
     document.head.appendChild(sc);
   }
+  function braquage() {
+    if (window.__braquage) { window.__braquage.demarrer(); return; }
+    if (document.getElementById('script-braq')) return;
+    var sc = document.createElement('script'); sc.id = 'script-braq'; sc.src = BASE + 'theme-braquage.js?v=20261118b'; sc.defer = true;
+    document.head.appendChild(sc);
+  }
+  if (mode === 'braq') document.addEventListener('DOMContentLoaded', braquage);
   if (mode === 'pample') {
     var entree = false; try { entree = sessionStorage.getItem('pp-entree') === '1'; sessionStorage.removeItem('pp-entree'); } catch (e) {}
     if (entree) { racine.classList.add('pp-entree'); setTimeout(function () { racine.classList.remove('pp-entree'); }, 1300); }
@@ -92,7 +106,7 @@
     if (!pied) return;
     var groupe = document.createElement('span'); groupe.className = 'theme-choix'; groupe.setAttribute('role', 'group'); groupe.setAttribute('aria-label', 'Style du site');
     groupe.appendChild(document.createTextNode('Style '));
-    var NOMS = { classique: 'Classique', cyber: 'Cyberpunk', pample: 'Pamplemousse' }, boutons = {};
+    var NOMS = { classique: 'Classique', cyber: 'Cyberpunk', pample: 'Pamplemousse', braq: 'Event' }, boutons = {};
     MODES.forEach(function (m) {
       var b = document.createElement('button'); b.type = 'button'; b.className = 'theme-bascule'; b.textContent = NOMS[m];
       b.addEventListener('click', function () { choisir(m); });
@@ -101,11 +115,13 @@
     function maj() { MODES.forEach(function (m) { boutons[m].setAttribute('aria-pressed', m === mode ? 'true' : 'false'); }); }
     function choisir(m) {
       if (m === mode) return;
-      racine.classList.remove('cyber', 'pample'); if (m !== 'classique') racine.classList.add(m);
+      racine.classList.remove('cyber', 'pample', 'braq'); if (m !== 'classique') racine.classList.add(m);
       if (arret) { arret(); arret = null; }
       if (window.__pamplemousse) window.__pamplemousse.arreter();
+      if (window.__braquage) window.__braquage.arreter();
       mode = m; ecrire(m); police(m); maj();
       if (m === 'pample') mouvement();
+      if (m === 'braq') braquage();
       if (m === 'cyber') { pluie(); dechiffrer(); }
     }
     maj(); pied.appendChild(groupe);

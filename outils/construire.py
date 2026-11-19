@@ -89,6 +89,8 @@ CHAPITRES = {
     ('terminale', 3): 'Limites de fonctions',
     ('terminale', 4): 'Vecteurs, droites et plans de l’espace',
     ('terminale', 5): 'Compléments sur la dérivation',
+    ('terminale', 6): 'Continuité des fonctions',
+    ('terminale', 8): 'Fonction logarithme népérien',
 }
 
 

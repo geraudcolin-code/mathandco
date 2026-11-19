@@ -1,0 +1,155 @@
+/* Colinéaire — thème « Braquage » (18 nov. 2026) : ambiance jeu vidéo de Vice City, d'après les affiches
+   « Braquage de math » de M. Colin (Euler et Pythagore). Coucher de soleil violet → rose → orange, palmiers et tours
+   en silhouette, lettrage d'affiche (crème cerné de noir), cartes « papier » aux ombres décalées comme une jaquette.
+   Tout est rangé sous :root.braq : sans la classe, ce fichier ne change rien.
+   Activation : boutons « Style » en bas de page, ou ?theme=braquage (retenu par le navigateur).
+   Les corrections animées et les polys ne sont pas concernés. Images : assets/braquage/. */
+
+:root.braq {
+  --bq-nuit: #23103d; --bq-violet: #4a1a63; --bq-pourpre: #8a2481; --bq-magenta: #e5267e; --bq-rose: #ff5fa2;
+  --bq-orange: #ff8a3d; --bq-soleil: #ffd36b; --bq-turquoise: #12b5c2; --bq-creme: #fff4e6;
+  --fond: #fff1e6; --fond-2: #ffe6dc; --encre: #23103d; --gris: #6f4b78; --filet: #e8c7d8;
+  --bleu: #c81f6e; --bleu-fond: #ffe0ee; --rouge: #e0283c; --pastille: #ffd2e6;
+  --vert: #138a63; --violet: #6a2b9b;
+  --orange: #e2671f; --orange-vif: #c7550f; --orange-fond: #ffe9d8; --orange-texte: #8f3d08;
+  --vert-mat: #138a63; --vert-mat-vif: #0f7353; --vert-mat-fond: #def5ec; --vert-mat-texte: #0c5f45;
+  --marine: #4a1a63; --marine-vif: #3a1350; --marine-fond: #efe2f6; --marine-texte: #4a1a63;
+  --jaune: #e7a812; --jaune-vif: #cf950b; --jaune-fond: #fff1c7; --jaune-texte: #6b4c00;
+  --sepia: #9a5a2c; --sepia-vif: #824a22; --sepia-fond: #f8e8da; --sepia-texte: #6e3f1c;
+  --prune: #9b2b8a; --prune-vif: #832374; --prune-fond: #f9e2f3; --prune-texte: #6f1d63;
+  --sarcelle: #0f8e99; --sarcelle-vif: #0c7780; --sarcelle-fond: #dcf4f6; --sarcelle-texte: #0a5d64;
+  --carreau: #ffd9e8; --papier: #fffaf4; --verre: rgba(35, 16, 61, .86);
+  --ombre: 6px 6px 0 rgba(35, 16, 61, .9);
+  --quiz-afaire: #0f9aa6; --quiz-afaire-fond: #dcf6f8;
+  --f-titre: "Anton", "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --bq-contour: -2px -2px 0 #120722, 2px -2px 0 #120722, -2px 2px 0 #120722, 2px 2px 0 #120722, 0 3px 0 #120722, 5px 6px 0 rgba(229, 38, 126, .9);
+  color-scheme: light;
+}
+
+/* ---------- fond : papier crème ; la première bande de chaque page (héros, porte d'entrée, en-tête de bibliothèque)
+   est une « scène » : coucher de soleil violet → rose → orange, soleil, ville et palmiers en silhouette en bas ---------- */
+.braq body { background: var(--fond); }
+.braq main { position: relative; z-index: 1; }
+.braq .pied { position: relative; z-index: 2; }
+.braq .hero, .braq .porte, .braq section:has(> .biblio-tete) { position: relative; isolation: isolate;
+  padding-bottom: calc(clamp(110px, 15vw, 190px) + 24px); background:
+  radial-gradient(circle min(150px, 22vw) at 72% calc(100% - clamp(70px, 9vw, 120px)), #ffe08a 0 60%, rgba(255, 211, 107, 0) 61%),
+  radial-gradient(circle min(280px, 40vw) at 72% calc(100% - clamp(70px, 9vw, 120px)), rgba(255, 190, 110, .55), transparent 70%),
+  linear-gradient(180deg, #23103d 0, #4a1a63 22%, #8a2481 48%, #e5487e 70%, #ff8a52 86%, #ffc27a 100%); }
+.braq .hero::after, .braq .porte::after, .braq section:has(> .biblio-tete)::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: -1;
+  height: clamp(110px, 15vw, 190px); pointer-events: none; background: url("braquage/horizon.svg") center bottom / auto 100% repeat-x; }
+.braq section:has(> .biblio-tete) { padding-top: 34px; }
+.braq .porte { min-height: auto; }
+.braq ::selection { background: var(--bq-rose); color: #fff; }
+.braq :focus-visible { outline-color: var(--bq-turquoise); }
+.braq a { color: var(--bleu); }
+
+/* ---------- typographie : lettrage d'affiche ---------- */
+.braq h1, .braq h2, .braq h3, .braq .logo, .braq .bouton, .braq .dossier-titre, .braq .fiche .num, .braq .classe-lien,
+.braq .lien-fleche, .braq .chapitre-tete .n, .braq .ch-tuile-titre, .braq .quiz-titres h2 { font-family: var(--f-titre); font-weight: 400; letter-spacing: .01em; }
+.braq h1, .braq h2 { text-transform: uppercase; line-height: 1.02; }
+.braq .section-tete h2, .braq .appel h2, .braq .classe-bloc > h2 { color: var(--bq-nuit); }
+.braq .section-tete h2::after, .braq .appel h2::after {
+  content: ""; display: block; width: 96px; height: 7px; margin: 14px auto 0; transform: skewX(-18deg);
+  background: linear-gradient(90deg, var(--bq-magenta), var(--bq-orange), var(--bq-soleil)); }
+/* titres posés sur le coucher de soleil : crème cerné de noir, ombre rose, légèrement penchés */
+.braq .hero h1, .braq .biblio-tete h1, .braq .porte h1 { color: var(--bq-creme); text-shadow: var(--bq-contour); transform: rotate(-2deg); }
+.braq .biblio-tete p, .braq .hero .accroche { color: #fff; text-shadow: 0 2px 8px rgba(35, 16, 61, .8); font-weight: 600; }
+
+/* ---------- barre du haut : nuit violette, filet néon ---------- */
+.braq .nav { background: rgba(35, 16, 61, .9); border-bottom: 3px solid var(--bq-magenta); box-shadow: 0 0 22px rgba(229, 38, 126, .45); }
+.braq .logo { color: var(--bq-creme); font-size: 1.45rem; text-transform: uppercase; letter-spacing: .03em; }
+.braq .logo .esperluette { color: var(--bq-rose); font-family: var(--f-titre); font-style: normal; }
+.braq .nav-liens a { color: #f6e6ff; }
+.braq .nav-liens a:hover { color: var(--bq-soleil); }
+
+/* ---------- boutons : bandeau d'affiche ---------- */
+.braq .bouton { background: linear-gradient(100deg, var(--bq-magenta), var(--bq-orange)); color: #fff; border: 2px solid #120722;
+  box-shadow: 4px 4px 0 #120722; text-transform: uppercase; letter-spacing: .04em; font-size: 1.05rem; border-radius: 10px;
+  transition: transform .15s, box-shadow .15s; }
+.braq .bouton:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 #120722; background: linear-gradient(100deg, var(--bq-rose), var(--bq-orange)); }
+.braq .bouton:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #120722; }
+.braq .bouton.secondaire { background: var(--bq-creme); color: var(--bq-nuit); }
+.braq .bouton.discret { background: transparent; color: var(--bq-creme); border-color: var(--bq-creme); box-shadow: none; }
+.braq .nav .bouton { font-size: .95rem; }
+.braq .lien-fleche { color: #fff; text-shadow: 0 2px 6px rgba(35, 16, 61, .8); text-transform: uppercase; }
+
+/* ---------- héros de l'accueil : texte à gauche, affiche à droite ---------- */
+.braq .hero { text-align: left; padding-top: clamp(36px, 6vw, 70px); }
+.braq .hero .colonne { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 20px 40px; align-items: center; }
+.braq .hero .colonne > :not(.bq-affiche) { grid-column: 1; }
+.braq .hero .actions { justify-content: flex-start; }
+.braq .hero h1 { font-size: clamp(2.8rem, 6vw, 5rem); transform-origin: left center; }
+.braq .hero h1 .esperluette { font-family: var(--f-titre); font-style: normal; color: var(--bq-soleil); -webkit-text-fill-color: var(--bq-soleil); }
+.bq-affiche { display: none; }
+.braq .bq-affiche { display: block; width: 100%; height: auto; border: 6px solid var(--bq-creme); outline: 3px solid #120722; border-radius: 4px;
+  box-shadow: 10px 12px 0 rgba(18, 7, 34, .85), 0 0 50px rgba(229, 38, 126, .45); transform: rotate(2.5deg); }
+.braq .hero .bq-affiche { grid-column: 2; grid-row: 1 / span 4; max-width: 400px; justify-self: center; }
+.braq .bq-affiche-porte { max-width: 460px; margin: 0 auto 26px; transform: rotate(-1.5deg); }
+.braq .bq-affiche-tete { max-width: 300px; justify-self: end; }
+.braq .biblio-tete:has(.bq-affiche-tete) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px 30px; }
+@media (max-width: 760px) {
+  .braq .hero { text-align: center; }
+  .braq .hero .colonne { grid-template-columns: minmax(0, 1fr); }
+  .braq .hero .bq-affiche { grid-column: 1; grid-row: auto; max-width: 290px; margin-top: 10px; }
+  .braq .hero .actions { justify-content: center; }
+  .braq .hero h1 { transform-origin: center; }
+  .braq .biblio-tete:has(.bq-affiche-tete) { grid-template-columns: minmax(0, 1fr); }
+  .braq .bq-affiche-tete { max-width: 240px; justify-self: center; }
+  .braq .nav-int .bouton.petit { font-size: .82rem; letter-spacing: .02em; padding: 0 10px; }
+  .braq .logo { font-size: 1.2rem; }
+}
+
+/* ---------- cartes : papier crème, contour nuit, ombre décalée (jaquette de jeu) ---------- */
+.braq .classe, .braq .fiche, .braq .ch-tuile, .braq .accueil-carte, .braq .quiz-carte, .braq .tuile, .braq .porte form {
+  background: var(--papier); border: 2px solid #120722; box-shadow: var(--ombre); border-radius: 14px; }
+.braq .classe:hover, .braq .fiche:hover, .braq .ch-tuile:hover { box-shadow: 8px 8px 0 var(--bq-magenta); transform: translate(-2px, -2px); }
+.braq .porte form { padding: 28px 26px 22px; }
+.braq .porte h1 { color: var(--bq-nuit); text-shadow: 3px 3px 0 var(--bq-rose); transform: none; }
+.braq .section.alt { background: linear-gradient(180deg, #ffe3ef, #ffeede); }
+.braq .dossier-bloc .dossier-tete { border: 2px solid #120722; box-shadow: 4px 4px 0 rgba(18, 7, 34, .85); }
+.braq .outils { background: rgba(255, 241, 230, .92); border-bottom: 2px solid #120722; }
+.braq .segments { background: var(--bq-nuit); border: 2px solid #120722; }
+.braq .segments button { color: #f6e6ff; font-family: var(--f-titre); letter-spacing: .04em; text-transform: uppercase; }
+.braq .segments button[aria-pressed="true"], .braq .segments button[aria-selected="true"] { background: linear-gradient(100deg, var(--bq-magenta), var(--bq-orange)); color: #fff; }
+.braq .champ input, .braq .recherche { border: 2px solid #120722; background: #fff; }
+.braq .champ input:focus, .braq .recherche:focus { box-shadow: 0 0 0 4px rgba(18, 181, 194, .35); border-color: var(--bq-turquoise); }
+
+/* ---------- pied de page : la nuit tombe sur la ville ---------- */
+.braq .pied { background: linear-gradient(180deg, var(--bq-violet), var(--bq-nuit)); color: #e9d7f5; border-top: 3px solid var(--bq-magenta);
+  box-shadow: 0 -6px 26px rgba(229, 38, 126, .35); }
+.braq .pied a { color: var(--bq-soleil); }
+.braq .theme-bascule { color: #f6e6ff; border-color: rgba(246, 230, 255, .4); }
+.braq .theme-bascule[aria-pressed="true"] { background: var(--bq-magenta); color: #fff; border-color: var(--bq-magenta); }
+
+/* ---------- hélicoptère et projecteur (theme-braquage.js) ---------- */
+#bq-helico { position: absolute; top: 120px; left: -160px; width: 120px; z-index: 0; pointer-events: none; opacity: .9; }
+#bq-helico svg { width: 100%; height: auto; display: block; }
+#bq-helico .faisceau { position: absolute; left: 58px; top: 34px; width: 260px; height: 300px; transform-origin: 0 0; transform: rotate(28deg);
+  background: linear-gradient(180deg, rgba(255, 246, 200, .55), rgba(255, 246, 200, 0)); clip-path: polygon(0 0, 14% 0, 100% 100%, 30% 100%); filter: blur(2px); }
+#bq-helico.vol { animation: bq-vol 26s linear forwards; }
+@keyframes bq-vol { 0% { transform: translateX(0) translateY(0); } 50% { transform: translateX(60vw) translateY(-30px); } 100% { transform: translateX(calc(100vw + 340px)) translateY(10px); } }
+#bq-helico .rotor { transform-origin: 60px 9px; animation: bq-rotor .12s linear infinite; }
+@keyframes bq-rotor { 50% { transform: scaleX(.15); } }
+
+/* ---------- quiz : bandeaux de fin de mission (theme-braquage.js) ---------- */
+.braq .quiz-titres h2 { text-transform: uppercase; }
+.braq .quiz-etiquette { background: var(--bq-nuit); color: var(--bq-soleil); }
+.braq .quiz-point { border-color: #120722; }
+.braq .quiz-point.juste { background: var(--vert); }
+.braq math-field.quiz-champ { border: 2px solid #120722; }
+.bq-bandeau { position: fixed; left: 0; right: 0; top: 38%; z-index: 902; pointer-events: none; text-align: center; opacity: 0; }
+.bq-bandeau span { display: inline-block; font-family: "Anton", Impact, sans-serif; font-size: clamp(2.6rem, 9vw, 5.4rem); letter-spacing: .03em;
+  text-transform: uppercase; line-height: 1; padding: .12em .5em; }
+.bq-bandeau.reussi span { color: var(--bq-soleil); text-shadow: -3px -3px 0 #120722, 3px -3px 0 #120722, -3px 3px 0 #120722, 3px 3px 0 #120722, 7px 8px 0 var(--bq-magenta); }
+.bq-bandeau.reussi small { display: block; font-family: "Anton", Impact, sans-serif; font-size: clamp(1.2rem, 3.4vw, 1.8rem); color: #fff;
+  text-shadow: -2px -2px 0 #120722, 2px -2px 0 #120722, -2px 2px 0 #120722, 2px 2px 0 #120722; letter-spacing: .08em; }
+.bq-bandeau.rate span { color: #ff3b4f; text-shadow: -3px -3px 0 #120722, 3px -3px 0 #120722, -3px 3px 0 #120722, 3px 3px 0 #120722; }
+.bq-bandeau.actif { animation: bq-bandeau 1.5s var(--courbe) forwards; }
+@keyframes bq-bandeau { 0% { opacity: 0; transform: scale(1.6); } 14% { opacity: 1; transform: scale(1); } 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.96); } }
+.braq .quiz-voile.actif { animation-name: bq-rate; }
+@keyframes bq-rate { 0% { opacity: 0; backdrop-filter: grayscale(0); } 12% { opacity: 1; backdrop-filter: grayscale(1); } 100% { opacity: 0; backdrop-filter: grayscale(1); } }
+@media (prefers-reduced-motion: reduce) { #bq-helico { display: none; } }
+/* clavier mathématique des quiz aux couleurs du thème */
+.braq { --keyboard-accent-color: var(--bq-magenta); --keycap-secondary-background: #ffd9ea; --keycap-secondary-text: var(--bq-nuit);
+  --keyboard-background: #f6e3f0; --keycap-background: #fffaf4; --keycap-text: var(--bq-nuit); --keycap-border-bottom: #c9a7c4; }

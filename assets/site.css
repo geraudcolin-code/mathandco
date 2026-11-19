@@ -893,7 +893,7 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
    dans sa colonne ; sur téléphone, « (d’après HR) » passe sous « c-à-d » (le calcul garde sa place) ; flèches « ×N » rouges
    étiquetées (numérateur par-dessus, dénominateur par-dessous) */
 .qv-dev-x { grid-template-columns: max-content max-content 1.7em minmax(0, 1fr); }
-.qv-dev-x .qv-dlx { text-align: right; white-space: nowrap; padding-right: .45em; font: 500 .9em/1.25 var(--f-texte); color: var(--encre); }
+.qv-dev-x .qv-dlx { text-align: right; white-space: nowrap; padding-right: .8em; font: 500 .9em/1.25 var(--f-texte); color: var(--encre); }
 .qv-dev-x .qv-dl0 .qv-dlx { display: none; }
 .qv-dpx .qv-dhr { color: #C25E14; font-weight: 700; }
 .qv-sait { color: #1E8449; font-weight: 700; }   /* hérédité : « ce que l’on sait » (vert), « ce que l’on veut » (rouge), charte § 3 */
@@ -901,6 +901,10 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 @media (max-width: 520px) { .qv-dev-x .qv-dlx { white-space: normal; max-width: 5.4em; font-size: .84em; } }
 .qv-dl.avec-fl-bas2 { padding-bottom: 2.4em; }
 .qv-dfl.fois { color: #D62828; }
+.qv-dl.qv-dl-cadre { margin-top: 7px; margin-bottom: 6px; }   /* ligne encadrée : le cadre ne touche pas la fraction du dessus */
+.qz-case-paire { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; min-width: 0; }   /* étiquette + case, jamais séparées */
+.qz-case-paire > .quiz-prefixe { flex: 0 1 auto; min-width: 0; }
+.quiz-cases > .qz-case-loin { margin-right: .4em; } .quiz-cases > .qz-case-tres-loin { margin-right: 1.4em; }   /* \quad, \qquad de tête */
 .qv-dfl-lab { fill: #D62828; font: 700 15px var(--f-texte); }
 .qv-dfl.trace .qv-dfl-lab { opacity: 0; animation: qv-pointe .15s .75s forwards; }
 @media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe, .qv-dfl.trace .qv-dfl-lab { animation: none; stroke-dasharray: none; opacity: 1; } .qv-sub, .qv-sub.vu { transition: none; } }

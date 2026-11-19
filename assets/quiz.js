@@ -1409,13 +1409,10 @@
   /* ----- plusieurs cadres dans une phrase : modele 'texte {0} texte {1}' ----- */
   Quiz.prototype.cases = function (q, zone, n, entree) {
     var self = this, ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
-    morceauxModele(String(q.modele)).forEach(function (morceau) {
-      var m = /^\{(\d+)\}$/.exec(morceau);
-      if (m) {
-        var i = +m[1], cd = q.cases[i] || {};
-        var mf = entree(nouveauChamp('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (question ' + (n + 1) + ')'));
-        champs[i] = mf; ligne.appendChild(mf);
-      } else if (morceau) { var t = el('span', 'quiz-prefixe', morceau); ligne.appendChild(t); }
+    poserCases(ligne, q.modele, function (i) {
+      var cd = q.cases[i] || {};
+      var mf = entree(nouveauChamp('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (question ' + (n + 1) + ')'));
+      champs[i] = mf; return mf;
     });
     zone.appendChild(ligne); rendre(ligne);
     var lire = function () {
@@ -1716,6 +1713,36 @@
     c = String(c == null ? '' : c);
     return !/\\\(/.test(c) && !/</.test(c) && /\\|\{,\}|\^|_/.test(c) ? '\\(' + c + '\\)' : c;
   }
+  /* Une ligne de cases « texte {0} texte {1} » : le texte qui PRÉCÈDE une case lui reste collé (span.qz-case-paire), de
+     même que le texte qui suit la dernière (unité) : au retour à la ligne, « Membre de droite : » ne se sépare plus de sa
+     case (relecture du quiz TERM CH02, 19 nov. 2026) ; un long texte passe à la ligne DANS sa paire. champ(i) crée la case i. */
+  function poserCases(ligne, modele, champ) {
+    var texte = null, dernier = null;
+    morceauxModele(String(modele)).forEach(function (m) {
+      var x = /^\{(\d+)\}$/.exec(m);
+      if (x) {
+        var mf = champ(+x[1]);
+        if (texte) { dernier = el('span', 'qz-case-paire'); dernier.appendChild(texte); dernier.appendChild(mf); texte = null; }
+        else dernier = mf;
+        ligne.appendChild(dernier);
+      } else if (m) {
+        if (texte) ligne.appendChild(texte);
+        // « \\(\\qquad\\) Membre de droite : » : l'espace de tête devient une marge à droite de ce qui précède (invisible en
+        // fin de ligne) ; au retour à la ligne, l'étiquette ne commence plus par un blanc
+        var e = /^\s*\\\(\s*\\(q?quad)(?![a-zA-Z])\s*/.exec(m);
+        if (e && ligne.lastChild) {
+          ligne.lastChild.classList.add(e[1] === 'qquad' ? 'qz-case-tres-loin' : 'qz-case-loin');
+          m = '\\(' + m.slice(e[0].length);
+          m = m.replace(/^\\\(\s*\\\)\s*/, '');
+        }
+        texte = m.trim() ? el('span', 'quiz-prefixe', m) : null;
+      }
+    });
+    if (!texte) return;
+    if (dernier && dernier.classList.contains('qz-case-paire')) dernier.appendChild(texte);
+    else if (dernier) { var g = el('span', 'qz-case-paire'); ligne.replaceChild(g, dernier); g.appendChild(dernier); g.appendChild(texte); }
+    else ligne.appendChild(texte);
+  }
   function morceauxModele(s) {                  // « texte {0} texte {1} » ; un {k} DANS une formule \( … \) n'est pas une case
     var out = [], re = /\\\([\s\S]*?\\\)|\{(\d+)\}/g, m, d = 0;
     while ((m = re.exec(s))) { if (m[1] == null) continue; out.push(s.slice(d, m.index), m[0]); d = re.lastIndex; }
@@ -1968,13 +1995,10 @@
   }
   function saisieCases(q, ctx) {
     var ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
-    morceauxModele(String(q.modele)).forEach(function (m) {
-      var x = /^\{(\d+)\}$/.exec(m);
-      if (x) {
-        var i = +x[1], cd = q.cases[i] || {}, mf = ctx.champ('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (' + ctx.label + ')');
-        mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
-        champs[i] = mf; ligne.appendChild(mf);
-      } else if (m) ligne.appendChild(el('span', 'quiz-prefixe', m));
+    poserCases(ligne, q.modele, function (i) {
+      var cd = q.cases[i] || {}, mf = ctx.champ('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (' + ctx.label + ')');
+      mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
+      champs[i] = mf; return mf;
     });
     rendre(ligne);
     entreeSuivante(Array.prototype.slice.call(ligne.querySelectorAll('math-field')), ctx.valider);
@@ -2802,7 +2826,10 @@
         else if (t === 'fx') fl.forEach(function (f) { if (f.k1 === Infinity) f.k1 = k - 1; });
         else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], id: id, k0: k }); });
         // avec un membre de gauche : toute l'égalité encadrée ; une ligne sans membre de gauche d'une grille alignée : ce qui est écrit
-        else if (t === 'c') cadres.push(gauche[r[0]] ? { ligne: C[r[0]].row, k0: k } : avecG ? { ligne: C[r[0]].c, k0: k } : { c: C[r[0]].c, k0: k });
+        else if (t === 'c') {
+          cadres.push(gauche[r[0]] ? { ligne: C[r[0]].row, k0: k } : avecG ? { ligne: C[r[0]].c, k0: k } : { c: C[r[0]].c, k0: k });
+          C[r[0]].row.classList.add('qv-dl-cadre');     // place du cadre réservée dès le début : rien ne bouge quand il apparaît
+        }
       });
     });
     var svg = svgEl('svg', { class: 'qv-dev-fl', 'aria-hidden': 'true', focusable: 'false' }); g.appendChild(svg);
@@ -3054,10 +3081,19 @@
   }
   function collerFigure(b) {                    // collée en haut du volet pendant qu'on la complète, si la hauteur le permet
     var corps = b.closest('.qv-corps'); if (!corps) return;
-    var h = b.offsetHeight;
-    // un programme seul (TERM CH02) reste collé jusqu'à 60 % de la hauteur : sur téléphone, la flèche qui glisse reste visible
-    var lim = b.querySelector('.qz-code-corr') && !b.querySelector('.qz-tab-cadre, svg, img') ? 0.6 : 0.46;
-    b.classList.toggle('colle', h > 0 && h <= corps.clientHeight * lim);
+    var h = b.offsetHeight, H = corps.clientHeight, cache = 0;
+    // un programme (TERM CH02), seul ou au-dessus de son tableau d'état, reste collé jusqu'à 62 % de la hauteur ; programme
+    // et tableau trop hauts ensemble (téléphone) : le bloc est collé avec un haut NÉGATIF, le programme défile hors de vue
+    // et le tableau qui se remplit reste visible (relecture du 19 nov. 2026)
+    var prog = b.querySelector('.qz-code-corr'), lim = prog && !b.querySelector('svg, img') ? 0.62 : 0.46;
+    var tab = prog && b.querySelector('.qz-tab-cadre');
+    if (tab && h > H * lim) {
+      cache = Math.max(0, Math.round(tab.getBoundingClientRect().top - b.getBoundingClientRect().top) - 2);   // dans la marge entre les deux
+      h -= cache; lim = 0.46;
+    }
+    var colle = h > 0 && h <= H * lim;
+    b.style.top = colle && cache ? -cache + 'px' : '';
+    b.classList.toggle('colle', colle);
   }
   /* Intitulé d'une capture du cours (texte de remplacement, titre de l'agrandissement) : window.QUIZ_COURS_NOMS[clé]
      quand la page le donne (« Remarque : incompatibles et indépendants (p. 51) ») ; sinon déduit de la clé : « Définition 1 »,
@@ -3246,7 +3282,10 @@
         if (colles.some(function (f) { return f.contains(x); })) return;
         var q = x.getBoundingClientRect(); if (q.height && r.bottom - Math.min(t, q.top) <= c.bottom - 40 - haut) t = Math.min(t, q.top);
       });
-      if (r.bottom > c.bottom - 12) v.corps.scrollBy({ top: r.bottom - c.bottom + 28, behavior: 'smooth' });
+      // une étape plus haute que la place visible (figure de conclusion sur téléphone) : son HAUT reste visible, sous la barre
+      // du volet (relecture du quiz TERM CH02, 19 nov. 2026) ; sinon, son bas est amené au-dessus du pied du volet
+      if (r.bottom > c.bottom - 12 && r.height + 36 > c.bottom - haut) v.corps.scrollBy({ top: r.top - haut - 8, behavior: 'smooth' });
+      else if (r.bottom > c.bottom - 12) v.corps.scrollBy({ top: r.bottom - c.bottom + 28, behavior: 'smooth' });
       else if (t < haut) v.corps.scrollBy({ top: t - haut - 16, behavior: 'smooth' });
     }
     majPied(v);

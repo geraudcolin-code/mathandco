@@ -92,6 +92,7 @@ CHAPITRES = {
     ('terminale', 6): 'Continuité des fonctions',
     ('terminale', 7): 'Produit scalaire dans l’espace, orthogonalité, distances',
     ('terminale', 8): 'Fonction logarithme népérien',
+    ('terminale', 10): 'Combinatoire et dénombrement',
     ('terminale', 15): 'Concentration et loi des grands nombres',
     ('terminale', 16): 'Fonctions trigonométriques',
 }

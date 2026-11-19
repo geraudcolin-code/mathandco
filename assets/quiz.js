@@ -404,12 +404,16 @@
   /* ======================= 2. Vérification d'une réponse ======================= */
   var ESSAIS = [-3.7, -1.3, -0.45, 0.35, 1.7, 2.6, 4.15, 7.9];
   var ESSAIS_POS = [0.35, 0.8, 1.3, 1.7, 2.6, 3.1, 4.15, 7.9];
+  /* Suites (quiz TERM CH02, 18 nov. 2026) : avec l'option entiers d'une question (ou d'une case), la variable est un
+     ENTIER naturel (n) : l'égalité est testée en n = 0, 1, …, 9 et 12 ((−2)ⁿ n'a pas de sens en n = 1,7 ; une valeur
+     interdite, 1/n en 0, est sautée). Sans l'option, rien ne change. */
+  var ESSAIS_N = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12];
   function listeVars(q) { var v = q.variable; return v == null ? [] : (Array.isArray(v) ? v : [v]); }
-  function equivalentes(a, b, vars, positifs) {
-    var ok = 0, E = positifs ? ESSAIS_POS : ESSAIS;
+  function equivalentes(a, b, vars, positifs, entiers) {
+    var ok = 0, E = entiers ? ESSAIS_N : positifs ? ESSAIS_POS : ESSAIS;
     for (var i = 0; i < E.length; i++) {
       var env = {};
-      vars.forEach(function (v, j) { env[v] = E[(i + 3 * j) % E.length] + 0.11 * j; });
+      vars.forEach(function (v, j) { env[v] = entiers ? E[i] : E[(i + 3 * j) % E.length] + 0.11 * j; });
       var va = evaluer(a, env), vb = evaluer(b, env);
       if (!isFinite(vb)) { if (vb === va) ok++; continue; }
       if (!isFinite(va)) return false;
@@ -441,18 +445,71 @@
     var t = String(latex || '').replace(/\\(text|mathrm|textrm|operatorname|mathit)\s*/g, '').replace(/\\[,;:! ]|~|\s|[{}]/g, '');
     return /^[a-zA-ZÀ-ÿ]{3,}$/.test(t) ? t.toLowerCase() : '';
   }
+  /* « aucune » (quiz TERM CH02, 18 nov. 2026 : « si la suite est géométrique, donner sa raison, sinon écrire aucune ») :
+     attendu 'aucune' accepté comme 'aucun' ; aucun: 'aucune' (une chaîne) donne le mot des messages et le bouton « Aucune »
+     sous le cadre (boutonAucun). */
+  function motAucun(q) { return typeof q.aucun === 'string' ? q.aucun : /^aucune$/.test(String(q.attendu).trim()) ? 'aucune' : 'aucun'; }
   function verifierAucun(q, latex) {           // null : la question n'attend pas de mot ; sinon le résultat
-    var attAucun = String(q.attendu).trim() === 'aucun';
+    var attAucun = /^aucune?$/.test(String(q.attendu).trim()), lire = 'Écris un nombre, ou le mot « ' + motAucun(q) + ' ».';
     if (!q.aucun && !attAucun) return null;
     if (q.gauche) latex = String(latex || '').replace(new RegExp('^\\s*' + q.gauche + '\\s*=\\s*'), '');   // « x = aucun » (TERM CH05, 17 nov. 2026)
     var mot = motTape(latex);
     if (/^aucune?s?$/.test(mot)) return attAucun ? { etat: 'juste' } : { etat: 'faux', msg: q.indiceAucun || q.indiceFaux || '' };
-    if (mot) return { etat: 'lecture', msg: 'Écris un nombre, ou le mot « aucun ».' };
+    if (mot) return { etat: 'lecture', msg: lire };
     if (!attAucun) return null;
-    try { lireTeX(q, nettoyer(q, latex)); } catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? 'Écris un nombre, ou le mot « aucun ».' : 'Je n’arrive pas à lire cette écriture.' }; }
+    try { lireTeX(q, nettoyer(q, latex)); } catch (e) { return { etat: 'lecture', msg: e.message === 'vide' ? lire : 'Je n’arrive pas à lire cette écriture.' }; }
     return { etat: 'faux', msg: q.indiceFaux || '' };
   }
+  /* LIMITE d'une suite (quiz TERM CH02, 18 nov. 2026) : option limite: true d'une question « expr » (ou d'une case).
+     L'élève tape +∞ ou −∞ (onglet ≤∈ℝ, ou « + » / « − » puis ∞), un nombre (forme de la question, « reduit » par défaut),
+     ou le mot « aucune » si la suite n'a pas de limite (option aucun, ou attendu: 'aucune'). Messages : ∞ sans signe et
+     calcul avec ∞ (gris, rien n'est jugé) ; mauvais signe de l'infini (indiceSigne) ; « aucune » alors que la suite a une
+     limite (indiceAucun) ; valeur approchée d'une limite exacte ; les pièges valent aussi pour +∞ / −∞ (si: '+\\infty'). */
+  var INF_P = { t: 'num', v: Infinity, infini: true }, INF_M = { t: 'neg', a: INF_P };
+  function verifierLimite(q, latex) {
+    var att = String(q.attendu).replace(/\s+|[{}]/g, ''), attAucun = /^aucune?$/.test(att), avecMot = !!(q.aucun || attAucun);
+    var lire = 'Écris la limite : un nombre, +∞ ou −∞' + (avecMot ? ', ou le mot « ' + motAucun(q) + ' » si la suite n’a pas de limite' : '') + '.';
+    latex = nettoyer(q, latex);
+    var mot = motTape(latex);
+    if (mot) {
+      if (avecMot && /^aucune?s?$/.test(mot)) return attAucun ? { etat: 'juste' } : { etat: 'faux', msg: q.indiceAucun || 'Cette suite a une limite : cherche-la.' };
+      return { etat: 'lecture', msg: lire };
+    }
+    var tk;
+    try { tk = decouper(latex); } catch (e) { return { etat: 'lecture', msg: 'Je n’arrive pas à lire cette écriture.' }; }
+    if (!tk.length || tk.indexOf('\\placeholder') >= 0) return { etat: 'lecture', msg: lire };
+    var attInf = /^\+?\\infty$/.test(att) ? 1 : /^-\\infty$/.test(att) ? -1 : 0;
+    if (tk.indexOf('\\infty') >= 0) {                     // un infini : +∞ ou −∞ SEUL
+      var s = tk.filter(function (t) { return !/^[{}()]$/.test(t); }).join(''), m = /^([+-]*)\\infty$/.exec(s);
+      if (!m) return { etat: 'lecture', msg: 'Écris +∞ ou −∞ seul : on ne calcule pas avec l’infini.' };
+      if (!m[1]) return { etat: 'lecture', msg: 'Précise le signe : +∞ ou −∞.' };
+      var sg = (m[1].match(/-/g) || []).length % 2 ? -1 : 1;
+      if (sg === attInf) return { etat: 'juste' };
+      var pg = piege(q, sg > 0 ? INF_P : INF_M, []);
+      if (pg) return { etat: 'faux', msg: pg };
+      if (attInf) return { etat: 'faux', msg: q.indiceSigne || 'Attention au signe de l’infini.' };
+      return { etat: 'faux', msg: q.indiceFaux || '' };
+    }
+    if (attInf || attAucun) {                               // un nombre, alors que la limite est infinie (ou n'existe pas)
+      var ex;
+      try { ex = lireTeX(q, latex); } catch (e2) { return { etat: 'lecture', msg: e2.message === 'vide' ? lire : 'Je n’arrive pas à lire cette écriture.' }; }
+      for (var v in variables(ex)) return { etat: 'faux', msg: 'Ta réponse contient la lettre ' + v + ' : une limite est un nombre, +∞ ou −∞.' };
+      return { etat: 'faux', msg: piege(q, ex, []) || q.indiceFaux || '' };
+    }
+    var q2 = {}; for (var c in q) q2[c] = q[c];               // limite finie : comme une question « expr » (valeur, forme, pièges)
+    q2.limite = false; q2.aucun = null; q2.variable = null; q2.entiers = false; q2.forme = q.forme || 'reduit';
+    var r = verifierExpr(q2, latex);
+    if (r.etat === 'faux' && (!r.msg || r.msg === q.indiceFaux)) {   // une valeur approchée d'une limite qui ne s'écrit pas en décimal court
+      try {
+        var a = lireTeX(q, latex), va = evaluer(a, {}), vb = evaluer(lireTeX(q, q.attendu), {});
+        if (estDecimal(a) && isFinite(va) && isFinite(vb) && Math.abs(vb * 1e4 - Math.round(vb * 1e4)) > 1e-6 && Math.abs(va - vb) <= 0.01 * Math.max(1, Math.abs(vb)))
+          return { etat: 'faux', msg: 'C’est une valeur approchée : donne la valeur exacte de la limite.' };
+      } catch (e3) {}
+    }
+    return r;
+  }
   function verifierExpr(q, latex) {
+    if (q.limite) return verifierLimite(q, latex);
     var arbre, ra = verifierAucun(q, latex);
     if (ra) return ra;
     latex = nettoyer(q, latex);
@@ -479,7 +536,7 @@
     if (q.tolerance != null) {
       var va = evaluer(expr, {}), vb = evaluer(attendu, {});
       egal = isFinite(va) && Math.abs(va - vb) <= q.tolerance + 1e-12;
-    } else egal = equivalentes(expr, attendu, vars, q.positifs);
+    } else egal = equivalentes(expr, attendu, vars, q.positifs, q.entiers);
     if (!egal) {
       var pg = piege(q, expr, vars);
       return { etat: 'faux', msg: pg || q.indiceFaux || '' };
@@ -511,7 +568,7 @@
   function piege(q, expr, vars) {             // erreurs classiques prévues : message dédié
     if (!q.pieges) return '';
     for (var i = 0; i < q.pieges.length; i++) {
-      try { if (equivalentes(expr, lireTeX(q, q.pieges[i].si), vars, q.positifs)) return q.pieges[i].msg; } catch (e) {}
+      try { if (equivalentes(expr, lireTeX(q, q.pieges[i].si), vars, q.positifs, q.entiers)) return q.pieges[i].msg; } catch (e) {}
     }
     return '';
   }
@@ -522,7 +579,8 @@
     // rien tant que tout n'est pas rempli (sinon une 1re case fausse enregistrait 0 en quiz noté, et « Remplis toutes les
     // cases » trahissait qu'elle était juste)
     for (var i0 = 0; i0 < q.cases.length; i0++) {
-      var l0 = latexs[i0], r0 = String(l0 || '').trim() ? verifierExpr({ attendu: q.cases[i0].attendu, forme: 'libre', variable: q.cases[i0].variable, nombreE: q.cases[i0].nombreE || q.nombreE }, l0) : { etat: 'lecture', msg: 'vide' };
+      var c0 = q.cases[i0], l0 = latexs[i0], r0 = String(l0 || '').trim() ? verifierExpr({ attendu: c0.attendu, forme: 'libre', variable: c0.variable, nombreE: c0.nombreE || q.nombreE,
+        entiers: c0.entiers || q.entiers, limite: c0.limite, aucun: c0.aucun }, l0) : { etat: 'lecture', msg: 'vide' };
       if (r0.etat === 'lecture') return { etat: 'lecture', msg: /vide/.test(r0.msg) ? 'Remplis toutes les cases.' : r0.msg };
     }
     if (q.variantes) for (var vi = 0; vi < q.variantes.length; vi++) {   // autre remplissage juste ((x − 3)² au lieu de (x + 3)², 15 nov. 2026)
@@ -533,13 +591,16 @@
       var inv = [latexs[1], latexs[0]], tout = true;
       for (var j = 0; j < 2; j++) {
         var cj = q.cases[j];
-        if (verifierExpr({ attendu: cj.attendu, forme: cj.forme || 'nombre', variable: cj.variable, tolerance: cj.tolerance, suffixe: cj.suffixe, nombreE: cj.nombreE || q.nombreE }, inv[j]).etat !== 'juste') tout = false;
+        if (verifierExpr({ attendu: cj.attendu, forme: cj.forme || 'nombre', variable: cj.variable, tolerance: cj.tolerance, suffixe: cj.suffixe, nombreE: cj.nombreE || q.nombreE,
+          entiers: cj.entiers || q.entiers, limite: cj.limite, aucun: cj.aucun }, inv[j]).etat !== 'juste') tout = false;
       }
-      if (tout && verifierExpr({ attendu: q.cases[0].attendu, forme: 'libre', nombreE: q.cases[0].nombreE || q.nombreE }, latexs[0]).etat !== 'juste') return { etat: 'faux', msg: 'Les deux valeurs sont justes, mais inversées.' };
+      if (tout && verifierExpr({ attendu: q.cases[0].attendu, forme: 'libre', variable: q.cases[0].variable, nombreE: q.cases[0].nombreE || q.nombreE, entiers: q.cases[0].entiers || q.entiers,
+        limite: q.cases[0].limite, aucun: q.cases[0].aucun }, latexs[0]).etat !== 'juste') return { etat: 'faux', msg: 'Les deux valeurs sont justes, mais inversées.' };
     }
     for (var i = 0; i < q.cases.length; i++) {
       var c = q.cases[i];
-      var sq = { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, nombreE: c.nombreE || q.nombreE };
+      var sq = { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, nombreE: c.nombreE || q.nombreE,
+        entiers: c.entiers || q.entiers, limite: c.limite, aucun: c.aucun, indiceSigne: c.indiceSigne, indiceAucun: c.indiceAucun };
       var r = verifierExpr(sq, latexs[i]);
       if (r.etat === 'lecture') return { etat: 'lecture', msg: /vide/.test(r.msg) || !String(latexs[i] || '').trim() ? 'Remplis toutes les cases.' : r.msg };
       if (r.etat !== 'juste') {
@@ -558,7 +619,8 @@
     var rem = [q.cases.map(function (c) { return c.attendu; })].concat(q.variantes || []), mieux = null;
     rem.forEach(function (att) {
       var d = q.cases.map(function (c, j) {
-        try { return verifierExpr({ attendu: att[j], forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, nombreE: c.nombreE || q.nombreE }, latexs[j]).etat === 'juste'; } catch (e) { return false; }
+        try { return verifierExpr({ attendu: att[j], forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, nombreE: c.nombreE || q.nombreE,
+          entiers: c.entiers || q.entiers, limite: c.limite, aucun: c.aucun }, latexs[j]).etat === 'juste'; } catch (e) { return false; }
       });
       if (!mieux || d.filter(Boolean).length > mieux.filter(Boolean).length) mieux = d;
     });
@@ -746,7 +808,8 @@
   }
   function sansReponse(x) { return x == null || x === '' || (typeof x === 'string' && !x.trim()) || (typeof x === 'number' && x < 0); }
   function caseVerif(c) {                       // une case (tableau, arbre) vérifiée comme une question « expr »
-    return { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, positifs: c.positifs, nombreE: c.nombreE };
+    return { attendu: c.attendu, forme: c.forme || 'nombre', variable: c.variable, tolerance: c.tolerance, suffixe: c.suffixe, pieges: c.pieges, positifs: c.positifs, nombreE: c.nombreE,
+      entiers: c.entiers, limite: c.limite, aucun: c.aucun, indiceSigne: c.indiceSigne, indiceAucun: c.indiceAucun };
   }
   function estVraiFaux(q) { return q.droite && q.droite.length === 2 && /^vrai$/i.test(String(q.droite[0]).trim()) && /^faux$/i.test(String(q.droite[1]).trim()); }
 
@@ -776,14 +839,29 @@
   }
 
   /* ----- associer : un choix de « droite » par ligne de « gauche » ----- */
+  /* Plusieurs assemblages justes (quiz TERM CH02, relecture du 19 nov. 2026 : « On sait que A et B » vaut « On sait que B et
+     A ») : q.variantes = [autre attendu, …], comme les variantes des questions à cases ; le jugement se fait contre l'assemblage
+     le plus proche de la réponse (lignes rouges et message du piège comptés par rapport à lui). */
+  function attenduAssocier(q, rep) {
+    var atts = [q.attendu].concat(q.variantes || []), mieux = q.attendu, nf = Infinity;
+    if (!rep) return mieux.slice();
+    atts.forEach(function (att) {
+      var f = 0; for (var i = 0; i < q.gauche.length; i++) if (+rep[i] !== att[i]) f++;
+      if (f < nf) { nf = f; mieux = att; }
+    });
+    return mieux.slice();
+  }
   function verifierAssocier(q, rep) {
     var n = q.gauche.length, vides = 0, faux = [], i;
     for (i = 0; i < n; i++) if (sansReponse(rep[i])) vides++;
+    if (vides && q.blocs) return { etat: 'lecture', msg: vides === n ? 'Place un bloc après chaque mot de la démonstration.' : 'Il reste ' + (vides > 1 ? vides + ' places vides' : 'une place vide') + ' dans la démonstration.' };
     if (vides) return { etat: 'lecture', msg: vides === n ? 'Associe chaque ligne à une réponse.' : 'Il reste ' + (vides > 1 ? vides + ' lignes' : 'une ligne') + ' sans réponse.' };
-    for (i = 0; i < n; i++) if (+rep[i] !== q.attendu[i]) faux.push(i);
+    var att = attenduAssocier(q, rep);
+    for (i = 0; i < n; i++) if (+rep[i] !== att[i]) faux.push(i);
     if (!faux.length) return { etat: 'juste' };
     var msg = '';
     (q.messages || []).some(function (m) { if (faux.indexOf(m.g) >= 0 && +rep[m.g] === m.d) { msg = m.msg; return true; } return false; });
+    if (!msg && q.blocs) msg = faux.length === 1 ? 'Un bloc sur ' + n + ' n’est pas le bon (en rouge).' : faux.length + ' blocs sur ' + n + ' ne sont pas les bons (en rouge).';
     if (!msg) {
       var mot = estVraiFaux(q) ? 'réponse' : 'association';
       msg = faux.length === 1 ? 'Une ' + mot + ' sur ' + n + ' n’est pas juste (en rouge).' : faux.length + ' ' + mot + 's sur ' + n + ' ne sont pas justes (en rouge).';
@@ -1199,6 +1277,7 @@
       if (pre) { var pf = el('span', 'quiz-prefixe', pre); ligne.appendChild(pf); rendre(pf); }
       ligne.appendChild(mf);
       if (suf) { var sf = el('span', 'quiz-prefixe quiz-suffixe', suf); ligne.appendChild(sf); rendre(sf); }
+      if (typeof q.aucun === 'string' && q.type !== 'ensemble' && q.type !== 'intervalles') ligne.appendChild(boutonAucun(q, mf));   // « Aucune » (TERM CH02)
       zone.appendChild(ligne);
       if (q.type === 'ensemble') { zone.appendChild(el('p', 'quiz-aide-tab', 'Sépare les solutions par un point-virgule « ; » (touche ; du clavier 123).')); }
       if (q.type === 'intervalles') { var ai = el('p', 'quiz-aide-tab', 'Crochets [ ], infini ∞ et réunion ∪ : onglet ≤∈ℝ du clavier (au clavier de l’ordinateur : « oo » donne ∞).'); zone.appendChild(ai); }
@@ -1331,13 +1410,10 @@
   /* ----- plusieurs cadres dans une phrase : modele 'texte {0} texte {1}' ----- */
   Quiz.prototype.cases = function (q, zone, n, entree) {
     var self = this, ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
-    morceauxModele(String(q.modele)).forEach(function (morceau) {
-      var m = /^\{(\d+)\}$/.exec(morceau);
-      if (m) {
-        var i = +m[1], cd = q.cases[i] || {};
-        var mf = entree(nouveauChamp('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (question ' + (n + 1) + ')'));
-        champs[i] = mf; ligne.appendChild(mf);
-      } else if (morceau) { var t = el('span', 'quiz-prefixe', morceau); ligne.appendChild(t); }
+    poserCases(ligne, q.modele, function (i) {
+      var cd = q.cases[i] || {};
+      var mf = entree(nouveauChamp('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (question ' + (n + 1) + ')'));
+      champs[i] = mf; return mf;
     });
     zone.appendChild(ligne); rendre(ligne);
     var lire = function () {
@@ -1638,6 +1714,36 @@
     c = String(c == null ? '' : c);
     return !/\\\(/.test(c) && !/</.test(c) && /\\|\{,\}|\^|_/.test(c) ? '\\(' + c + '\\)' : c;
   }
+  /* Une ligne de cases « texte {0} texte {1} » : le texte qui PRÉCÈDE une case lui reste collé (span.qz-case-paire), de
+     même que le texte qui suit la dernière (unité) : au retour à la ligne, « Membre de droite : » ne se sépare plus de sa
+     case (relecture du quiz TERM CH02, 19 nov. 2026) ; un long texte passe à la ligne DANS sa paire. champ(i) crée la case i. */
+  function poserCases(ligne, modele, champ) {
+    var texte = null, dernier = null;
+    morceauxModele(String(modele)).forEach(function (m) {
+      var x = /^\{(\d+)\}$/.exec(m);
+      if (x) {
+        var mf = champ(+x[1]);
+        if (texte) { dernier = el('span', 'qz-case-paire'); dernier.appendChild(texte); dernier.appendChild(mf); texte = null; }
+        else dernier = mf;
+        ligne.appendChild(dernier);
+      } else if (m) {
+        if (texte) ligne.appendChild(texte);
+        // « \\(\\qquad\\) Membre de droite : » : l'espace de tête devient une marge à droite de ce qui précède (invisible en
+        // fin de ligne) ; au retour à la ligne, l'étiquette ne commence plus par un blanc
+        var e = /^\s*\\\(\s*\\(q?quad)(?![a-zA-Z])\s*/.exec(m);
+        if (e && ligne.lastChild) {
+          ligne.lastChild.classList.add(e[1] === 'qquad' ? 'qz-case-tres-loin' : 'qz-case-loin');
+          m = '\\(' + m.slice(e[0].length);
+          m = m.replace(/^\\\(\s*\\\)\s*/, '');
+        }
+        texte = m.trim() ? el('span', 'quiz-prefixe', m) : null;
+      }
+    });
+    if (!texte) return;
+    if (dernier && dernier.classList.contains('qz-case-paire')) dernier.appendChild(texte);
+    else if (dernier) { var g = el('span', 'qz-case-paire'); ligne.replaceChild(g, dernier); g.appendChild(dernier); g.appendChild(texte); }
+    else ligne.appendChild(texte);
+  }
   function morceauxModele(s) {                  // « texte {0} texte {1} » ; un {k} DANS une formule \( … \) n'est pas une case
     var out = [], re = /\\\([\s\S]*?\\\)|\{(\d+)\}/g, m, d = 0;
     while ((m = re.exec(s))) { if (m[1] == null) continue; out.push(s.slice(d, m.index), m[0]); d = re.lastIndex; }
@@ -1665,7 +1771,8 @@
     var multi = !!q.bonnes, ordre = q.propositions.map(function (_, i) { return i; });
     if (q.melanger !== false) ordre = melanger(ordre);
     var figs = q.propositions.some(function (t) { return /<img\b/.test(String(t)); });   // cartes à figures (TERM CH05) : une colonne
-    var box = el('div', 'qz-qcm' + (multi ? ' qz-multi' : '') + (figs ? ' qz-figures' : '')), grille = el('div', 'qz-props'), choix = multi ? [] : null, cartes = {};
+    // uneColonne (quiz TERM CH02, 18 nov. 2026) : une proposition par ligne (longues formules qui ne passent pas à la ligne)
+    var box = el('div', 'qz-qcm' + (multi ? ' qz-multi' : '') + (figs ? ' qz-figures' : '') + (q.uneColonne ? ' qz-une-colonne' : '')), grille = el('div', 'qz-props'), choix = multi ? [] : null, cartes = {};
     grille.setAttribute('role', 'group'); grille.setAttribute('aria-label', multi ? 'Propositions (plusieurs réponses possibles)' : 'Propositions');
     if (multi) box.appendChild(el('p', 'qz-consigne', 'Plusieurs réponses possibles.'));
     ordre.forEach(function (i, rang) {
@@ -1718,8 +1825,100 @@
     };
   }
 
+  /* ----- bouton « Aucune » (quiz TERM CH02, 18 nov. 2026, comme le bouton de kwyk) : aucun: 'aucune' (le mot attendu
+     quand il n'y a pas de limite, pas de raison…) ; il écrit le mot dans le cadre, l'élève valide ensuite ----- */
+  function boutonAucun(q, mf) {
+    var mot = String(q.aucun), b = el('button', 'qz-aucun', mot.charAt(0).toUpperCase() + mot.slice(1));
+    b.type = 'button'; b.setAttribute('aria-label', 'Écrire « ' + mot + ' » dans le cadre');
+    b.addEventListener('click', function () {
+      if (b.disabled || mf.readOnly) return;
+      mf.value = '\\text{' + mot + '}';
+      mf.dispatchEvent(new Event('input', { bubbles: true }));
+      if (mf._majVide) mf._majVide();
+    });
+    return b;
+  }
+
+  /* ----- DÉMONSTRATION EN BLOCS (quiz TERM CH02, 18 nov. 2026, façon kwyk) : une question « associer » avec blocs: true.
+     Les lignes (gauche) sont les mots de liaison « On sait que », « or, », « donc » (une nouvelle étape commence à chaque
+     « On sait que », jamais d'imbrication) ; les choix (droite) sont les BLOCS, dans une palette sous la démonstration.
+     On touche une place (la première place vide est prête), puis un bloc : il s'y pose et la place vide suivante est prête ;
+     un bloc sert autant de fois qu'il faut ; une place remplie se touche pour être changée, une seconde fois pour être
+     vidée. Couleurs des blocs (genres, comme kwyk) : 'prop' propriété / théorème / définition (brun), 'fait' affirmation
+     sur la suite (bleu), 'ineg' inégalité (violet). Même vérification, même barème et même rapport qu'« associer ».
+     Apparence FAÇON SCRATCH (M. Colin, 18 nov. 2026, 22 h 33) : « Démonstration » en bloc chapeau, chaque ligne une pièce de
+     commande à encoche et à ergot (une seule pile), un trou de la forme des blocs dans chaque ligne ; tous les blocs ont la
+     même forme ; un bloc posé s'incruste dans son trou (site.css : formes en clip-path). ----- */
+  function saisieBlocs(q) {
+    var n = q.gauche.length, rep = q.gauche.map(function () { return null; }), actif = 0, fige = false;
+    var ordreD = q.droite.map(function (_, j) { return j; });
+    if (q.melanger !== false) ordreD = melanger(ordreD);
+    function genre(j) { var g = q.genres && q.genres[j]; return g === 'prop' || g === 'ineg' ? g : 'fait'; }
+    var box = el('div', 'qz-blocs'), demo = el('div', 'qz-blocs-demo'), pal = el('div', 'qz-blocs-palette');
+    demo.appendChild(el('p', 'qz-blocs-cap qz-blocs-chapeau', 'Démonstration'));      // le bloc chapeau de la pile
+    var lignes = q.gauche.map(function (g, i) {
+      var etape = i > 0 && /^(on sait|initialisation|hérédité|conclusion)/i.test(texteSimple(g));   // une nouvelle étape de la démonstration
+      var li = el('div', 'qz-blocs-ligne' + (etape ? ' qz-blocs-etape' : '')), mot = el('span', 'qz-blocs-mot', g), place = el('button', 'qz-blocs-place');
+      place.type = 'button'; place.dataset.i = i;
+      place.addEventListener('click', function () {
+        if (fige) return;
+        if (actif === i && rep[i] != null) rep[i] = null;          // seconde touche sur une place remplie : vidée
+        actif = i; li.classList.remove('qz-faux'); maj();
+      });
+      li.appendChild(mot); li.appendChild(place); demo.appendChild(li);
+      return { li: li, place: place, nom: texteSimple(g) };
+    });
+    pal.appendChild(el('p', 'qz-blocs-cap qz-blocs-cap-pal', 'Blocs à placer'));
+    var liste = el('div', 'qz-blocs-liste'), bs = {};
+    liste.setAttribute('role', 'group'); liste.setAttribute('aria-label', 'Blocs à placer dans la démonstration');
+    ordreD.forEach(function (j) {
+      var b = el('button', 'qz-bloc qz-bloc-' + genre(j), q.droite[j]); b.type = 'button'; b.dataset.j = j;
+      b.addEventListener('click', function () { if (!fige) poser(j); });
+      liste.appendChild(b); bs[j] = b;
+    });
+    pal.appendChild(liste);
+    box.appendChild(demo); box.appendChild(pal);
+    rendre(box);
+    function poser(j) {
+      if (actif < 0) actif = rep.indexOf(null);
+      if (actif < 0) return;                                      // tout est rempli : toucher d'abord la place à changer
+      rep[actif] = j; lignes[actif].li.classList.remove('qz-faux');
+      var suivante = -1;
+      for (var k = 1; k <= n; k++) { var x = (actif + k) % n; if (rep[x] == null) { suivante = x; break; } }
+      actif = suivante;
+      maj();
+    }
+    function maj() {
+      lignes.forEach(function (l, i) {
+        var j = rep[i], p = l.place;
+        p.className = 'qz-blocs-place' + (j != null ? ' remplie qz-bloc-' + genre(j) : '') + (i === actif && !fige ? ' active' : '');
+        if (p._j !== j) {
+          p._j = j; p.innerHTML = j != null ? q.droite[j] : '';
+          if (j != null) {
+            rendre(p);
+            if (pret) { p.classList.add('qz-incruste'); p.addEventListener('animationend', function fin() { p.classList.remove('qz-incruste'); p.removeEventListener('animationend', fin); }); }   // le bloc s'incruste dans son trou
+          }
+        }
+        p.setAttribute('aria-pressed', i === actif && !fige ? 'true' : 'false');
+        p.setAttribute('aria-label', 'Place ' + (i + 1) + ', après « ' + l.nom + ' » : ' + (j != null ? texteSimple(q.droite[j]) : 'vide'));
+      });
+    }
+    var pret = false;                                               // pas d'animation au premier affichage
+    maj();
+    pret = true;
+    return {
+      el: box, ordreD: ordreD,
+      lire: function () { return rep.slice(); },
+      marquer: function (r) {
+        lignes.forEach(function (l, i) { l.li.classList.toggle('qz-faux', !!(r.faux && r.faux.indexOf(i) >= 0)); l.li.classList.toggle('qz-juste', r.etat === 'juste'); });
+      },
+      figer: function () { fige = true; maj(); lignes.forEach(function (l) { l.place.disabled = true; }); ordreD.forEach(function (j) { bs[j].disabled = true; }); }
+    };
+  }
+
   /* ----- associer : une ligne par élément de gauche, les choix de droite en pastilles ----- */
   function saisieAssocier(q) {
+    if (q.blocs) return saisieBlocs(q);
     var vf = estVraiFaux(q), box = el('div', 'qz-assoc' + (vf ? ' qz-assoc-vf' : '')), rep = q.gauche.map(function () { return null; }), lignes = [];
     var ordreD = q.droite.map(function (_, j) { return j; });
     if (q.melanger === true && !vf) ordreD = melanger(ordreD);      // option : choix de droite dans un ordre au hasard
@@ -1782,6 +1981,8 @@
     if (q.prefixe) ligne.appendChild(el('span', 'quiz-prefixe', q.prefixe));
     ligne.appendChild(mf);
     if (q.suffixe) ligne.appendChild(el('span', 'quiz-prefixe quiz-suffixe', q.suffixe));
+    var bA = typeof q.aucun === 'string' && q.type !== 'intervalles' ? boutonAucun(q, mf) : null;   // « Aucune » (TERM CH02)
+    if (bA) ligne.appendChild(bA);
     rendre(ligne);
     mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
     entreeSuivante([mf], ctx.valider);
@@ -1791,17 +1992,14 @@
       var ai = el('p', 'quiz-aide-tab', 'Crochets [ ], infini ∞ et réunion ∪ : onglet ≤∈ℝ du clavier (au clavier de l’ordinateur : « oo » donne ∞).'); bloc.appendChild(ai);
     }
     return { el: bloc, champs: [mf], lire: function () { return mf.value; },
-      marquer: function (r) { mf.classList.toggle('qz-faux', r.etat === 'faux'); }, figer: function () { figerChamps([mf]); } };
+      marquer: function (r) { mf.classList.toggle('qz-faux', r.etat === 'faux'); }, figer: function () { figerChamps([mf]); if (bA) bA.disabled = true; } };
   }
   function saisieCases(q, ctx) {
     var ligne = el('div', 'quiz-ligne quiz-cases'), champs = [];
-    morceauxModele(String(q.modele)).forEach(function (m) {
-      var x = /^\{(\d+)\}$/.exec(m);
-      if (x) {
-        var i = +x[1], cd = q.cases[i] || {}, mf = ctx.champ('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (' + ctx.label + ')');
-        mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
-        champs[i] = mf; ligne.appendChild(mf);
-      } else if (m) ligne.appendChild(el('span', 'quiz-prefixe', m));
+    poserCases(ligne, q.modele, function (i) {
+      var cd = q.cases[i] || {}, mf = ctx.champ('quiz-champ petit' + (cd.large ? ' large' : ''), (cd.nom || 'case ' + (i + 1)) + ' (' + ctx.label + ')');
+      mf.addEventListener('input', function () { mf.classList.remove('qz-faux'); });
+      champs[i] = mf; return mf;
     });
     rendre(ligne);
     entreeSuivante(Array.prototype.slice.call(ligne.querySelectorAll('math-field')), ctx.valider);
@@ -1911,6 +2109,9 @@
   function dessinerTableau(t, mode, o) {
     o = o || {}; o.slots = o.slots || [];
     var cadre = el('div', 'qz-tab-cadre'), tab = el('table', 'qz-tab' + (t.totaux ? ' qz-avec-totaux' : '')), R = t.lignes.length;
+    // 6 colonnes ou plus (tableau d'état d'un programme : k, u et 4 tours de boucle, quiz TERM CH02, 19 nov. 2026) : sur téléphone,
+    // cases plus compactes (site.css) pour que le tableau tienne dans l'écran sans défiler
+    if (Math.max.apply(null, t.lignes.map(function (l) { return l.length; })) >= 6) tab.classList.add('qz-tab-serre');
     t.lignes.forEach(function (ligne, i) {
       var tr = el('tr'), C = ligne.length;
       ligne.forEach(function (c, j) {
@@ -2206,7 +2407,7 @@
   }
   function texArbre(n) {
     var s;
-    if (n.k === 'somme') s = n.items.map(function (x, i) { return (i || x.signe === '-' ? x.signe : '') + texArbre(x.n); }).join('');
+    if (n.k === 'somme') s = n.items.map(function (x, i) { return (i || x.signe ? x.signe : '') + texArbre(x.n); }).join('');   // un « + » écrit en tête reste (« +∞ », 18 nov. 2026)
     else if (n.k === 'produit') s = n.fac.map(function (x, i) { return (i ? x.op + ' ' : '') + texArbre(x.n); }).join('');
     else if (n.k === 'frac') s = n.cmd + '{' + texArbre(n.num) + '}{' + texArbre(n.den) + '}';
     else if (n.k === 'boite') s = '\\boxed{' + texArbre(n.c) + '}';
@@ -2417,6 +2618,36 @@
       if (g._justifs && (deborde() || margeManque())) { f = 1; g.style.fontSize = ''; g.classList.add('qv-dessous'); reduire(0.5); }
       g._ajuste = W;
     });
+    // développement pas à pas (TERM CH02) : un morceau d'un seul tenant plus large que sa ligne (une fraction dont le
+    // numérateur est développé) est réduit jusqu'à tenir ; les autres passent à la ligne entre deux morceaux
+    Array.prototype.forEach.call(racine.querySelectorAll('.qv-dev'), function (g) {
+      var W = g.clientWidth; if (!W || (g._ajuste === W && !force)) return;
+      var ms = Array.prototype.slice.call(g.querySelectorAll('.qv-dp'));
+      ms.forEach(function (x) { x.style.fontSize = ''; });
+      ms.forEach(function (x) {
+        if (x.classList.contains('qv-dj')) return;                 // les justifications ensuite : elles prennent la place qui reste
+        var c = x.closest('.qv-dc'), cw = c && c.clientWidth, w = x.getBoundingClientRect().width;
+        if (cw && w > cw) x.style.fontSize = Math.max(0.55, cw / w * 0.97).toFixed(3) + 'em';
+      });
+      // justification « car … » au bout d'une ligne (contre-relecture du 19 nov. 2026) : passée sous la ligne, elle restait dans la
+      // colonne des membres de droite et pouvait déborder du volet sur téléphone ; dans une grille à membres de gauche, elle va alors
+      // sous la ligne entière (toute la largeur, calée à droite) ; trop large, elle rétrécit (taille de base .82em, comme la marge)
+      ms.forEach(function (x) {
+        if (!x.classList.contains('qv-dj')) return;
+        var c = x._cellule || x.closest('.qv-dc'), row = c && c.closest('.qv-dl'); if (!c || !row) return;
+        x._cellule = c;
+        if (x.parentNode !== c) c.appendChild(x);                 // remise au bout de sa ligne : la largeur a pu changer
+        x.classList.remove('qv-dj-dessous');
+        var av = x.previousElementSibling;
+        if (av && x.getBoundingClientRect().top >= av.getBoundingClientRect().bottom - 2 && row.parentNode.classList.contains('qv-dev-g')) {
+          row.appendChild(x); x.classList.add('qv-dj-dessous');
+        }
+        var box = (x.parentNode === row ? row : c).getBoundingClientRect(), w = x.scrollWidth;
+        var dispo = x.parentNode === row ? box.width - 2 : box.right - x.getBoundingClientRect().left - 2;
+        if (w > dispo + 1) x.style.fontSize = (Math.max(0.6, dispo / w) * 0.82).toFixed(3) + 'em';
+      });
+      g._ajuste = W;
+    });
     Array.prototype.forEach.call(racine.querySelectorAll('.qv-p'), function (p) {
       var W = p.clientWidth; if (!W || (p._ajuste === W && !force)) return;
       Array.prototype.forEach.call(p.querySelectorAll('.qv-insec'), function (q) { q.style.fontSize = ''; });
@@ -2532,22 +2763,37 @@
      Une marque est posée dans le TeX d'un morceau : \class{qv-c qv-m-<id>}{…} (le cœur d'un terme, jamais son signe).
      Morceau {i, t, g} : les morceaux de même groupe g (une parenthèse entière) ne sont jamais coupés par un retour à la
      ligne (15 nov. 2026). d.g = {ligne: {i, t}} : membre de gauche d'une ligne (« 9 = 3² donc b = 3 », « 2ab = … »),
-     dans une colonne alignée, révélé par ['v', i] à son propre clic ; le « = » vient avec le premier morceau de droite. */
+     dans une colonne alignée, révélé par ['v', i] à son propre clic ; le « = » vient avec le premier morceau de droite.
+     Ajouts du quiz TERM CH02 (18 nov. 2026, distributivité fléchée partout, charte § 11.2) :
+     - SOUS-MORCEAU \class{qv-sub qv-s-<id>}{…} dans le TeX d'un morceau (un terme d'un NUMÉRATEUR, qui ne peut pas être
+       un morceau à part) : ['v', <id>] le fait apparaître à son clic ; le morceau qui le porte (la fraction, son trait et
+       son dénominateur) apparaît avec son premier sous-morceau ; ['x', <id>] le barre ;
+     - morceau {i, t, j: 1} : justification de la ligne (« HR ») en orange au bout de la ligne, à son clic, avant la ligne ;
+     - ['f', de, vers, 'haut2'] : flèche bleue PAR-DESSUS, plus haute (2ᵉ facteur dans un numérateur : par-dessous, elle
+       couperait le trait de fraction) ;
+     - ['c', ligne] sur une ligne sans membre de gauche d'un développement à membres de gauche : cadre à la taille de ce
+       qui est écrit (la cellule de la grille s'étire sur toute la largeur). */
   function etapesDev(d, ajouter, trans, majs) {
-    var g = el('div', 'qv-dev'), P = {}, N = {}, C = [], ouverts = {}, fl = [], barres = [], cadres = [], ligneDe = {};
+    var g = el('div', 'qv-dev'), P = {}, N = {}, C = [], ouverts = {}, fl = [], barres = [], cadres = [], ligneDe = {}, SUB = {};
     var gauche = d.g || {}, avecG = Object.keys(gauche).length > 0;   // membres de gauche (lignes « 9 = 3² », « 2ab = … »)
+    // mot de liaison devant un membre de gauche (quiz TERM CH02, 19 nov. 2026, hérédité selon la charte § 4 : « On a : uₖ₊₁ = … »,
+    // « c-à-d (d’après HR) uₖ₊₁ = … », « c-à-d uₖ₊₁ = … ») : g[ligne].x, texte dans sa propre colonne, qui vient avec le membre
+    var avecX = Object.keys(gauche).some(function (c) { return gauche[c].x; });
     if (avecG) g.classList.add('qv-dev-g');
+    if (avecX) g.classList.add('qv-dev-x');
     d.l.forEach(function (L, i) {
       var aEg = i > 0 || !!gauche[i];
       var row = el('div', 'qv-dl' + (aEg ? '' : ' qv-dl0')), eg = el('span', 'qv-deg' + (aEg ? ' qv-e' : ''), aEg ? '\\(=\\)' : ''), c = el('span', 'qv-dc');
       if (avecG) {
-        var lg = el('span', 'qv-dlg');
-        if (gauche[i]) { var sl = el('span', 'qv-dp qv-e', '\\(' + gauche[i].t + '\\)'); sl.dataset.ligne = i; sl.dataset.gauche = '1'; P[gauche[i].i] = sl; lg.appendChild(sl); }
+        var lg = el('span', 'qv-dlg'), sx = null;
+        if (avecX) { var lx = el('span', 'qv-dlx'); if (gauche[i] && gauche[i].x) { sx = el('span', 'qv-dpx qv-e', gauche[i].x); lx.appendChild(sx); } row.appendChild(lx); }
+        if (gauche[i]) { var sl = el('span', 'qv-dp qv-e', '\\(' + gauche[i].t + '\\)'); sl.dataset.ligne = i; sl.dataset.gauche = '1'; sl._x = sx; P[gauche[i].i] = sl; lg.appendChild(sl); }
         row.appendChild(lg);
       }
       row.appendChild(eg); row.appendChild(c); g.appendChild(row); C.push({ row: row, eg: eg, c: c });
-      var groupes = {};                         // morceaux d'un même groupe (p.g) : jamais coupés par un retour à la ligne
+      var groupes = {}, jus = [];               // morceaux d'un même groupe (p.g) : jamais coupés par un retour à la ligne
       L.forEach(function (p, j) {
+        if (p.j) { var sj = el('span', 'qv-dp qv-dj qv-e', p.t); sj.dataset.ligne = i; sj.dataset.just = '1'; P[p.i] = sj; jus.push(sj); return; }   // « HR » : posée après le garde-fou
         var ouvrant = j && /[([]\s*$/.test(L[j - 1].t);                             // juste après « ( » ou « [ » : un signe de début de terme, pas d'opération
         var t = p.t, sg = j && !ouvrant ? /^(\\class\{[^{}]*\}\{[+-]\}|[+=-])/.exec(t) : null;   // un signe (ou un « = ») entre deux morceaux : espacé
         if (sg) t = sg[1] + '\\:' + t.slice(sg[1].length);                              // comme une opération (morceaux séparés)
@@ -2557,6 +2803,7 @@
         if (p.g) { if (!groupes[p.g]) { groupes[p.g] = el('span', 'qv-dgr'); c.appendChild(groupes[p.g]); } groupes[p.g].appendChild(s); }
         else c.appendChild(s);
         (p.t.match(/qv-m-[\w-]+/g) || []).forEach(function (m) { ligneDe[m.slice(5)] = i; });
+        (p.t.match(/qv-s-[\w-]+/g) || []).forEach(function (m) { SUB[m.slice(5)] = { p: s, k: null }; });   // termes d'un numérateur
       });
       // garde-fou (15 nov. 2026) : le dernier morceau d'une ligne n'est jamais laissé seul à la ligne : collé au précédent
       var kids = c.children, der = kids[kids.length - 1], avant = kids[kids.length - 2];
@@ -2566,6 +2813,7 @@
         else { var colle = el('span', 'qv-dgr'); c.insertBefore(colle, avant); colle.appendChild(avant); colle.appendChild(seul); }
         if (der !== seul) c.removeChild(der);
       }
+      jus.forEach(function (sj) { c.appendChild(sj); });
       var ns = (d.n || []).filter(function (x) { return x.apres === i; });
       if (ns.length) {
         var bloc = el('div', 'qv-notes');
@@ -2581,19 +2829,29 @@
       var k = ajouter();
       acts.forEach(function (a) {
         var t = a[0], r = a.slice(1);
-        if (t === 'v') r.forEach(function (id) { var p = P[id]; p.dataset.e = k; var L = C[+p.dataset.ligne]; if (!p.dataset.gauche && L.eg.classList.contains('qv-e') && !L.eg.dataset.e) L.eg.dataset.e = k; });
+        if (t === 'v') r.forEach(function (id) {
+          var p = P[id], sb = !p && SUB[id];
+          if (sb) { sb.k = k; p = sb.p; if (p.dataset.e) return; }      // un terme d'un numérateur : la fraction vient avec le premier
+          p.dataset.e = k; if (p._x) p._x.dataset.e = k; var L = C[+p.dataset.ligne];
+          if (!p.dataset.gauche && !p.dataset.just && L.eg.classList.contains('qv-e') && !L.eg.dataset.e) L.eg.dataset.e = k;
+        });
         else if (t === 'n') N[r[0]].el.dataset.e = k;
         else if (t === 'nx') N[r[0]].el.dataset.f = k;                     // le post-it s'en va (le suivant prend sa place)
         else if (t === 'nl') N[r[0]].l[r[1]].dataset.e = k;
         else if (t === 'h') { var o = { id: trans.length, sel: 'qv-m-' + r[0], c: r[1], pre: k, show: Infinity }; trans.push(o); ouverts[r[0]] = o; }
         else if (t === 'hx') r.forEach(function (id) { if (ouverts[id]) { ouverts[id].show = k - 1; delete ouverts[id]; } });
-        else if (t === 'f') {
-          fl.push({ de: r[0], vers: r[1], bas: r[2] === 'bas', k0: k, k1: Infinity });
-          C[ligneDe[r[1]]].row.classList.add(r[2] === 'bas' ? 'avec-fl-bas' : 'avec-fl');   // de la place pour la flèche
+        else if (t === 'f') {                           // ['f', de, vers, sens, étiquette] : étiquette « ×10 » en rouge au sommet (19 nov. 2026)
+          var lab = r[3] || null;
+          fl.push({ de: r[0], vers: r[1], bas: r[2] === 'bas', haut2: r[2] === 'haut2' || (!!lab && r[2] !== 'bas'), lab: lab, k0: k, k1: Infinity });
+          C[ligneDe[r[1]]].row.classList.add(r[2] === 'bas' ? (lab ? 'avec-fl-bas2' : 'avec-fl-bas') : r[2] === 'haut2' || lab ? 'avec-fl2' : 'avec-fl');   // de la place pour la flèche
         }
         else if (t === 'fx') fl.forEach(function (f) { if (f.k1 === Infinity) f.k1 = k - 1; });
-        else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], k0: k }); });
-        else if (t === 'c') cadres.push(gauche[r[0]] ? { ligne: C[r[0]].row, k0: k } : { c: C[r[0]].c, k0: k });   // avec un membre de gauche : toute l'égalité encadrée
+        else if (t === 'x') r.forEach(function (id) { barres.push({ p: P[id], id: id, k0: k }); });
+        // avec un membre de gauche : toute l'égalité encadrée ; une ligne sans membre de gauche d'une grille alignée : ce qui est écrit
+        else if (t === 'c') {
+          cadres.push(gauche[r[0]] ? { ligne: C[r[0]].row, k0: k } : avecG ? { ligne: C[r[0]].c, k0: k } : { c: C[r[0]].c, k0: k });
+          C[r[0]].row.classList.add('qv-dl-cadre');     // place du cadre réservée dès le début : rien ne bouge quand il apparaît
+        }
       });
     });
     var svg = svgEl('svg', { class: 'qv-dev-fl', 'aria-hidden': 'true', focusable: 'false' }); g.appendChild(svg);
@@ -2605,30 +2863,43 @@
         if (!A || !B) return;
         var x1 = (A.l + A.r) / 2 - H.left, x2 = (B.l + B.r) / 2 - H.left, s = f.bas ? 1 : -1;
         var y1 = (f.bas ? A.b + 3 : A.t - 3) - H.top, y2 = (f.bas ? B.b + 3 : B.t - 3) - H.top;
-        var h = Math.min(30, 11 + Math.abs(x2 - x1) * 0.17), ym = (f.bas ? Math.max(y1, y2) : Math.min(y1, y2)) + s * h;
+        var h = f.lab ? Math.min(34, 20 + Math.abs(x2 - x1) * 0.15) : f.haut2 ? Math.min(46, 24 + Math.abs(x2 - x1) * 0.22) : Math.min(30, 11 + Math.abs(x2 - x1) * 0.17), ym = (f.bas ? Math.max(y1, y2) : Math.min(y1, y2)) + s * h;
         var neuve = !f.el;
         if (neuve) {
-          f.el = svgEl('g', { class: 'qv-dfl' + (f.bas ? ' bas' : '') });
+          f.el = svgEl('g', { class: 'qv-dfl' + (f.lab ? ' fois' : f.bas ? ' bas' : f.haut2 ? ' bleu' : '') });
           f.el.appendChild(svgEl('path', { class: 'tige' })); f.el.appendChild(svgEl('path', { class: 'pointe' })); svg.appendChild(f.el);
+          if (f.lab) { f.t = svgEl('text', { class: 'qv-dfl-lab', 'text-anchor': 'middle' }); f.t.textContent = f.lab; f.el.appendChild(f.t); }
         }
-        var tige = f.el.firstChild, pointe = f.el.lastChild;
+        var tige = f.el.firstChild, pointe = f.el.childNodes[1];
         tige.setAttribute('d', 'M' + x1 + ' ' + y1 + ' C' + x1 + ' ' + ym + ',' + x2 + ' ' + ym + ',' + x2 + ' ' + y2);
         pointe.setAttribute('d', 'M' + (x2 - 5) + ' ' + (y2 + s * 7) + ' L' + x2 + ' ' + y2 + ' L' + (x2 + 5) + ' ' + (y2 + s * 7));
+        if (f.t) {                                    // l'étiquette au sommet de l'arc (sommet de la courbe de Bézier : t = 1/2)
+          var ys = 0.125 * (y1 + y2) + 0.75 * ym;
+          f.t.setAttribute('x', ((x1 + x2) / 2).toFixed(1)); f.t.setAttribute('y', (f.bas ? ys + 15 : ys - 5).toFixed(1));
+        }
         if (neuve && anime && k === f.k0) {        // la flèche se TRACE du facteur vers le terme, la pointe à l'arrivée
           var L = tige.getTotalLength ? tige.getTotalLength() : 200;
           f.el.style.setProperty('--L', L.toFixed(1)); f.el.classList.add('trace');
         }
       });
+      Object.keys(SUB).forEach(function (id) {   // termes d'un numérateur : chacun à son clic (place gardée : rien ne bouge)
+        var sb = SUB[id], vu = sb.k != null && k >= sb.k;
+        Array.prototype.forEach.call(g.querySelectorAll('.qv-s-' + id), function (x) {
+          var avant = x.classList.contains('vu');
+          x.classList.toggle('vu', vu);
+          if (vu && !avant && anime && k === sb.k) { var o = calque(x, g, 'qv-eclair', 2); if (o) o.addEventListener('animationend', function () { o.remove(); }); }
+        });
+      });
       barres.forEach(function (b) {               // termes qui s'annulent : barrés en rouge
         if (k < b.k0) { if (b.o) { b.o.remove(); b.o = null; } return; }
-        b.o = calque(b.p, g, 'qv-raye', 1, b.o);
+        var e = b.p || g.querySelector('.qv-s-' + b.id); if (e) b.o = calque(e, g, 'qv-raye', 1, b.o);
       });
       cadres.forEach(function (c) {
         if (c.c) { c.c.classList.toggle('qv-cadre', k >= c.k0); return; }
         // égalité « gauche = droite » : cadre à la taille de ce qui est écrit (la ligne occupe toute la grille)
         if (k < c.k0) { if (c.o) { c.o.remove(); c.o = null; } return; }
         var u = null;                                // union de l'encre des morceaux (pas des cellules de la grille)
-        Array.prototype.forEach.call(c.ligne.querySelectorAll('.qv-dp, .qv-deg'), function (x) {
+        Array.prototype.forEach.call(c.ligne.querySelectorAll('.qv-dp:not(.qv-dj), .qv-deg'), function (x) {
           var b = boiteEncre(x); if (!b) return;
           u = u ? { l: Math.min(u.l, b.l), t: Math.min(u.t, b.t), r: Math.max(u.r, b.r), b: Math.max(u.b, b.b) } : b;
         });
@@ -2715,14 +2986,17 @@
      dernière étape) ; un exercice : les corrections de ses parties à la suite, sous « Question 1 », « Question 2 »… */
   function construireEtapes(q) {
     var racine = el('div', 'qv-etapes'), n = 0, trans = [], majs = [];
-    var ctx = { ajouter: function () { return ++n; }, n: function () { return n; }, trans: trans, majs: majs };
+    var ctx = { ajouter: function () { return ++n; }, n: function () { return n; }, trans: trans, majs: majs, code: codeDe(q) };
     if (q.type === 'exercice') {
       etapesFigure(q, racine, ctx);
+      ctx.devs = q.devs || null;                   // <!--dev:k--> de la correction commune
       etapesTexte(q.correction || '', racine, ctx, null);
       q.parties.forEach(function (pa, i) {
         var sec = el('section', 'qz-corr-partie'), t = el('h3', 'qz-corr-titre', 'Question ' + (i + 1));
         racine.appendChild(sec);
-        if ((pa.type === 'arbre' && pa.arbre) || (pa.type === 'tableau' && pa.tableau)) etapesQuestion(pa, sec, ctx, t);   // titre collé avec la figure
+        // titre collé avec la figure ; une partie dont la correction COMMENCE par le programme (<!--code-->, TERM CH02) : le titre
+        // vient dans le bloc du programme (collé en haut du volet, il cacherait sinon « Question k »)
+        if ((pa.type === 'arbre' && pa.arbre) || (pa.type === 'tableau' && pa.tableau) || /^\s*<!--\s*code\s*-->/.test(pa.correction || '')) etapesQuestion(pa, sec, ctx, t);
         else { t.classList.add('qv-e'); t.dataset.e = n + 1; sec.appendChild(t); etapesQuestion(pa, sec, ctx); }   // le titre vient avec la première étape
       });
     } else etapesQuestion(q, racine, ctx);
@@ -2736,48 +3010,107 @@
   }
   function etapesQuestion(q, racine, ctx, titre) {
     var aComp = (q.type === 'arbre' && q.arbre) || (q.type === 'tableau' && q.tableau);
+    ctx.devs = q.devs || null;                     // développements fléchés de CETTE question (une partie d'exercice : les siens)
     if (!aComp) etapesFigure(q, racine, ctx);
-    var fig = aComp ? figureACompleter(q, racine, ctx, titre) : null;
+    var src = /<!--\s*code\s*-->/.test(q.correction || '') ? (codeDe(q) || ctx.code) : '';   // le programme de l'énoncé (TERM CH02)
+    var prog = src ? programmeCorrection(src, ctx) : null, progPose = false;
+    var fig = aComp ? figureACompleter(q, racine, ctx, titre, prog) : null;
+    if (prog && aComp) progPose = true;
+    var code = prog ? { poser: function () {
+      if (progPose) return; progPose = true;
+      var b = el('div', 'qz-fig-corr qz-code-etape qv-e');
+      if (titre && !aComp) b.appendChild(titre);    // partie d'exercice : « Question k » au-dessus du programme, dans le bloc collé
+      b.appendChild(prog.el); b.dataset.e = ctx.ajouter(); racine.appendChild(b);
+      ctx.majs.push(function () { collerFigure(b); });
+    }, ligne: prog.ligne } : null;
+    // graphique de conclusion (TERM CH02, charte § 4 : un calcul de limite se conclut par un graphique) : à la fin, ou au marqueur <!--graphique-->
+    var grFait = false, gr = q.figureConclusion ? function () {
+      if (grFait) return; grFait = true;
+      var f = el('figure', 'qv-fig qv-fig-fin qv-e'), im = el('img');
+      im.src = q.figureConclusion; im.alt = q.figureConclusionAlt || 'Graphique de la conclusion'; im.decoding = 'async';
+      f.appendChild(im); f.dataset.e = ctx.ajouter(); racine.appendChild(f);
+    } : null;
     if (aComp) etapesFigure(q, racine, ctx);       // tableau à compléter ET figure de lecture (TERM CH05) : le tableau en tête, collé en haut
     // « trace le tableau » (M. Colin, 12 nov. 2026) : à la fin, ou à l'étape du marqueur <!--tableau--> (16 nov. 2026)
     // q.tableauCorrection (quiz TERM CH05) : le tableau de signes / de variations d'une question d'un autre type (lecture
     // graphique, intervalles…), tracé de même ({type: 'signes' | 'variations', valeurs, ligne | ligneSigne, fleches, images, convexite})
     var srcT = q.tableauCorrection || ((q.type === 'variations' && q.fleches) || (q.type === 'signes' && q.ligne) ? q : null);
     var pose = false, tab = srcT ? function () { if (!pose) { pose = true; racine.appendChild(tableauCorrection(srcT, ctx.ajouter)); } } : null;
-    etapesTexte(q.dev ? '' : q.correction || '', racine, ctx, fig, tab);
+    etapesTexte(q.dev ? '' : q.correction || '', racine, ctx, fig, tab, gr, code);
     if (q.dev) racine.appendChild(etapesDev(q.dev, ctx.ajouter, ctx.trans, ctx.majs));   // développement pas à pas (M. Colin, 14 nov. 2026)
     if (tab) tab();
     if (fig) fig.finir(ctx.n());
+    if (gr) gr();
   }
-  var RE_ETAPES = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]|<!--\s*(cours|v|tableau)\s*(?::\s*([\s\S]*?))?\s*-->/g;
-  var RE_MARQUEUR = /<!--\s*(?:(?:cours|v)\s*:|tableau\s*-->)/;
-  function etapesTexte(html, racine, ctx, fig, tab) {
+  /* Programme Python dans la correction (quiz TERM CH02, 18 nov. 2026 ; charte § 3 : « une seule flèche qui glisse de ligne
+     en ligne et remonte sur la boucle à chaque fin de tour ») : <!--code--> recopie le programme de l'énoncé (le premier
+     <pre class="qz-code">, celui de l'énoncé commun pour une partie d'exercice) dans le volet, collé en haut tant que la
+     hauteur le permet ; dans une question « tableau » (tableau d'état), il est posé au-dessus du tableau. <!--py:k--> : à
+     la PREMIÈRE étape du dernier bloc construit avant le marqueur (le paragraphe ou le calcul qui parle de cette ligne), la
+     flèche se pose sur la ligne k (1 = première ; 0 : plus de flèche) ; elle GLISSE d'une ligne à l'autre et la ligne lue
+     est surlignée. */
+  var RE_CODE = /<pre class="qz-code"[\s\S]*?<\/pre>/;
+  function codeDe(q) { var m = RE_CODE.exec(String((q && q.enonce) || '')); return m ? m[0] : ''; }
+  function programmeCorrection(html, ctx) {
+    var b = el('div', 'qz-code-corr'), marques = [];
+    b.innerHTML = html;
+    var bande = el('span', 'qz-py-bande'), fl = el('span', 'qz-py-fleche');
+    bande.setAttribute('aria-hidden', 'true'); fl.setAttribute('aria-hidden', 'true');
+    b.appendChild(bande); b.appendChild(fl);
+    ctx.majs.push(function (k) {
+      var L = 0; marques.forEach(function (m) { if (m[0] <= k) L = m[1]; });
+      var x = L > 0 ? b.querySelectorAll('.qz-py-ligne')[L - 1] : null, e = b.closest('.qv-e');
+      var vis = !!x && !!e && e.classList.contains('vu');
+      b.classList.toggle('qz-py-actif', vis);
+      if (!vis) return;
+      var R = b.getBoundingClientRect(), r = x.getBoundingClientRect(), y = r.top - R.top;
+      fl.style.transform = 'translateY(' + (y + r.height / 2).toFixed(1) + 'px)';
+      bande.style.transform = 'translateY(' + y.toFixed(1) + 'px)'; bande.style.height = r.height.toFixed(1) + 'px';
+    });
+    return { el: b, ligne: function (k, L) { marques.push([k, L]); } };
+  }
+  var RE_ETAPES = /<p>([\s\S]*?)<\/p>|\\\[([\s\S]*?)\\\]|<!--\s*(cours|v|tableau|graphique|code|py|dev)\s*(?::\s*([\s\S]*?))?\s*-->/g;
+  var RE_MARQUEUR = /<!--\s*(?:(?:cours|v|py|dev)\s*:|(?:tableau|graphique|code)\s*-->)/;
+  function etapesTexte(html, racine, ctx, fig, tab, gr, code) {
     if (RE_MARQUEUR.test(html))                   // un marqueur glissé DANS un paragraphe le coupe en deux
       html = html.replace(/<p>([\s\S]*?)<\/p>/g, function (tout, c) {
-        return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v)\s*:[\s\S]*?-->|<!--\s*tableau\s*-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
+        return RE_MARQUEUR.test(c) ? '<p>' + c.replace(/\s*(<!--\s*(?:cours|v|py|dev)\s*:[\s\S]*?-->|<!--\s*(?:tableau|graphique|code)\s*-->)\s*/g, '</p>$1<p>') + '</p>' : tout;
       }).replace(/<p>\s*<\/p>/g, '');
-    var re = new RegExp(RE_ETAPES.source, 'g'), m, dernier = 0;
-    function libre(t) { t = t.trim(); if (t) { var b = el('div', 'qv-p'); morceau(b, t, ctx.ajouter()); racine.appendChild(b); } }
+    // debut : première étape du dernier bloc construit (paragraphe, calcul) ; <!--py:k--> écrit APRÈS un bloc pose la flèche
+    // sur la ligne k dès la PREMIÈRE étape de ce bloc (« Ligne 3 : … » : la flèche y est quand la phrase commence)
+    var re = new RegExp(RE_ETAPES.source, 'g'), m, dernier = 0, debut = 0;
+    function bloc0() { var d = ctx.n() + 1; return function () { if (ctx.n() >= d) debut = d; }; }
+    function libre(t) { t = t.trim(); if (t) { var f0 = bloc0(), b = el('div', 'qv-p'); morceau(b, t, ctx.ajouter()); racine.appendChild(b); f0(); } }
     while ((m = re.exec(html))) {
       libre(html.slice(dernier, m.index));
-      if (m[1] != null) racine.appendChild(etapesParagraphe(m[1], ctx.ajouter, ctx.trans));
+      var f1 = bloc0();
+      if (m[1] != null) { racine.appendChild(etapesParagraphe(m[1], ctx.ajouter, ctx.trans)); f1(); }
       else if (m[2] != null) {
         var a = m[2].match(/^\s*\\begin\{aligned\}([\s\S]*)\\end\{aligned\}\s*$/);
         if (a) racine.appendChild(etapesAligne(a[1], ctx.ajouter, ctx.trans));
         else { var b = el('div', 'qv-disp'); morceau(b, '\\[' + m[2] + '\\]', ctx.ajouter()); racine.appendChild(b); }
+        f1();
       }
       else if (m[3] === 'cours') captureCours(m[4], racine, ctx);
       else if (m[3] === 'tableau') { if (tab) tab(); }
+      else if (m[3] === 'graphique') { if (gr) gr(); }
+      else if (m[3] === 'code') { if (code) code.poser(); }
+      else if (m[3] === 'py') { if (code) code.ligne(Math.max(1, debut || ctx.n()), parseInt(m[4], 10) || 0); }
+      else if (m[3] === 'dev') {                   // <!--dev:k--> : le développement q.devs[k], fléché, au milieu de la correction (TERM CH02)
+        var dv = (ctx.devs || [])[parseInt(m[4], 10)];
+        if (dv) { racine.appendChild(etapesDev(dv, ctx.ajouter, ctx.trans, ctx.majs)); f1(); }
+      }
       else if (fig) fig.ecrire(m[4].split(',').map(function (x) { return parseInt(x, 10); }).filter(function (x) { return x >= 0; }), Math.max(1, ctx.n()));
       dernier = re.lastIndex;
     }
     libre(html.slice(dernier));
   }
-  function figureACompleter(q, racine, ctx, titre) {   // l'arbre / le tableau dessiné EN TÊTE, emplacements vides en pointillés
+  function figureACompleter(q, racine, ctx, titre, prog) {   // l'arbre / le tableau dessiné EN TÊTE, emplacements vides en pointillés
     var o = { slots: [], valeur: function (k) { return (q.cases[k] || {}).attendu || ''; } };
     var fig = q.type === 'arbre' ? dessinerArbre(q.arbre, 'correction', o) : dessinerTableau(q.tableau, 'correction', o);
     var bloc = el('div', 'qz-fig-corr qv-e');
     if (titre) bloc.appendChild(titre);           // exercice : « Question k » reste visible au-dessus de la figure collée
+    if (prog) bloc.appendChild(prog.el);          // tableau d'état d'un programme (TERM CH02) : le programme au-dessus
     bloc.appendChild(fig.el); bloc.dataset.e = ctx.ajouter(); racine.appendChild(bloc);
     ctx.majs.push(function () { collerFigure(bloc); });
     function poser(ks, k) { ks.forEach(function (j) { var s = o.slots[j]; if (s && !s.val.dataset.e) s.val.dataset.e = k; }); }
@@ -2785,8 +3118,21 @@
   }
   function collerFigure(b) {                    // collée en haut du volet pendant qu'on la complète, si la hauteur le permet
     var corps = b.closest('.qv-corps'); if (!corps) return;
-    var h = b.offsetHeight;
-    b.classList.toggle('colle', h > 0 && h <= corps.clientHeight * 0.46);
+    var h = b.offsetHeight, H = corps.clientHeight, cache = 0;
+    // un programme (TERM CH02), seul ou au-dessus de son tableau d'état, reste collé jusqu'à 62 % de la hauteur ; programme
+    // et tableau trop hauts ensemble (téléphone) : le bloc est collé avec un haut NÉGATIF, le programme défile hors de vue
+    // et le tableau qui se remplit reste visible (relecture du 19 nov. 2026)
+    var prog = b.querySelector('.qz-code-corr'), lim = prog && !b.querySelector('svg, img') ? 0.62 : 0.46;
+    var tab = prog && b.querySelector('.qz-tab-cadre');
+    if (tab && h > H * lim) {
+      cache = Math.max(0, Math.round(tab.getBoundingClientRect().top - b.getBoundingClientRect().top) - 2);   // dans la marge entre les deux
+      h -= cache; lim = 0.46;
+    }
+    var colle = h > 0 && h <= H * lim;
+    b.style.top = colle && cache ? -cache + 'px' : '';
+    b.style.setProperty('--qz-cache', (colle && cache ? cache : 0) + 'px');   // le cache de la marge du haut passe au-dessus du tableau
+    b.classList.toggle('colle-haut', colle && cache > 0);
+    b.classList.toggle('colle', colle);
   }
   /* Intitulé d'une capture du cours (texte de remplacement, titre de l'agrandissement) : window.QUIZ_COURS_NOMS[clé]
      quand la page le donne (« Remarque : incompatibles et indépendants (p. 51) ») ; sinon déduit de la clé : « Définition 1 »,
@@ -2975,7 +3321,10 @@
         if (colles.some(function (f) { return f.contains(x); })) return;
         var q = x.getBoundingClientRect(); if (q.height && r.bottom - Math.min(t, q.top) <= c.bottom - 40 - haut) t = Math.min(t, q.top);
       });
-      if (r.bottom > c.bottom - 12) v.corps.scrollBy({ top: r.bottom - c.bottom + 28, behavior: 'smooth' });
+      // une étape plus haute que la place visible (figure de conclusion sur téléphone) : son HAUT reste visible, sous la barre
+      // du volet (relecture du quiz TERM CH02, 19 nov. 2026) ; sinon, son bas est amené au-dessus du pied du volet
+      if (r.bottom > c.bottom - 12 && r.height + 36 > c.bottom - haut) v.corps.scrollBy({ top: r.top - haut - 8, behavior: 'smooth' });
+      else if (r.bottom > c.bottom - 12) v.corps.scrollBy({ top: r.bottom - c.bottom + 28, behavior: 'smooth' });
       else if (t < haut) v.corps.scrollBy({ top: t - haut - 16, behavior: 'smooth' });
     }
     majPied(v);
@@ -3066,7 +3415,8 @@
      case par case / question par question et le message de l'erreur repérée. notes.html le relit (clé privée). */
   var CHAMPS_RAPPORT = ['type', 'enonce', 'enonceApres', 'prefixe', 'suffixe', 'gauche', 'droite', 'tableau', 'arbre', 'modele', 'propositions', 'figureAlt'];
   function sansImage(x) {                       // une image (data URI) n'est jamais envoyée : « [figure] » à sa place
-    if (typeof x === 'string') return x.replace(/<img\b[^>]*>/gi, '[figure]').replace(/[ \t\r\n]+/g, ' ');   // espaces insécables gardés
+    if (typeof x === 'string') return x.replace(/<img\b[^>]*>/gi, '[figure]').split(/(<pre\b[\s\S]*?<\/pre>)/i)   // espaces insécables gardés ;
+      .map(function (t, i) { return i % 2 ? t : t.replace(/[ \t\r\n]+/g, ' '); }).join('');                     // programme (<pre>) tel quel
     if (Array.isArray(x)) return x.map(sansImage);
     if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = sansImage(x[k]); return o; }
     return x;
@@ -3100,10 +3450,13 @@
       default: return null;
     }
   }
+  function attenduRapport(q, rep) {               // bonne réponse du rapport : avec des variantes (blocs), la plus proche de la réponse
+    return q.type === 'associer' && q.variantes && rep ? attenduAssocier(q, rep) : reponseAttendue(q);
+  }
   function rapportQuestion(d, q, e, s) {
     if (q.famille) d.famille = q.famille;
     d.q = questionRapport(q, s);
-    d.a = reponseRapport(reponseAttendue(q));               // bonne réponse
+    d.a = reponseRapport(attenduRapport(q, e.repondue ? e.brute : null));   // bonne réponse
     if (!e.repondue) return;
     d.r = reponseRapport(e.brute);                          // réponse de l'élève
     var c = detailRapport(q, e.brute, e.res); if (c) d.c = c;
@@ -3567,7 +3920,7 @@
     verifierReponse: verifierReponse, reponseAttendue: reponseAttendue,
     // pour les tests : monter un quiz sans tuile, découper une correction en étapes
     monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases, pointQuestion: pointQuestion,
-    pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse,
+    pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse, attenduRapport: attenduRapport,
     // rapport détaillé des quiz notés (notes.html, 17 nov. 2026) : mêmes tableaux, arbres et formules que le quiz
     dessinerTableau: dessinerTableau, dessinerArbre: dessinerArbre, rendre: rendre, questionRapport: questionRapport, variables: variables, chiffrerNote: chiffrerNote
   };

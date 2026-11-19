@@ -126,7 +126,10 @@
   }
 
   /* ======================= HTML sûr ======================= */
-  var BALISES = { P: 'p', BR: 'br', I: 'i', B: 'b', STRONG: 'strong', EM: 'em', SUP: 'sup', SUB: 'sub', SPAN: 'span', U: 'u', SMALL: 'small' };
+  var BALISES = { P: 'p', BR: 'br', I: 'i', B: 'b', STRONG: 'strong', EM: 'em', SUP: 'sup', SUB: 'sub', SPAN: 'span', U: 'u', SMALL: 'small', CODE: 'code' };
+  // programme Python d'un énoncé (quiz TERM CH02, 18 nov. 2026) : <pre> avec la classe fixe « qz-code », et les seules classes
+  // de coloration ci-dessous sur les <span> (aucune autre classe, aucun autre attribut)
+  var CLASSES_PY = { 'qz-py-ligne': 1, 'qz-py-kw': 1, 'qz-py-nb': 1, 'qz-py-op': 1, 'qz-py-fn': 1, 'qz-py-ch': 1, 'qz-py-cm': 1 };
   var JETES = { SCRIPT: 1, STYLE: 1, TEMPLATE: 1, NOSCRIPT: 1, IFRAME: 1, OBJECT: 1, EMBED: 1, TEXTAREA: 1, SELECT: 1, TITLE: 1 };
   var SVG_B = ['svg', 'g', 'path', 'text', 'tspan', 'line', 'circle', 'ellipse', 'rect', 'polygon', 'polyline'];
   // attributs SVG : valeurs simples seulement (nombres, chemins, couleurs nommées ou #hex) ; PAS d'attribut style (un
@@ -157,9 +160,9 @@
    'exponentialE imaginaryI differentialD placeholder overline underline overrightarrow vec hat widehat bar dot ddot tilde ' +
    'ldots cdots dots vdots ddots quad qquad big Big bigg Bigg bigl bigr Bigl Bigr displaystyle textstyle scriptstyle ' +
    'lbrack rbrack lbrace rbrace langle rangle lvert rvert vert Vert mid parallel perp angle circ degree prime ast star ' +
-   'binom dbinom tbinom ln log exp sin cos tan lim sum prod int min max percent colon cancel not ' +
+   'binom dbinom tbinom ln log exp sin cos tan lim limits sum prod int min max percent colon cancel not ' +
    'alpha beta gamma delta epsilon varepsilon zeta eta theta vartheta iota kappa lambda mu nu xi pi varpi rho varrho sigma ' +
-   'varsigma tau upsilon phi varphi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega begin end').split(' ').forEach(function (c) { TEX_OK[c] = 1; });
+   'varsigma tau upsilon phi varphi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega ell begin end').split(' ').forEach(function (c) { TEX_OK[c] = 1; });
   var ENV_OK = { aligned: 1, cases: 1, matrix: 1, pmatrix: 1, bmatrix: 1, array: 1 };
   var SIGNES_OK = ',;:! {}()[]%_&#|\\';
   function texSur(t) {
@@ -198,6 +201,9 @@
       a += styleSvg(x);
       return '<' + t + a + '>' + enfants(x) + '</' + t + '>';
     }
+    if (x.tagName === 'PRE') return '<pre class="qz-code">' + enfants(x) + '</pre>';
+    var cp = x.getAttribute('class');
+    if (x.tagName === 'SPAN' && cp && Object.prototype.hasOwnProperty.call(CLASSES_PY, cp)) return '<span class="' + cp + '">' + enfants(x) + '</span>';
     var b = BALISES[x.tagName];
     if (b === 'br') return '<br>';
     return b ? '<' + b + '>' + enfants(x) + '</' + b + '>' : enfants(x);
@@ -251,7 +257,7 @@
       .replace(/[{}]/g, '').replace(/\s+/g, ' ').trim();
   }
   function texteBrut(html) {                    // énoncé : paragraphes séparés par « / », formules en texte lisible
-    var doc = new DOMParser().parseFromString('<!DOCTYPE html><body>' + sur(html).replace(/<\/p>|<br>/g, '$& / '), 'text/html');
+    var doc = new DOMParser().parseFromString('<!DOCTYPE html><body>' + sur(html).replace(/<\/p>|<br>/g, '$& / ').replace(/<pre class="qz-code">[\s\S]*?<\/pre>/g, function (t) { return t.replace(/\n/g, ' / '); }), 'text/html');
     return texLisible(doc.body.textContent).replace(/(\s*\/\s*)+$/, '').replace(/^\s*\/\s*/, '').replace(/\s*\/\s*\/\s*/g, ' / ');
   }
   var LETTRES = 'ABCDEFGH';

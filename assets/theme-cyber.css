@@ -245,3 +245,27 @@
 .cyber .qz-fig-corr.colle { box-shadow: 0 12px 14px -14px rgba(0, 240, 255, .55); }
 .cyber .qv-convexe { color: var(--cp-teal); }
 .cyber .qv-concave { color: #6fb8ff; }
+/* quiz TERM CH02 (18 nov. 2026) : programme Python, démonstration en blocs, bouton « Aucune » à coins vifs */
+.cyber .qz-code { border-radius: 0; box-shadow: 0 0 0 1px rgba(0, 240, 255, .35); }
+.cyber .qz-c { background: #0b0d1a; color: var(--cp-cyan); border-color: rgba(0, 240, 255, .35); border-radius: 0; }
+.cyber .qz-c.qz-c-cadre { border-color: var(--cp-rose, #ff2a6d); background: #0b0d1a; }
+.cyber .qz-aucun { border-radius: 0; background: #0b0d1a; border-color: var(--cp-cyan); color: var(--cp-cyan); }
+/* blocs façon Scratch (18 nov. 2026, 22 h 33) en Cyberpunk : pièces sombres à liseré néon (encoche et ergot gardés), blocs et
+   trous à pans coupés (la même forme pour tous), couleurs de sens gardées (brun, bleu, violet), mots de liaison verts */
+.cyber .qz-blocs { --qzb-vert: #0f3b26; --qzb-vert-l: var(--cp-teal); --qzb-pill: 0; }
+.cyber .qz-blocs-chapeau::before { background: #3a2c00; border-radius: 0; }
+.cyber .qz-blocs-chapeau::after { background: var(--cp-jaune); border-radius: 0; inset: -2px 0 -2px; }
+.cyber .qz-blocs-cap.qz-blocs-chapeau { color: var(--cp-jaune); font-family: var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.cyber .qz-blocs-mot { color: var(--cp-teal); font-family: var(--f-mono); text-shadow: 0 0 8px rgba(0, 255, 156, .45); }
+.cyber .qz-blocs-place, .cyber .qz-bloc { clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); border-radius: 0; }
+.cyber .qz-blocs-place { border-color: rgba(0, 240, 255, .75); background: #070912; box-shadow: none; }
+.cyber .qz-blocs-place.active { border-color: var(--cp-cyan); background: rgba(0, 240, 255, .14); box-shadow: none; }
+.cyber .qz-blocs-place.remplie, .cyber .qz-bloc { border: 1px solid rgba(234, 246, 255, .55); box-shadow: none; }
+.cyber .qz-blocs-place.remplie.active { border: 2px solid var(--cp-cyan); box-shadow: none; }
+.cyber .qz-bloc-prop, .cyber .qz-blocs-place.remplie.qz-bloc-prop { background: #7a4a2a; }
+.cyber .qz-bloc-fait, .cyber .qz-blocs-place.remplie.qz-bloc-fait { background: #1d4f86; }
+.cyber .qz-bloc-ineg, .cyber .qz-blocs-place.remplie.qz-bloc-ineg { background: #5d2b9e; }
+.cyber .qz-blocs-ligne.qz-faux .qz-blocs-place { border: 2px solid var(--cp-rouge); box-shadow: none; }
+.cyber .qz-blocs-ligne.qz-juste .qz-blocs-place { border: 2px solid var(--cp-teal); box-shadow: none; }
+.cyber .qz-blocs-palette { border-radius: 0; border-color: rgba(0, 240, 255, .35); background: #0b0d1a; }
+.cyber .qz-blocs-cap.qz-blocs-cap-pal { color: var(--cp-cyan); font-family: var(--f-mono); }

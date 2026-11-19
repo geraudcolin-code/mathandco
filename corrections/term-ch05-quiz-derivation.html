@@ -5,8 +5,8 @@
 <link rel="icon" href="../assets/icone.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=STIX+Two+Text:ital,wght@0,400;0,500;1,400;1,500&display=swap">
-<link rel="stylesheet" href="../assets/site.css?v=20261118c">
-<link rel="stylesheet" href="../assets/theme-cyber.css?v=20261116t">
+<link rel="stylesheet" href="../assets/site.css?v=20261119b">
+<link rel="stylesheet" href="../assets/theme-cyber.css?v=20261118t">
 <link rel="stylesheet" href="../assets/theme-pample.css?v=20261114a">
 <link rel="stylesheet" href="../assets/theme-braquage.css?v=20261118a">
 <script src="../assets/theme.js?v=20261118d"></script>
@@ -47,7 +47,7 @@ function demarrer(DATA){
   window.QUIZ_COURS = Object.assign(window.QUIZ_COURS || {}, DATA.cours || {});
   window.QUIZ_COURS_NOMS = Object.assign(window.QUIZ_COURS_NOMS || {}, DATA.coursNoms || {});
   if (DATA.coursRef) window.QUIZ_COURS_REF = DATA.coursRef;
-  charger('../assets/quiz.js?v=20261118q').then(function () { return charger('../assets/mathlive/mathlive.min.js'); });
+  charger('../assets/quiz.js?v=20261119b').then(function () { return charger('../assets/mathlive/mathlive.min.js'); });
 }
 function octets(b64){ const t = atob(b64), u = new Uint8Array(t.length); for (let k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
 async function dechiffrer(mdp){

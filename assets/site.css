@@ -869,7 +869,14 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
 .qv-dp.qv-dps { margin-left: .24em; }
 .qv-dev-fl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 1; }
 .qv-dfl { color: #D62828; }
-.qv-dfl.bas { color: #2F6FD6; }
+.qv-dfl.bas, .qv-dfl.bleu { color: #2F6FD6; }
+/* quiz TERM CH02 (18 nov. 2026, distributivité fléchée partout) : un terme d'un numérateur à son propre clic (sous-morceau,
+   place gardée), flèches bleues plus hautes au-dessus d'un numérateur, justification « HR » en orange au bout de la ligne */
+.qv-sub { visibility: hidden; opacity: 0; transition: opacity .45s var(--courbe), visibility 0s .45s; }
+.qv-sub.vu { visibility: inherit; opacity: 1; transition: opacity .45s var(--courbe), visibility 0s; }
+.qv-dl.avec-fl2 { padding-top: 2.5em; }
+.qv-dp.qv-dj { margin-left: .9em; align-self: center; max-width: 100%; color: #ED7D31; font: 700 .82em var(--f-texte); white-space: normal; }
+.qv-dev-g > .qv-dl > .qv-dp.qv-dj-dessous { grid-column: 1 / -1; justify-self: end; text-align: right; margin: .35em 0 0; }   /* sous la ligne entière */
 .qv-dfl path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .qv-dfl.trace .tige { stroke-dasharray: var(--L); stroke-dashoffset: var(--L); animation: qv-trace .8s cubic-bezier(.25, .7, .35, 1) forwards; }
 .qv-dfl.trace .pointe { opacity: 0; animation: qv-pointe .15s .75s forwards; }
@@ -883,7 +890,25 @@ math-field.quiz-champ.petit.vide { border-style: dashed; border-width: 2px; bord
   box-shadow: 3px 5px 14px rgba(51, 51, 51, .25); color: #222; font-size: .86em; line-height: 1.5; transform: rotate(-1.2deg); }
 .qv-note-t { font-size: .6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #7D6A12; }
 .qv-note .ML__latex { font-size: 1.05em; }
-@media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe { animation: none; stroke-dasharray: none; opacity: 1; } }
+/* quiz TERM CH02 (19 nov. 2026) : mot de liaison devant un membre de gauche (hérédité : « On a : », « c-à-d », « c-à-d (d’après HR) »)
+   dans sa colonne ; sur téléphone, « (d’après HR) » passe sous « c-à-d » (le calcul garde sa place) ; flèches « ×N » rouges
+   étiquetées (numérateur par-dessus, dénominateur par-dessous) */
+.qv-dev-x { grid-template-columns: max-content max-content 1.7em minmax(0, 1fr); }
+.qv-dev-x .qv-dlx { text-align: right; white-space: nowrap; padding-right: .8em; font: 500 .9em/1.25 var(--f-texte); color: var(--encre); }
+.qv-dev-x .qv-dl0 .qv-dlx { display: none; }
+.qv-dpx .qv-dhr { color: #C25E14; font-weight: 700; }
+.qv-sait { color: #1E8449; font-weight: 700; }   /* hérédité : « ce que l’on sait » (vert), « ce que l’on veut » (rouge), charte § 3 */
+.qv-veut { color: #C0392B; font-weight: 700; }
+@media (max-width: 520px) { .qv-dev-x .qv-dlx { white-space: normal; max-width: 5.4em; font-size: .84em; } }
+.qv-dl.avec-fl-bas2 { padding-bottom: 2.4em; }
+.qv-dfl.fois { color: #D62828; }
+.qv-dl.qv-dl-cadre { margin-top: 7px; margin-bottom: 6px; }   /* ligne encadrée : le cadre ne touche pas la fraction du dessus */
+.qz-case-paire { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; min-width: 0; }   /* étiquette + case, jamais séparées */
+.qz-case-paire > .quiz-prefixe { flex: 0 1 auto; min-width: 0; }
+.quiz-cases > .qz-case-loin { margin-right: .4em; } .quiz-cases > .qz-case-tres-loin { margin-right: 1.4em; }   /* \quad, \qquad de tête */
+.qv-dfl-lab { fill: #D62828; font: 700 15px var(--f-texte); }
+.qv-dfl.trace .qv-dfl-lab { opacity: 0; animation: qv-pointe .15s .75s forwards; }
+@media (prefers-reduced-motion: reduce) { .qv-dfl.trace .tige, .qv-dfl.trace .pointe, .qv-dfl.trace .qv-dfl-lab { animation: none; stroke-dasharray: none; opacity: 1; } .qv-sub, .qv-sub.vu { transition: none; } }
 
 /* ===== Quiz de chapitre : QCM, vrai / faux, associer, tableau à double entrée, arbre pondéré, exercice (1ère CH03, 14 nov. 2026) =====
    Classes préfixées « qz- » ; mêmes jetons que le reste des quiz : --quiz-afaire (à remplir), --rouge (erreur), --vert (réussite). */
@@ -1010,6 +1035,9 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
 .qz-fig-corr { position: relative; z-index: 2; margin: 0 0 14px; padding: 2px 0 6px; background: var(--papier); }
 .qz-fig-corr.colle { position: sticky; top: 0; box-shadow: 0 12px 12px -14px rgba(0, 0, 0, .45); }
 .qz-fig-corr.colle::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 24px; background: inherit; }   /* la marge du haut du volet : rien ne passe au-dessus */
+/* collé avec un haut NÉGATIF (programme + tableau d'état trop hauts, téléphone) : le programme défile hors de vue, le cache de la
+   marge du haut se place juste au-dessus du TABLEAU et passe devant le programme (sinon son bas reste visible dans la marge) */
+.qz-fig-corr.colle.colle-haut::before { bottom: auto; top: calc(var(--qz-cache, 0px) - 24px); left: -10px; right: -10px; z-index: 4; }   /* plus large (le cadre du programme déborde de ~8 px), sans dépasser la marge du volet (12 px) */
 .qz-fig-corr .qz-arbre-cadre, .qz-fig-corr .qz-tab-cadre { margin: 0; }
 .qv-corps .qz-arbre, .qv-corps .qz-tab { font-family: var(--f-texte); font-size: 1rem; }
 .qv-corps .qz-fig-corr .ML__latex, .qv-rappel .ML__latex { font-size: 1.06em; }
@@ -1069,6 +1097,15 @@ math-field.quiz-champ.qz-illisible { border-color: var(--rouge); border-style: d
   .qv-corps .qz-arbre, .qv-corps .qz-tab { font-size: .92rem; }
 }
 @media (prefers-reduced-motion: reduce) { .qz-partie-coche, .qz-prop, .qz-vf-b, .qz-pastille { transition: none; } .qz-val.neuf { animation: none; } }
+/* Tableau de 6 colonnes ou plus (classe posée par dessinerTableau : tableau d'état d'un programme, quiz TERM CH02, 19 nov. 2026) :
+   sur téléphone, cases plus compactes, pour qu'il tienne dans l'écran (iPhone 13 : 390 px, dans une partie d'exercice aussi)
+   au lieu de défiler sans que rien ne le signale ; les tableaux plus étroits ne changent pas */
+@media (max-width: 520px) {
+  .qz-tab.qz-tab-serre { font-size: .92rem; }
+  .qz-tab.qz-tab-serre th, .qz-tab.qz-tab-serre td { padding: 3px 4px; min-width: 2.6em; }
+  .qz-tab.qz-tab-serre td.qz-case { padding: 3px; }
+  .qz-tab.qz-tab-serre math-field.quiz-champ.petit.qz-champ { min-width: 2.6em; font-size: .96rem; padding: 2px 3px; }
+}
 
 /* Facteurs barrés (\cancel) des simplifications : le trait de MathLive est trop fin (≈ 1 px) pour qu'on le voie ;
    barre oblique nette, comme dans les corrections de M. Colin (15 nov. 2026) */
@@ -1111,6 +1148,127 @@ math-field.quiz-champ.qz-juste { border-color: var(--vert); border-style: solid;
   border: 2px solid var(--rouge, #D62828); box-shadow: 0 18px 50px rgba(0, 0, 0, .35); text-align: center; }
 .qn-voile-boite p { margin: 0 0 14px; }
 .qn-voile-titre { font-size: 1.25rem; font-weight: 700; color: var(--rouge, #D62828); }
+
+/* ===== Quiz TERM CH02 « Suites » (18 nov. 2026) : programme Python, bouton « Aucune », démonstration en blocs ===== */
+/* programme Python dans un énoncé (charte § 8 : répété dans chaque question qui s'en sert) : chasse fixe, numéros de ligne,
+   mots-clés colorés comme dans le livret de M. Colin ; fond blanc dans les trois styles, comme les figures */
+.qz-code { position: relative; display: block; margin: 10px 0 12px; padding: 9px 14px 9px 6px; max-width: 100%; box-sizing: border-box; overflow-x: auto;
+  background: #fff; color: #1d2433; border: 1px solid #c3ccda; border-radius: 10px; box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+  font: 500 1rem/1.62 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace; white-space: pre; text-align: left;
+  counter-reset: qzpy; tab-size: 4; -webkit-text-size-adjust: 100%; }
+.qz-code code { font: inherit; color: inherit; background: none; padding: 0; white-space: inherit; }
+.qz-py-ligne::before { counter-increment: qzpy; content: counter(qzpy); display: inline-block; width: 1.5em; margin-right: .75em; padding-right: .45em;
+  text-align: right; color: #8b95a7; border-right: 2px solid #1d2433; font-weight: 400; }
+.qz-py-kw { color: #1f3f9f; font-weight: 700; }
+.qz-py-nb { color: #0b7a7e; }
+.qz-py-op { color: #b4442a; }
+.qz-py-fn { font-weight: 700; }
+.qz-py-ch { color: #2e7d32; }
+.qz-py-cm { color: #6f7889; font-style: italic; }
+@media (max-width: 520px) { .qz-code { font-size: .88rem; padding-right: 8px; } }
+/* correction : le programme recopié, une flèche qui GLISSE de ligne en ligne, la ligne lue surlignée */
+.qz-code-corr { position: relative; }
+.qz-code-corr .qz-code { margin: 0 0 4px; padding-left: 24px; }
+.qz-py-fleche { position: absolute; left: 6px; top: -7px; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent;
+  border-left: 12px solid #D62828; opacity: 0; transition: transform .5s var(--courbe), opacity .3s; z-index: 3; pointer-events: none; }
+.qz-py-bande { position: absolute; left: 2px; right: 2px; top: 0; height: 0; border-radius: 4px; background: rgba(255, 205, 0, .3); opacity: 0;
+  transition: transform .5s var(--courbe), height .3s, opacity .3s; pointer-events: none; z-index: 2; }
+.qz-code-corr.qz-py-actif .qz-py-fleche, .qz-code-corr.qz-py-actif .qz-py-bande { opacity: 1; }
+.qz-fig-corr > .qz-code-corr + .qz-tab-cadre { margin-top: 8px; }
+/* téléphone : le programme du volet resserré, pour rester collé en haut pendant qu'on lit la correction (la flèche visible) */
+@media (max-width: 520px) { .qz-code-corr .qz-code { font-size: .8rem; line-height: 1.42; padding-top: 5px; padding-bottom: 5px; } }
+@media (prefers-reduced-motion: reduce) { .qz-py-fleche, .qz-py-bande { transition: none; } }
+/* code dans une phrase (formule de tableur, ligne ou appel de fonction) ; .qz-c-cadre : la réponse encadrée d'une correction */
+.qz-c { font: 500 .93em 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace; padding: 1px 5px; border-radius: 5px;
+  background: #f1f4f9; color: #1d2433; border: 1px solid #d5dbe6; white-space: nowrap; }
+.qz-c.qz-c-cadre { border: 2px solid #D62828; background: #fff; padding: 2px 7px; }
+/* QCM aux propositions longues (formules qui ne passent pas à la ligne) : une proposition par ligne */
+.qz-une-colonne .qz-props { grid-template-columns: 1fr; }
+/* « Aucune » : écrit le mot dans le cadre (suite sans limite, pas de raison), comme le bouton de kwyk */
+.qz-aucun { min-height: 44px; padding: 6px 16px; border: 2px solid var(--bleu); border-radius: 999px; background: var(--papier); color: var(--bleu);
+  font: 600 1rem var(--f-texte); cursor: pointer; transition: background-color .2s, transform .15s; }
+@media (hover: hover) { .qz-aucun:hover:not(:disabled) { background: var(--bleu-fond); } }
+.qz-aucun:active:not(:disabled) { transform: scale(.97); }
+.qz-aucun:disabled { opacity: .5; cursor: default; }
+.quiz-ligne .qz-aucun { margin-left: 4px; }
+/* graphique de conclusion d'une correction (nuage de points d'une limite) */
+.qv-fig.qv-fig-fin { margin: 10px 0 6px; }
+.qv-fig.qv-fig-fin img { max-height: 340px; }
+/* démonstration en BLOCS FAÇON SCRATCH (M. Colin, 18 nov. 2026, 22 h 33 : « des blocs qui s'incrustent les uns dans les autres
+   comme sur Scratch ») : le titre « Démonstration » en bloc CHAPEAU ; chaque ligne (« On sait que », « or, », « donc »…) est une
+   pièce de commande verte à ENCOCHE (en haut) et à ERGOT (en bas), empilée sous la précédente (une seule pile : l'ergot entre
+   dans l'encoche) ; dans chaque ligne, un TROU de la forme des blocs ; tous les blocs ont la MÊME forme (elle ne trahit rien),
+   leur couleur garde son sens : brun propriété, bleu fait, violet inégalité ; un bloc posé s'incruste (transform seulement :
+   rien ne bouge autour). Formes : clip-path sur des pseudo-éléments (::before la pièce, ::after son liseré plus sombre). */
+.qz-blocs { --qzb-n: 6px; --qzb-x: 16px; --qzb-l: 22px; --qzb-vert: #3d8b37; --qzb-vert-l: #276222; --qzb-pill: 1.35em;
+  display: grid; gap: 18px; }
+.qz-blocs-demo { display: grid; min-width: 0; padding: 2px 0 8px; }
+/* forme d'une pièce : encoche de profondeur n entre x et x + l (en haut), ergot identique en bas */
+.qz-blocs-ligne, .qz-blocs-chapeau { --qzb-forme: polygon(0 4px, 4px 0, var(--qzb-x) 0, calc(var(--qzb-x) + var(--qzb-n)) var(--qzb-n),
+    calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) var(--qzb-n), calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) 0, calc(100% - 4px) 0,
+    100% 4px, 100% calc(100% - var(--qzb-n) - 4px), calc(100% - 4px) calc(100% - var(--qzb-n)),
+    calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) calc(100% - var(--qzb-n)), calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) 100%,
+    calc(var(--qzb-x) + var(--qzb-n)) 100%, var(--qzb-x) calc(100% - var(--qzb-n)), 4px calc(100% - var(--qzb-n)), 0 calc(100% - var(--qzb-n) - 4px)); }
+.qz-blocs-ligne::before, .qz-blocs-ligne::after, .qz-blocs-chapeau::before, .qz-blocs-chapeau::after { content: ''; position: absolute; pointer-events: none; }
+/* le chapeau : dôme en haut à gauche, ergot en bas (rien en haut à emboîter) */
+.qz-blocs-cap.qz-blocs-chapeau { position: relative; isolation: isolate; justify-self: start; min-width: min(15em, 100%); margin: 0; padding: 20px 22px calc(9px + var(--qzb-n)) 14px;
+  border-radius: 0; background: none; color: #fff; font: 700 1rem/1.2 var(--f-texte); letter-spacing: .01em; }
+.qz-blocs-chapeau::before { inset: 0; z-index: -1; background: #c88a12; border-radius: 74px 12px 0 0 / 22px 12px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--qzb-n) - 4px), calc(100% - 4px) calc(100% - var(--qzb-n)),
+    calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) calc(100% - var(--qzb-n)), calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) 100%,
+    calc(var(--qzb-x) + var(--qzb-n)) 100%, var(--qzb-x) calc(100% - var(--qzb-n)), 0 calc(100% - var(--qzb-n))); }
+.qz-blocs-chapeau::after { inset: 0 0 -2px; z-index: -2; background: #8f6008; border-radius: 74px 12px 0 0 / 22px 12px 0 0;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--qzb-n) - 4px), calc(100% - 4px) calc(100% - var(--qzb-n)),
+    calc(var(--qzb-x) + var(--qzb-l) + 2 * var(--qzb-n)) calc(100% - var(--qzb-n)), calc(var(--qzb-x) + var(--qzb-l) + var(--qzb-n)) 100%,
+    calc(var(--qzb-x) + var(--qzb-n)) 100%, var(--qzb-x) calc(100% - var(--qzb-n)), 0 calc(100% - var(--qzb-n))); }
+/* une ligne = une pièce de commande (verte : les mots de liaison) ; son ergot entre dans l'encoche de la suivante */
+.qz-blocs-ligne { position: relative; isolation: isolate; display: grid; grid-template-columns: 7.2em minmax(0, 1fr); align-items: center; gap: 8px;
+  margin-top: calc(-1 * var(--qzb-n)); padding: calc(7px + var(--qzb-n)) 10px calc(7px + var(--qzb-n)) 12px; color: #fff; }
+.qz-blocs-ligne::before { inset: 0; z-index: -1; background: var(--qzb-vert); clip-path: var(--qzb-forme); transition: background-color .2s; }
+.qz-blocs-ligne::after { inset: -2px 0; z-index: -2; background: var(--qzb-vert-l); clip-path: var(--qzb-forme); }
+.qz-blocs-ligne.qz-blocs-etape::before { box-shadow: inset 0 2px 0 rgba(255, 255, 255, .28); }   /* « On sait que » : une nouvelle étape */
+.qz-blocs-mot { display: block; padding: 0 2px; color: #fff; font: 700 1rem/1.25 var(--f-texte); text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+/* le TROU : creusé dans la pièce, de la forme des blocs ; « à remplir » en pointillés */
+.qz-blocs-place { min-width: 0; min-height: 46px; padding: 6px 14px; border: 2px dashed rgba(255, 255, 255, .85); border-radius: var(--qzb-pill);
+  background: rgba(0, 0, 0, .26); box-shadow: inset 0 3px 5px rgba(0, 0, 0, .35); color: #fff; font: 500 1.04rem/1.3 var(--f-texte);
+  text-align: left; cursor: pointer; overflow-x: auto; transition: box-shadow .2s, background-color .2s, border-color .2s; }
+.qz-blocs-place:hover:not(:disabled):not(.remplie) { background: rgba(0, 0, 0, .18); }
+.qz-blocs-place.active { border-style: solid; border-color: #fff; background: color-mix(in srgb, var(--quiz-afaire, var(--bleu)) 30%, rgba(0, 0, 0, .3));
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, .3), 0 0 0 3px color-mix(in srgb, var(--quiz-afaire, #fff) 70%, #fff); }
+.qz-blocs-place.remplie { border: 1px solid rgba(0, 0, 0, .3); box-shadow: 0 2px 0 rgba(0, 0, 0, .25); }
+.qz-blocs-place.remplie.active { box-shadow: 0 2px 0 rgba(0, 0, 0, .25), 0 0 0 3px #fff, 0 0 0 5px color-mix(in srgb, var(--bleu) 70%, transparent); }
+.qz-blocs-place.qz-incruste { animation: qz-incruste .42s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes qz-incruste { 0% { transform: translateY(-9px) scale(1.07); opacity: .45; } 60% { transform: translateY(1px) scale(.985); opacity: 1; }
+  100% { transform: none; } }
+/* la palette, comme celle de Scratch : un panneau clair, les blocs les uns sous les autres */
+.qz-blocs-palette { display: grid; gap: 10px; min-width: 0; padding: 10px 12px 14px; border: 1px solid var(--filet); border-radius: 10px;
+  background: color-mix(in srgb, var(--fond-2) 70%, transparent); }
+.qz-blocs-cap.qz-blocs-cap-pal { justify-self: start; margin: 0; padding: 0; border-radius: 0; background: none; color: var(--gris);
+  font: 700 .82rem var(--f-texte); letter-spacing: .06em; text-transform: uppercase; }
+.qz-blocs-liste { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 9px; }
+.qz-bloc { min-height: 44px; max-width: 100%; padding: 6px 16px; border: 1px solid rgba(0, 0, 0, .3); border-radius: var(--qzb-pill); color: #fff;
+  font: 500 1.04rem/1.3 var(--f-texte); text-align: left; cursor: pointer; overflow-x: auto; box-shadow: 0 2px 0 rgba(0, 0, 0, .25);
+  transition: transform .15s, opacity .2s, box-shadow .15s; }
+.qz-bloc:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 0 rgba(0, 0, 0, .25); }
+.qz-bloc:active:not(:disabled) { transform: translateY(1px) scale(.985); box-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
+.qz-bloc:disabled { opacity: .55; cursor: default; }
+.qz-bloc-prop, .qz-blocs-place.remplie.qz-bloc-prop { background: #8a5a3c; }
+.qz-bloc-fait, .qz-blocs-place.remplie.qz-bloc-fait { background: #2f5f8f; }
+.qz-bloc-ineg, .qz-blocs-place.remplie.qz-bloc-ineg { background: #6a3f9e; }
+/* vérification : la ligne fausse marquée d'un liseré rouge à gauche, son trou entouré de rouge ; juste : entouré de vert */
+.qz-blocs-ligne.qz-faux::before { box-shadow: inset 7px 0 0 var(--rouge); }
+.qz-blocs-ligne.qz-faux .qz-blocs-place { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--rouge); }
+.qz-blocs-ligne.qz-juste .qz-blocs-place { box-shadow: 0 0 0 3px #fff, 0 0 0 6px #a6ec98; }   /* vert clair : visible sur la pièce verte */
+.qz-blocs-place:disabled { cursor: default; }
+@media (max-width: 720px) {
+  .qz-blocs { --qzb-x: 12px; --qzb-l: 18px; }
+  .qz-blocs-ligne { grid-template-columns: 5.6em minmax(0, 1fr); gap: 6px; padding-left: 9px; padding-right: 7px; }
+  .qz-blocs-mot { font-size: .92rem; }
+  .qz-blocs-place, .qz-bloc { font-size: .98rem; padding: 5px 12px; }
+  .qz-blocs-palette { padding: 8px 8px 12px; }
+  .qz-blocs-liste { flex-direction: column; }        /* téléphone : un bloc par ligne, comme la palette de Scratch */
+}
+@media (prefers-reduced-motion: reduce) { .qz-blocs-place.qz-incruste { animation: none; } }
 
 /* tableau de signes d'un produit (M. Colin, 18 nov. 2026) : un étage par facteur, justifié par son coefficient directeur,
    puis l'étage du produit (règle des signes) ; la justification en orange sous l'étiquette */

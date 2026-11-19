@@ -1,0 +1,25 @@
+{
+ "maj": "2026-11-19T17:45:00Z",
+ "notes": [
+  "1ere-ch03-quiz-probabilites-conditionnelles",
+  "2nde-ch03-quiz-developper-factoriser"
+ ],
+ "quiz": {
+  "1ere-ch03-quiz-probabilites-conditionnelles": {
+   "id": "1ere-ch03-quiz",
+   "titre": "Première spécialité · Chapitre 3 · Probabilités conditionnelles et indépendance"
+  },
+  "2nde-ch03-quiz-developper-factoriser": {
+   "id": "2nde-ch03-devfact",
+   "titre": "Seconde · Chapitre 3 · Développer et factoriser"
+  },
+  "term-ch02-quiz-suites": {
+   "id": "term-ch02-quiz",
+   "titre": "Terminale spécialité · Chapitre 2 · Suites : rappels, récurrence et limites"
+  },
+  "term-ch05-quiz-derivation": {
+   "id": "term-ch05-quiz",
+   "titre": "Terminale spécialité · Chapitre 5 · Compléments sur la dérivation"
+  }
+ }
+}

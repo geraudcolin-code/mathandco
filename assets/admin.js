@@ -3,10 +3,13 @@
    passe du professeur, une correction OUVERTE avec celui des élèves (lu dans assets/cle.js, où il est chiffré par le
    mot de passe du professeur). « Publier » rechiffre ici, dans le navigateur, la page et le PDF de chaque correction
    ouverte ou fermée, puis enregistre le tout (et acces.json) en un seul envoi, avec la clé d'accès du professeur, qui
-   reste sur l'appareil. */
+   reste sur l'appareil.
+   MODE DES QUIZ DE CHAPITRE (M. Colin, 19 nov. 2026) : à côté de « Ouverte / Fermée », chaque quiz a un interrupteur
+   « Entraînement / Noté ». Son état est le fichier PUBLIC notes-modes.json ({"notes": [pages notées], "quiz": {page:
+   {id, titre}}}), enregistré par le même envoi ; la page du quiz le lit (quiz.js) : aucun rechiffrement. */
 (function () {
   'use strict';
-  var DEPOT = 'geraudcolin-code/mathandco', BRANCHE = 'main', FICHIER = 'acces.json';
+  var DEPOT = 'geraudcolin-code/mathandco', BRANCHE = 'main', FICHIER = 'acces.json', FICHIER_MODES = 'notes-modes.json';
   var API = 'https://api.github.com/repos/' + DEPOT;
   var CLE_ADMIN = 'colineaire.admin', CLE_ELEVE = 'mathandco.mdp', CLE_PROF = 'colineaire.prof';
   var ITER = 600000;
@@ -55,6 +58,26 @@
       { accept: 'application/vnd.github.raw' });
   }
   async function lireAcces(ref) { return JSON.parse(new TextDecoder().decode(await brut(FICHIER, ref || BRANCHE))); }
+  // notes-modes.json : absent (404) -> aucun quiz noté connu ; toute autre erreur arrête tout (on n'écrase jamais le fichier
+  // à partir d'une lecture ratée)
+  async function lireModes(ref) {
+    var r = await fetch(API + '/contents/' + FICHIER_MODES + '?ref=' + (ref || BRANCHE) + '&t=' + Date.now(),
+      { cache: 'no-store', headers: entetes('application/vnd.github.raw') });
+    if (r.status === 404) return { notes: [], quiz: {} };
+    if (r.status === 401) throw new Error('La clé d’accès est refusée (mal copiée ou expirée).');
+    if (!r.ok) throw new Error('Le serveur ne répond pas (erreur ' + r.status + '). Réessayez dans un instant.');
+    var j = JSON.parse(new TextDecoder().decode(await r.arrayBuffer()));
+    return { notes: Array.isArray(j.notes) ? j.notes.slice() : [], quiz: (j.quiz && typeof j.quiz === 'object') ? j.quiz : {} };
+  }
+  // identifiant du quiz (clé de QUIZ_CONFIG, sous laquelle les résultats sont rangés) : lu dans la page déchiffrée
+  async function idQuiz(octetsPage) {
+    var t = new TextDecoder().decode(octetsPage), m = PAT.exec(t);
+    if (!m) return null;
+    var P = { s: m[1], i: m[2], n: +m[3], c: m[4] };
+    var r = await essayer(function (k) { return ouvrirP(P, k); }, [MDP_ELEVES, MDP_PROF]);
+    var d = JSON.parse(new TextDecoder().decode(r[1])), b = /data-quiz-config="([a-z0-9-]+)"/.exec(d.body || '');
+    return b ? b[1] : Object.keys((d.data || {}).config || {})[0] || null;
+  }
 
   // Rechiffrement : une clé par mot de passe et par publication (sel commun), un IV neuf par fichier.
   async function cible(vers) {
@@ -93,13 +116,16 @@
   }
 
   // Une publication = un seul envoi (commit) : acces.json + les pages et PDF rechiffrés.
-  async function publier(ouvre, ferme, message, progres) {
+  async function publier(ouvre, ferme, note, entraine, message, progres) {
     var href = {}; items().forEach(function (it) { href[ident(it)] = it; });
     for (var essai = 0; essai < 3; essai++) {
       var c0 = (await api('/git/ref/heads/' + BRANCHE)).object.sha;
       var arbre0 = (await api('/git/commits/' + c0)).tree.sha;
       var j = await lireAcces(c0), ens = {};
       (j.ouvertes || []).forEach(function (s) { ens[s] = true; });
+      var md = await lireModes(c0), notes = {};
+      md.notes.forEach(function (s) { notes[s] = true; });
+      note.forEach(function (s) { notes[s] = true; }); entraine.forEach(function (s) { delete notes[s]; });
       ouvre.forEach(function (s) { ens[s] = true; }); ferme.forEach(function (s) { delete ens[s]; });
       var CS = await cible(MDP_ELEVES), CP = await cible(MDP_PROF), entrees = [];
       var lot = ouvre.map(function (s) { return [s, CS]; }).concat(ferme.map(function (s) { return [s, CP]; }));
@@ -113,9 +139,19 @@
           if (np) entrees.push([it.pdf, np]);
         }
       }
+      for (var q = 0; q < note.length; q++) {            // quiz noté inconnu du fichier : son identifiant et son intitulé
+        if (md.quiz[note[q]] && md.quiz[note[q]].id) continue;
+        progres('Lecture du quiz ' + (q + 1) + ' / ' + note.length + '…');
+        var iq = await idQuiz(await brut('corrections/' + note[q] + '.html', c0)), inf = INFO_QUIZ[note[q]] || {};
+        if (!iq) throw new Error('Quiz illisible : ' + note[q] + '.');
+        md.quiz[note[q]] = { id: iq, titre: [inf.classe, inf.numero ? 'Chapitre ' + inf.numero : '', inf.titre].filter(Boolean).join(' · ') || iq };
+      }
       progres('Enregistrement…');
-      var corps = JSON.stringify({ maj: new Date().toISOString(), ouvertes: Object.keys(ens).sort() }, null, 1) + '\n';
-      entrees.push([FICHIER, new TextEncoder().encode(corps)]);
+      if (ouvre.length || ferme.length) {
+        var corps = JSON.stringify({ maj: new Date().toISOString(), ouvertes: Object.keys(ens).sort() }, null, 1) + '\n';
+        entrees.push([FICHIER, new TextEncoder().encode(corps)]);
+      }
+      if (note.length || entraine.length) entrees.push([FICHIER_MODES, new TextEncoder().encode(corpsModes(notes, md.quiz))]);
       var arbre = [];
       for (var e = 0; e < entrees.length; e++) {
         var bl = await api('/git/blobs', { method: 'POST', body: { content: b64(entrees[e][1]), encoding: 'base64' } });
@@ -123,16 +159,27 @@
       }
       var t = await api('/git/trees', { method: 'POST', body: { base_tree: arbre0, tree: arbre } });
       var c = await api('/git/commits', { method: 'POST', body: { message: message, tree: t.sha, parents: [c0] } });
-      if (await api('/git/refs/heads/' + BRANCHE, { method: 'PATCH', body: { sha: c.sha, force: false }, conflit: true })) return ens;
+      if (await api('/git/refs/heads/' + BRANCHE, { method: 'PATCH', body: { sha: c.sha, force: false }, conflit: true })) return [ens, notes];
     }
     throw new Error('Le site change en même temps ailleurs : réessayez.');
   }
 
+  function corpsModes(notes, quiz) {          // même forme que outils/construire.py (ecrire_modes)
+    var q = {}; Object.keys(quiz).sort().forEach(function (k) { q[k] = { id: quiz[k].id, titre: quiz[k].titre }; });
+    return JSON.stringify({ maj: new Date().toISOString(), notes: Object.keys(notes).sort(), quiz: q }, null, 1) + '\n';
+  }
+
   // ---------- état ----------
-  var DONNEES = null, PUBLIE = {}, VOULU = {}, filtre = 'toutes', texte = '', EN_COURS = false;
+  var DONNEES = null, PUBLIE = {}, VOULU = {}, NOTE_PUBLIE = {}, NOTE_VOULU = {}, INFO_QUIZ = {}, filtre = 'toutes', texte = '', EN_COURS = false;
   function ident(it) { return decodeURIComponent(it.href.split('/').pop()).replace(/\.html$/, ''); }
   function items() { var t = []; DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { t = t.concat(ch.items); }); }); return t; }
   function changements() { return items().map(ident).filter(function (s) { return !!VOULU[s] !== !!PUBLIE[s]; }); }
+  function changementsModes() { return items().filter(function (it) { return it.type === 'quiz'; }).map(ident)
+    .filter(function (s) { return !!NOTE_VOULU[s] !== !!NOTE_PUBLIE[s]; }); }
+  function majLigne(l) {
+    var s = l.dataset.id;
+    l.classList.toggle('modifiee', !!VOULU[s] !== !!PUBLIE[s] || (l.classList.contains('ligne-quiz') && !!NOTE_VOULU[s] !== !!NOTE_PUBLIE[s]));
+  }
   function libelle(it) {
     if (it.type === 'exercice') return 'Exercice ' + it.numero;
     if (it.type === 'evaluation') return (it.interro ? 'Interrogation flash ' + it.interro + ', ' : it.sujet ? 'Sujet ' + it.sujet + ', ' : 'Évaluation, ') + 'exercice ' + it.numero;
@@ -149,9 +196,22 @@
     b.maj = function () {
       b.setAttribute('aria-checked', VOULU[s] ? 'true' : 'false');
       lib.textContent = VOULU[s] ? 'Ouverte' : 'Fermée';
-      b.closest('.ligne-acces').classList.toggle('modifiee', !!VOULU[s] !== !!PUBLIE[s]);
+      majLigne(b.closest('.ligne-acces'));
     };
     b.addEventListener('click', function () { VOULU[s] = !VOULU[s]; b.maj(); bilan(); });
+    return b;
+  }
+  function interrupteurMode(s) {          // quiz de chapitre : « Entraînement » / « Noté » (19 nov. 2026)
+    var b = el('button', 'interrupteur adm-mode'); b.type = 'button'; b.setAttribute('role', 'switch');
+    b.title = 'Noté : pseudo, 20 questions tirées dans tout le chapitre, une réponse par question, note sur 20. Entraînement : réglages et corrections après chaque question.';
+    var lib = el('span', 'lib'); b.appendChild(lib); b.appendChild(el('span', 'piste'));
+    b.maj = function () {
+      b.setAttribute('aria-checked', NOTE_VOULU[s] ? 'true' : 'false');
+      b.setAttribute('aria-label', 'Mode du quiz : ' + (NOTE_VOULU[s] ? 'noté' : 'entraînement'));
+      lib.textContent = NOTE_VOULU[s] ? 'Noté' : 'Entraînement';
+      majLigne(b.closest('.ligne-acces'));
+    };
+    b.addEventListener('click', function () { NOTE_VOULU[s] = !NOTE_VOULU[s]; b.maj(); bilan(); });
     return b;
   }
 
@@ -186,7 +246,7 @@
         [['Tout ouvrir', true], ['Tout fermer', false]].forEach(function (o) {
           var b = el('button', null, o[0]); b.type = 'button';
           b.addEventListener('click', function () {
-            Array.prototype.forEach.call(lignes.children, function (l) { if (!l.hidden) { VOULU[l.dataset.id] = o[1]; l.querySelector('.interrupteur').maj(); } });
+            Array.prototype.forEach.call(lignes.children, function (l) { if (!l.hidden) { VOULU[l.dataset.id] = o[1]; l.querySelector('.interrupteur:not(.adm-mode)').maj(); } });
             bilan();
           });
           acts.appendChild(b);
@@ -201,9 +261,14 @@
           if (it.titre && it.type !== 'poly') nom.appendChild(el('span', null, it.titre));
           l.appendChild(nom);
           var ap = el('a', 'apercu', 'Aperçu'); ap.href = it.href; ap.target = '_blank'; ap.rel = 'noopener'; l.appendChild(ap);
+          if (it.type === 'quiz') {
+            l.classList.add('ligne-quiz');
+            INFO_QUIZ[id] = { classe: c.nom, numero: ch.numero, titre: it.titre || '' };
+            var sm = interrupteurMode(id); l.appendChild(sm);
+          }
           var sw = interrupteur(id); l.appendChild(sw);
           l.dataset.cherche = norm([c.nom, (ch.dossier ? 'dossier ' + ch.dossier + (ch.dossier === 'ds' ? ' devoir surveille ' : ch.dossier === 'dm' ? ' devoir maison dm ' : ' ') : '') + 'chapitre ' + ch.numero, ch.titre, libelle(it), it.titre, it.consigne].join(' '));
-          lignes.appendChild(l); sw.maj();
+          lignes.appendChild(l); sw.maj(); if (sm) sm.maj();
         });
         s.appendChild(lignes); bloc.appendChild(s);
       });
@@ -248,7 +313,7 @@
   $('recherche').addEventListener('input', function (e) { texte = e.target.value; appliquer(); });
 
   function bilan(msgEtat, cls) {
-    var tous = items().filter(function (it) { return it.type !== 'quiz'; }), ch = changements();   // un quiz n'est pas une correction
+    var tous = items().filter(function (it) { return it.type !== 'quiz'; }), ch = changements().concat(changementsModes());   // un quiz n'est pas une correction
     var ouv = tous.filter(function (it) { return PUBLIE[ident(it)]; }).length;
     $('resume').textContent = ouv + ' corrections ouvertes aux élèves sur ' + tous.length + '. Les nouvelles corrections arrivent fermées.';
     var e = $('etat');
@@ -258,19 +323,23 @@
     majTuiles();
   }
   $('annuler').addEventListener('click', function () {
-    VOULU = Object.assign({}, PUBLIE);
+    VOULU = Object.assign({}, PUBLIE); NOTE_VOULU = Object.assign({}, NOTE_PUBLIE);
     document.querySelectorAll('.interrupteur').forEach(function (b) { b.maj(); });
     bilan();
   });
   $('publier').addEventListener('click', async function () {
-    var ch = changements(); if (!ch.length) return;
+    var ch = changements(), cm = changementsModes(); if (!ch.length && !cm.length) return;
     var pb = $('publier'); EN_COURS = true;
     bilan('Publication…');
     var ouvre = ch.filter(function (s) { return VOULU[s]; }), ferme = ch.filter(function (s) { return !VOULU[s]; });
-    var message = 'Accès : ' + [ouvre.length ? 'ouvre ' + ouvre.join(', ') : '', ferme.length ? 'ferme ' + ferme.join(', ') : ''].filter(Boolean).join(' ; ');
+    var note = cm.filter(function (s) { return NOTE_VOULU[s]; }), entraine = cm.filter(function (s) { return !NOTE_VOULU[s]; });
+    var message = [ouvre.length || ferme.length ? 'Accès : ' + [ouvre.length ? 'ouvre ' + ouvre.join(', ') : '', ferme.length ? 'ferme ' + ferme.join(', ') : ''].filter(Boolean).join(' ; ') : '',
+                   note.length || entraine.length ? 'Mode des quiz : ' + [note.length ? 'noté ' + note.join(', ') : '', entraine.length ? 'entraînement ' + entraine.join(', ') : ''].filter(Boolean).join(' ; ') : '']
+                  .filter(Boolean).join(' — ');
     try {
-      var ens = await publier(ouvre, ferme, message, function (t) { bilan(t); });
+      var res = await publier(ouvre, ferme, note, entraine, message, function (t) { bilan(t); }), ens = res[0];
       PUBLIE = ens; VOULU = Object.assign({}, ens);
+      NOTE_PUBLIE = res[1]; NOTE_VOULU = Object.assign({}, res[1]);
       document.querySelectorAll('.interrupteur').forEach(function (b) { b.maj(); });
       EN_COURS = false;
       bilan('Publié. Les élèves le verront d\'ici une à deux minutes.', 'ok');
@@ -308,6 +377,9 @@
     var j = await lireAcces();
     PUBLIE = {}; (j.ouvertes || []).forEach(function (s) { PUBLIE[s] = true; });
     VOULU = Object.assign({}, PUBLIE);
+    var md = await lireModes();
+    NOTE_PUBLIE = {}; md.notes.forEach(function (s) { NOTE_PUBLIE[s] = true; });
+    NOTE_VOULU = Object.assign({}, NOTE_PUBLIE);
     try {
       var st = garder ? localStorage : sessionStorage;
       st.setItem(CLE_ADMIN, JSON.stringify({ jeton: jeton }));
@@ -329,7 +401,7 @@
     location.reload();
   });
   window.addEventListener('beforeunload', function (ev) {
-    if (DONNEES && changements().length) { ev.preventDefault(); ev.returnValue = ''; }
+    if (DONNEES && (changements().length || changementsModes().length)) { ev.preventDefault(); ev.returnValue = ''; }
   });
 
   // déjà connecté sur cet appareil

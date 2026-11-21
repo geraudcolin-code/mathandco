@@ -93,6 +93,7 @@ CHAPITRES = {
     ('premiere', 4): 'Dérivation locale',
     ('premiere', 5): 'Dérivation globale',
     ('premiere', 6): 'Suites arithmétiques et géométriques',
+    ('premiere', 11): 'Géométrie repérée',
     ('premiere-ms', 1): 'Suites numériques',
     ('premiere-ms', 2): 'Probabilités conditionnelles et indépendance',
     ('terminale', 1): 'Suites et récurrence',

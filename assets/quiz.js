@@ -459,7 +459,7 @@
     produit: 'C’est égal, mais ce n’est pas une forme factorisée : on attend un produit.',
     factorise: 'C’est égal, mais ce n’est pas factorisé au maximum : un des facteurs se factorise encore.',
     factorisee: 'C’est égal, mais un des facteurs se factorise encore (x est encore en facteur).',
-    reduire: 'C’est égal, mais chaque facteur doit être réduit : plus de parenthèses ni de termes semblables à l’intérieur d’un facteur.',
+    reduire: 'C’est bien factorisé, mais chaque facteur doit être réduit : plus de parenthèses ni de termes semblables à l’intérieur d’un facteur.',
     regrouper: 'C’est égal, mais regroupe le coefficient et les puissances de x en un seul facteur (3x² et non 3x × x).',
     un: 'C’est égal, mais un facteur 1 (ou −1) ne factorise rien : il faut un vrai produit de facteurs.',
     pasfacto: 'C’est égal, mais ce n’est pas encore factorisé : un des facteurs se factorise encore.',
@@ -618,25 +618,26 @@
     }
     var forme = q.forme || 'libre';
     var facto = forme === 'factorise' || forme === 'factorisee';
+    /* forme: true : réponse ÉGALE à l'attendu mais mal écrite (lu par la revue finale d'un quiz noté, option revueForme) */
     if (!FORMES[forme](expr, vars[0], q)) {
       var pf = piegeForme(q, expr);                // une mauvaise écriture prévue comme piège : son message (15 nov. 2026)
-      if (pf) return { etat: 'faux', msg: pf };
+      if (pf) return { etat: 'faux', msg: pf, forme: true };
       if (facto) {
         var rf = raisonFacto(expr, vars[0], forme === 'factorise', q.facteursReduits);
-        if (rf === 'un') return { etat: 'faux', msg: MSG_FORME.un };
+        if (rf === 'un') return { etat: 'faux', msg: MSG_FORME.un, forme: true };
         if (q.facteursReduits && rf === 'regrouperN') {      // le message ne parle que des nombres (« 2 × 2 = 4 »)
           var ns = aplatirProduit(expr).map(sansSigne).filter(estConstante).map(function (m) { return evaluer(m, {}); });
           var pr = ns.reduce(function (a, b) { return a * b; }, 1), f = function (v) { return String(Math.round(v * 1e6) / 1e6).replace('.', ','); };
-          return { etat: 'faux', msg: 'C’est égal, mais regroupe les nombres en un seul coefficient : ' + ns.map(f).join(' × ') + ' = ' + f(pr) + '.' };
+          return { etat: 'faux', msg: 'C’est égal, mais regroupe les nombres en un seul coefficient : ' + ns.map(f).join(' × ') + ' = ' + f(pr) + '.', forme: true };
         }
-        if (q.facteursReduits && (rf === 'produit' || rf === 'reduire' || rf === 'regrouper')) return { etat: 'faux', msg: MSG_FORME[rf] };
+        if (q.facteursReduits && (rf === 'produit' || rf === 'reduire' || rf === 'regrouper')) return { etat: 'faux', msg: MSG_FORME[rf], forme: true };
       }
       var mf = forme === 'factorise' && !FORMES.produit(expr) ? MSG_FORME.produit : MSG_FORME[forme];
-      return { etat: 'faux', msg: q.indiceForme || mf || 'Le résultat est juste, mais pas écrit sous la forme demandée.' };
+      return { etat: 'faux', msg: q.indiceForme || mf || 'Le résultat est juste, mais pas écrit sous la forme demandée.', forme: true };
     }
     if (facto) {                                   // vraiment factorisé : au moins autant de facteurs que l'attendu
       var na = nbFacteurs(analyser(q.attendu));
-      if (nbFacteurs(expr) < na) return { etat: 'faux', msg: piegeForme(q, expr) || MSG_FORME.pasfacto };
+      if (nbFacteurs(expr) < na) return { etat: 'faux', msg: piegeForme(q, expr) || MSG_FORME.pasfacto, forme: true };
     }
     return { etat: 'juste' };
   }
@@ -3733,10 +3734,12 @@
     var self = this, cfg = this.cfg;
     var source = { etiquette: cfg.etiquette, titre: cfg.titre, sousTitre: 'Quiz noté · pseudo : ' + echapper(this.pseudo), questions: [],
                    tirage: { depuis: cfg.themes.slice(), n: cfg.note.n || 20, equilibre: !!cfg.equilibre } };   // equilibre : sous-banques en proportion (Seconde CH03)
+    var revueForme = !!cfg.revueForme;
     this.debut = new Date();
     this.tentative = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
     this.racine._quiz = this;
     this.quiz = new Quiz(this.racine, source, { note: {
+      revueForme: revueForme,
       maj: function (b) { self.preparer(b); },
       fin: function (res) { self.version = (self.version || 0) + 1; self.partiel = null; try { localStorage.removeItem(ENCOURS); } catch (e) {}
                             if (self.voile) self.voile.hidden = true; quitterPleinEcran(); return self.envoyer(res); },
@@ -3843,6 +3846,11 @@
         c._msg.className = 'quiz-message ' + (e.points === 1 ? 'ok' : partiel ? 'partiel' : 'ko');
         c._msg.textContent = !e.repondue ? 'Pas de réponse : 0 point.' : e.points === 1 ? 'Juste : 1 point.'
           : (partiel ? 'En partie juste : ' + pointQuestion(e.points) + '.' : 'Faux : 0 point.');
+        /* option revueForme du quiz (Seconde CH03, M. Colin, 21 nov. 2026 : des élèves factorisaient sans réduire les facteurs et
+           ne comprenaient pas pourquoi ils n'avaient pas le point) : une réponse ÉGALE mais mal écrite dit pourquoi, à la fin
+           seulement (« Faux : 0 point. C'est bien factorisé, mais chaque facteur doit être réduit… ») */
+        if (self.opts.note.revueForme && e.repondue && !(e.points > 0) && e.res && e.res.forme && e.res.msg)
+          ecrireMsg(c._msg, 'Faux : 0 point. ' + e.res.msg);
       });
       this.envoi = this.opts.note.fin(bn);
     }

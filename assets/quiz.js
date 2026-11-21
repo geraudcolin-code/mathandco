@@ -270,6 +270,29 @@
     if (n.t === '/' && (rac(n.a) || (n.a.t === '*' && estEntier(n.a.a) && rac(n.a.b))) && estEntier(n.b)) return true;
     return false;
   }
+  function coefRadical(n) {                    // q√k : coefficient décimal ou fraction irréductible (0,4√6, 2/5 √6, 2 × (√6 / 5)), √k simplifié
+    n = sansSigne(n);
+    if (n.t !== '*' || !(estDecimal(n.a) || estFractionIrred(n.a))) return false;
+    var r = sansParentheses(n.b);
+    if (r.t === '/' && estEntier(r.b) && evaluer(r.b, {}) > 1) {   // 2 × (√6 / 5) : 2 et 5 premiers entre eux
+      if (!estEntier(n.a) || pgcd(evaluer(n.a, {}), evaluer(r.b, {})) !== 1) return false;
+      r = sansParentheses(r.a);
+    }
+    return r.t === 'fn' && r.nom === 'sqrt' && estEntier(r.a) && evaluer(r.a, {}) > 1 && sansCarre(evaluer(r.a, {}));
+  }
+  function radicalIrred(n) {                   // a√k / b : a et b premiers entre eux, b > 1 (24√2 / 2 n'est pas simplifié)
+    n = sansSigne(n);
+    if (n.t !== '/') return true;
+    var b = evaluer(n.b, {}), num = sansParentheses(n.a), a = num.t === '*' ? Math.abs(evaluer(num.a, {})) : 1;
+    return b > 1 && pgcd(a, b) === 1;
+  }
+  function radicande(n) {                      // le k de √k, a√k, √k / b, a√k / b, q × (√k / b) (après estRadical ou coefRadical)
+    n = sansSigne(n);
+    if (n.t === '/') n = sansParentheses(n.a);
+    if (n.t === '*') n = sansParentheses(n.b);
+    if (n.t === '/') n = sansParentheses(n.a);
+    return evaluer(n.a, {});
+  }
   function estDecimal(n) { n = sansSigne(n); return n.t === 'num' && isFinite(n.v); }
   function estPuissanceDe10(n) {
     n = sansParentheses(n);
@@ -320,6 +343,20 @@
     fraction: function (n) { return estEntier(n) || estFractionIrred(n); },   // entier ou fraction irréductible
     nombre: function (n) { return estDecimal(n) || estFractionIrred(n); },    // décimal ou fraction irréductible
     reduit: function (n) { return estDecimal(n) || estFractionIrred(n) || estRadical(n); },  // + racines simplifiées
+    radicaux: function (n) {                  // a + b√c (sujets blancs, 21 nov. 2026) : un nombre et des radicaux simplifiés, radicandes distincts
+      var ts = termes(sansParentheses(n), 1), nb = 0, vus = {};   // « (8 − 4√3) » : parenthèses extérieures permises
+      for (var i = 0; i < ts.length; i++) {
+        var t = ts[i].n;
+        if (ts.length > 1 && Math.abs(evaluer(t, {})) < 1e-12) return false;   // un terme nul (« + 0√2 ») n'est pas réduit
+        if (estDecimal(t) || estFractionIrred(t)) { if (++nb > 1) return false; continue; }
+        if (!estRadical(t) && !coefRadical(t)) return false;
+        if (!radicalIrred(t)) return false;
+        var k = radicande(t);
+        if (vus[k]) return false;
+        vus[k] = true;
+      }
+      return true;
+    },
     pi: function (n) {                        // k π avec k écrit comme un nombre (aire, volume : calcul effectué)
       n = sansSigne(n);
       function estPi(m) { m = sansParentheses(m); return m.t === 'num' && m.cst === 'pi'; }
@@ -430,6 +467,7 @@
     fraction: 'C’est égal, mais il faut l’écrire sous forme d’une fraction irréductible (ou d’un entier).',
     nombre: 'C’est égal, mais il faut effectuer le calcul : un nombre décimal ou une fraction irréductible.',
     reduit: 'C’est égal, mais l’écriture peut encore être simplifiée.',
+    radicaux: 'C’est égal, mais il faut l’écrire sous la forme a + b√c, avec la racine simplifiée (c le plus petit possible) et les calculs effectués.',
     scientifique: 'C’est égal, mais ce n’est pas une écriture scientifique a × 10ⁿ avec 1 ≤ a < 10.',
     pi: 'C’est égal, mais il faut effectuer le calcul : écris le résultat sous la forme k π (par exemple 12π).'
   };
@@ -572,6 +610,10 @@
     } else egal = equivalentes(expr, attendu, vars, q.positifs, q.entiers);
     if (!egal) {
       var pg = piege(q, expr, vars);
+      if (!pg && q.forme === 'radicaux' && estDecimal(expr) && !vars.length) {   // 2,1 pour 8 − 4√3 (21 nov. 2026)
+        var vr = evaluer(expr, {}), ve = evaluer(attendu, {});
+        if (isFinite(ve) && Math.abs(vr - ve) <= 0.01 * Math.max(1, Math.abs(ve))) return { etat: 'faux', msg: 'C’est une valeur approchée : donne la valeur exacte (avec la racine carrée).' };
+      }
       return { etat: 'faux', msg: pg || q.indiceFaux || '' };
     }
     var forme = q.forme || 'libre';
@@ -730,7 +772,8 @@
       return { etat: 'lecture', msg: m || 'Je n’arrive pas à lire cette écriture d’intervalle.' };
     }
     var att = lireIntervalles(q.attendu);
-    function pres(a, b) { return a === b || Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b)); }
+    // borne infinie : égalité exacte (21 nov. 2026 : |0 − (−∞)| ≤ 1e-9 × ∞ était vrai, « ]0 ; 1] » passait pour « ]−∞ ; 1] »)
+    function pres(a, b) { return a === b || (isFinite(a) && isFinite(b) && Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b))); }
     for (var i = 0; i < r.length; i++) {
       if (!(r[i].a < r[i].b)) return { etat: 'faux', msg: 'Dans un intervalle, la plus petite borne s’écrit à gauche.' };
       if ((r[i].a === -Infinity && r[i].fa) || (r[i].b === Infinity && r[i].fb)) return { etat: 'faux', msg: 'Du côté de l’infini, le crochet est toujours ouvert.' };

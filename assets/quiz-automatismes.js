@@ -80,7 +80,19 @@
       pieges: [{ si: '999999', msg: 'C’est la valeur exacte : on demande seulement un ordre de grandeur, une puissance de 10.' }],
       correction: p(R`\(999\approx1000=10^3\) et \(1001\approx1000=10^3\), donc \(999\times1001\approx10^3\times10^3=\boxed{10^6}\).`) },
     { type: 'expr', enonce: p(R`On sait que \(289\times307=88\,723\).`, R`Donner la valeur exacte de \(289\times0{,}307\).`), prefixe: R`\(289\times0{,}307=\)`, attendu: '88{,}723', forme: 'decimal',
-      correction: p(R`\(0{,}307=307\div1000\), donc \(289\times0{,}307=88\,723\div1000=\boxed{88{,}723}\).`, R`Vérification de vraisemblance : \(289\times0{,}307\approx300\times0{,}3=90\).`) }
+      correction: p(R`\(0{,}307=307\div1000\), donc \(289\times0{,}307=88\,723\div1000=\boxed{88{,}723}\).`, R`Vérification de vraisemblance : \(289\times0{,}307\approx300\times0{,}3=90\).`) },
+    // --- sujets blancs (M. Colin, 21 nov. 2026 : QCM convertis en réponses courtes, valeurs changées)
+
+    { type: 'expr', enonce: p(R`Donner l’écriture décimale de \(A=300\times\left(2\times10^{-2}\right)^2\).`), prefixe: R`\(A=\)`, attendu: '0{,}12', forme: 'decimal',
+      indiceForme: 'C’est égal, mais on demande l’écriture décimale (sans puissance de 10).',
+      pieges: [{ si: '0{,}06', msg: 'Le carré porte sur tout le produit : (2 × 10⁻²)² = 2² × (10⁻²)².' }, { si: '12', msg: '(10⁻²)² = 10⁻⁴ : une puissance de puissance, on multiplie les exposants.' }, { si: '0{,}0012', msg: 'Vérifie le décalage de la virgule : multiplier par 10⁻⁴, c’est décaler de 4 rangs vers la gauche.' }],
+      correction: al(R`A&=300\times\left(2\times10^{-2}\right)^2`, R`&=300\times2^2\times\left(10^{-2}\right)^2`, R`&=300\times4\times10^{-4}`, R`&=1\,200\times10^{-4}`, R`&=\boxed{0{,}12}`) },
+    { type: 'expr', enonce: p(R`Écrire \(4^{-3}\times7^{-3}\) sous la forme d’une seule puissance.`), prefixe: R`\(4^{-3}\times7^{-3}=\)`, attendu: '28^{-3}', forme: 'puissance',
+      pieges: [{ si: '28^{-6}', msg: 'Les deux puissances ont le même exposant : on le garde, aⁿ × bⁿ = (a × b)ⁿ (on n’additionne pas les exposants).' }, { si: '11^{-3}', msg: 'On multiplie 4 et 7, on ne les additionne pas : aⁿ × bⁿ = (a × b)ⁿ.' }],
+      correction: p(R`Les deux puissances ont le même exposant : \(a^n\times b^n=(a\times b)^n\).`) + al(R`4^{-3}\times7^{-3}&=(4\times7)^{-3}`, R`&=\boxed{28^{-3}}`) },
+    { type: 'expr', enonce: p(R`Écrire \(A=\sqrt{\dfrac25}\times\sqrt{\dfrac{12}{5}}\) sans racine au dénominateur, avec une racine simplifiée.`), prefixe: R`\(A=\)`, attendu: R`\frac{2\sqrt6}{5}`, forme: 'radicaux',
+      pieges: [{ si: R`\frac{\sqrt{24}}{5}`, msg: 'C’est égal, mais √24 se simplifie : 24 = 4 × 6.' }, { si: R`\frac{\sqrt{24}}{\sqrt{25}}`, msg: 'C’est égal, mais √25 = 5 et √24 se simplifie (24 = 4 × 6).' }],
+      correction: p(R`Pour des nombres positifs : \(\sqrt a\times\sqrt b=\sqrt{ab}\) et \(\sqrt{\dfrac ab}=\dfrac{\sqrt a}{\sqrt b}\).`) + al(R`A&=\sqrt{\dfrac25}\times\sqrt{\dfrac{12}{5}}`, R`&=\sqrt{\dfrac25\times\dfrac{12}{5}}`, R`&=\sqrt{\dfrac{24}{25}}`, R`&=\dfrac{\sqrt{24}}{\sqrt{25}}`, R`&=\dfrac{\sqrt{4\times6}}{5}`, R`&=\dfrac{\sqrt4\times\sqrt6}{5}`, R`&=\boxed{\dfrac{2\sqrt6}{5}}`) }
   ]);
 
   /* ===================================================================== */
@@ -271,7 +283,29 @@
       correction: p(R`\(cd=4\times\left(-\dfrac14\right)=-1\).`) + al(R`F&=a+\dfrac{b}{cd}`, R`&=\dfrac12+\dfrac{3}{-1}`, R`&=\dfrac12-\dfrac62`, R`&=\boxed{-\dfrac52}`) },
     { type: 'expr', enonce: p(R`La résistance d’un appareil est donnée par \(R=\dfrac{U^2}{P}\), où \(U\) est la tension (en volts) et \(P\) la puissance (en watts).`, R`Calculer \(R\) pour une tension de 20 V et une puissance de 80 W.`),
       prefixe: R`\(R=\)`, suffixe: R`\(\Omega\)`, attendu: '5', forme: 'nombre',
-      correction: p(R`\(R=\dfrac{20^2}{80}=\dfrac{400}{80}=\boxed{5}\) \(\Omega\).`) }
+      correction: p(R`\(R=\dfrac{20^2}{80}=\dfrac{400}{80}=\boxed{5}\) \(\Omega\).`) },
+    // --- sujets blancs (M. Colin, 21 nov. 2026 : QCM convertis en réponses courtes, valeurs changées)
+
+    { type: 'expr', enonce: p(R`Les réels \(u\), \(v\) et \(t\) sont strictement positifs, avec \(t>u\), et \(u=\dfrac{vt}{1+v}\).`, R`Exprimer \(v\) en fonction de \(u\) et de \(t\).`),
+      prefixe: R`\(v=\)`, gauche: 'v', variable: ['u', 't'], positifs: true, attendu: R`\frac{u}{t-u}`, forme: 'libre',
+      pieges: [{ si: R`\frac{u}{u-t}`, msg: 'Attention au signe du dénominateur : refais le passage où l’on regroupe les termes en v.' }, { si: R`\frac{t-u}{u}`, msg: 'C’est l’inverse de la réponse : vérifie la dernière division.' }],
+      correction: res(['u', R`\dfrac{vt}{1+v}`], ['u(1+v)', 'vt', R`\times(1+v)`], ['u+uv', 'vt'], ['u', 'vt-uv', '-uv'], ['u', 'v(t-u)'], [R`\dfrac{u}{t-u}`, 'v', R`\div(t-u)\text{ : }t-u>0`], ['v', R`\boxed{\dfrac{u}{t-u}}`, ECH]) },
+    { type: 'expr', enonce: p(R`Les réels \(x\), \(y\) et \(z\) sont strictement positifs et \(\dfrac3x+\dfrac2y=\dfrac5z\).`, R`Exprimer \(z\) en fonction de \(x\) et de \(y\).`),
+      prefixe: R`\(z=\)`, gauche: 'z', variable: ['x', 'y'], positifs: true, attendu: R`\frac{5xy}{3y+2x}`, forme: 'libre',
+      pieges: [{ si: R`\frac{xy}{3y+2x}`, msg: 'C’est z ÷ 5 : il reste à multiplier par 5.' }, { si: R`\frac{3y+2x}{5xy}`, msg: 'C’est 1/z : il reste à prendre l’inverse.' }, { si: R`\frac{5x}{3}+\frac{5y}{2}`, msg: 'L’inverse d’une somme n’est pas la somme des inverses : réduis d’abord 3/x + 2/y au même dénominateur.' }],
+      correction: p('On réduit d’abord le membre de gauche au même dénominateur :') + res([R`\dfrac3x+\dfrac2y`, R`\dfrac5z`], [R`\dfrac{3\times\textcolor{#D62828}{y}}{x\times\textcolor{#D62828}{y}}+\dfrac{2\times\textcolor{#D62828}{x}}{y\times\textcolor{#D62828}{x}}`, R`\dfrac5z`], [R`\dfrac{3y+2x}{xy}`, R`\dfrac5z`], [R`\dfrac{xy}{3y+2x}`, R`\dfrac z5`, R`\text{on prend les inverses}`], [R`\dfrac{5xy}{3y+2x}`, 'z', R`\times5`], ['z', R`\boxed{\dfrac{5xy}{3y+2x}}`, ECH]) },
+    { type: 'expr', enonce: p(R`La période d’un pendule simple est \(T=2\pi\sqrt{\dfrac Lg}\), où \(L\) est la longueur du fil (en m) et \(g\) l’intensité de la pesanteur ; \(T\), \(L\) et \(g\) sont strictement positifs.`, R`Exprimer \(g\) en fonction de \(T\) et de \(L\).`),
+      prefixe: R`\(g=\)`, gauche: 'g', variable: ['T', 'L'], positifs: true, attendu: R`\frac{4\pi^2L}{T^2}`, forme: 'libre',
+      pieges: [{ si: R`\frac{T^2}{4\pi^2L}`, msg: 'C’est 1/g : il reste à prendre l’inverse.' }, { si: R`\frac{2\pi L}{T}`, msg: 'Pour faire disparaître la racine, il faut élever au carré les deux membres.' }],
+      correction: res(['T', R`2\pi\sqrt{\dfrac Lg}`], [R`\dfrac{T}{2\pi}`, R`\sqrt{\dfrac Lg}`, R`\div2\pi`], [R`\left(\dfrac{T}{2\pi}\right)^2`, R`\dfrac Lg`, R`(\ )^2\text{ : membres positifs}`], [R`\dfrac{T^2}{4\pi^2}`, R`\dfrac Lg`], [R`\dfrac{4\pi^2}{T^2}`, R`\dfrac gL`, R`\text{on prend les inverses}`], [R`\dfrac{4\pi^2L}{T^2}`, 'g', R`\times L`], ['g', R`\boxed{\dfrac{4\pi^2L}{T^2}}`, ECH]) },
+    { type: 'expr', enonce: p(R`On considère la relation \(H=\dfrac{p-q}{s+t}\).`, R`Calculer \(H\) pour \(p=\dfrac52\), \(q=-3\), \(s=-2\) et \(t=\dfrac12\).`),
+      prefixe: R`\(H=\)`, attendu: R`-\frac{11}{3}`, forme: 'nombre',
+      pieges: [{ si: R`\frac{11}{3}`, msg: 'Attention au signe : le dénominateur s + t est négatif.' }, { si: R`\frac13`, msg: 'Attention : p − q = 5/2 − (−3) ; soustraire −3, c’est ajouter 3.' }],
+      correction: p('On remplace chaque lettre par sa valeur, entre parenthèses si elle est négative :') + al(R`H&=\dfrac{p-q}{s+t}`, R`&=\dfrac{\dfrac52-(-3)}{(-2)+\dfrac12}`, R`&=\dfrac{\dfrac52+\dfrac62}{-\dfrac42+\dfrac12}`, R`&=\dfrac{\dfrac{11}{2}}{-\dfrac32}`, R`&=\dfrac{11}{2}\times\left(-\dfrac23\right)`, R`&=-\dfrac{11\times2}{2\times3}`, R`&=-\dfrac{11\times\textcolor{#D62828}{\mathord{\cancel{2}}}}{\textcolor{#D62828}{\mathord{\cancel{2}}}\times3}`, R`&=\boxed{-\dfrac{11}{3}}`) },
+    { type: 'expr', enonce: p(R`On considère la relation \(F=a^{-b}+\dfrac cd\).`, R`Calculer \(F\) pour \(a=2\), \(b=3\), \(c=7\) et \(d=4\).`),
+      prefixe: R`\(F=\)`, attendu: R`\frac{15}{8}`, forme: 'nombre',
+      pieges: [{ si: R`-\frac{17}{4}`, msg: 'Attention : 2⁻³ n’est pas −6 : c’est l’inverse de 2³.' }, { si: R`-\frac{25}{4}`, msg: 'Attention : 2⁻³ n’est pas −8 : c’est l’inverse de 2³.' }],
+      correction: al(R`F&=a^{-b}+\dfrac cd`, R`&=2^{-3}+\dfrac74`, R`&=\dfrac{1}{2^3}+\dfrac74`, R`&=\dfrac18+\dfrac74`, R`&=\dfrac18+\dfrac{7\times\textcolor{#D62828}{2}}{4\times\textcolor{#D62828}{2}}`, R`&=\dfrac18+\dfrac{14}{8}`, R`&=\boxed{\dfrac{15}{8}}`) }
   ]);
 
   /* ===================================================================== */
@@ -359,7 +393,17 @@
     { type: 'variations', enonce: p(R`On a tracé la courbe d’une fonction \(f\) définie sur \([-5\,;6]\). Construire son tableau de variations.`),
       figure: FIG + 'auto-variations.svg', figureAlt: 'Courbe d’une fonction f sur [−5 ; 6]', bornes: [-5, 6], valeurs: [-2, 2],
       fleches: ['↘', '↗', '↘'], images: [3, -1, 4, 0],
-      correction: p(R`La ligne des \(x\) va de \(-5\) à \(6\) ; le sens de variation change en \(-2\) et en \(2\).`, R`\(f\) est décroissante sur \([-5\,;-2]\) (de 3 à −1), croissante sur \([-2\,;2]\) (de −1 à 4), décroissante sur \([2\,;6]\) (de 4 à 0).`) }
+      correction: p(R`La ligne des \(x\) va de \(-5\) à \(6\) ; le sens de variation change en \(-2\) et en \(2\).`, R`\(f\) est décroissante sur \([-5\,;-2]\) (de 3 à −1), croissante sur \([-2\,;2]\) (de −1 à 4), décroissante sur \([2\,;6]\) (de 4 à 0).`) },
+    // --- sujets blancs (M. Colin, 21 nov. 2026 : QCM convertis en réponses courtes, valeurs changées)
+
+    { type: 'expr', enonce: p(R`Le point \(A\left(\dfrac14\,;y_A\right)\) appartient à la courbe d’équation \(y=\dfrac8x\). Calculer \(y_A\).`), prefixe: R`\(y_A=\)`, attendu: '32', forme: 'nombre',
+      pieges: [{ si: '2', msg: 'Diviser par 1/4, ce n’est pas multiplier par 1/4.' }],
+      correction: p(R`On remplace \(x\) par \(\dfrac14\) :`) + al(R`y_A&=\dfrac{8}{\dfrac14}`, R`&=8\times4&&\div\frac14\text{ revient à }\times4`, R`&=\boxed{32}`) },
+    { type: 'cases', enonce: p(R`La courbe \(\mathcal C\) ci-dessous représente une fonction \(f\) définie sur \(\mathbb R\) par \(f(x)=ax^2+b\). Lire graphiquement \(a\) et \(b\).`),
+      figure: FIG + 'auto-parabole-ab.svg', figureAlt: 'Parabole tournée vers le haut, de sommet (0 ; −3), passant par (1 ; −1)', figureCorrection: FIG + 'auto-parabole-ab-corr.svg',
+      modele: R`\(a=\) {0} \(\qquad b=\) {1}`,
+      cases: [{ attendu: '2', forme: 'nombre', nom: 'a' }, { attendu: '-3', forme: 'nombre', nom: 'b', pieges: [{ si: '3', msg: 'La courbe coupe l’axe des ordonnées sous l’axe des abscisses.' }] }],
+      correction: p(R`\(f(0)=a\times0^2+b=b\) : on lit l’ordonnée du point de \(\mathcal C\) d’abscisse 0, donc \(\boxed{b=-3}\).`, R`On lit aussi \(f(1)=-1\), et \(f(1)=a\times1^2+b=a+b\) :`) + res(['a+b', '-1'], ['a-3', '-1', R`b=-3`], ['a', R`\boxed{2}`, '+3']) }
   ]);
 
   /* ===================================================================== */
@@ -409,7 +453,16 @@
     { type: 'signes', enonce: p(R`Construire sur \(\mathbb R\) le tableau de signes de la fonction \(f:x\longmapsto(2x-4)(-x+1)\).`), valeurs: [1, 2],
       ligne: { label: R`signe de \(f(x)\)`, traits: ['zero', 'zero'], signes: ['−', '+', '−'] },
       facteurs: [{ tex: '2x-4', a: 2, b: -4 }, { tex: '-x+1', a: -1, b: 1 }],
-      correction: p('Chaque facteur s’annule une fois :') + res(['2x-4', '0'], ['2x', '4', '+4'], ['x', R`\dfrac42=2`, R`\div2`]) + res(['-x+1', '0'], ['-x', '-1', '-1'], ['x', '1', R`\div(-1)`]) + p(SIGNES_PRODUIT) }
+      correction: p('Chaque facteur s’annule une fois :') + res(['2x-4', '0'], ['2x', '4', '+4'], ['x', R`\dfrac42=2`, R`\div2`]) + res(['-x+1', '0'], ['-x', '-1', '-1'], ['x', '1', R`\div(-1)`]) + p(SIGNES_PRODUIT) },
+    // --- sujets blancs (M. Colin, 21 nov. 2026 : QCM convertis en réponses courtes, valeurs changées)
+
+    { type: 'expr', enonce: p(R`Donner le coefficient directeur \(m\) de la droite d’équation \(y=\dfrac x5+3\).`), prefixe: CD, attendu: R`\frac15`, forme: 'nombre',
+      pieges: [{ si: '3', msg: '3 est l’ordonnée à l’origine p : le coefficient directeur est le nombre qui multiplie x.' }, { si: '5', msg: 'x/5, c’est x multiplié par 1/5 (et non par 5).' }],
+      correction: p(R`\(\dfrac x5=\dfrac15\times x\), donc l’équation s’écrit \(y=\dfrac15x+3\) : c’est la forme \(y=mx+p\) avec \(\boxed{m=\dfrac15}\) (et \(p=3\)).`) },
+    { type: 'comparer', enonce: p(R`On donne les tableaux de signes de deux fonctions \(f\) et \(g\) définies sur \([-3\,;4]\). Comparer \(f(3)\times g(3)\) et \(0\) : taper <, > ou = dans la case.`),
+      figure: FIG + 'auto-signes-fg.svg', figureAlt: 'Tableaux de signes : f positive sur [−3 ; −1[, nulle en −1, négative sur ]−1 ; 4] ; g négative sur [−3 ; 2[, nulle en 2, positive sur ]2 ; 4]', figureLarge: true,
+      figureCorrection: FIG + 'auto-signes-fg-corr.svg', gauche: R`f(3)\times g(3)`, droite: '0', attendu: '<',
+      correction: p(R`\(3\) est compris entre \(-1\) et \(4\) : sur \(]{-1}\,;4]\), \(f(x)\) est négatif, donc \(f(3)<0\).`, R`\(3\) est compris entre \(2\) et \(4\) : sur \(]2\,;4]\), \(g(x)\) est positif, donc \(g(3)>0\).`, R`Règle des signes : un nombre négatif multiplié par un nombre positif donne un nombre négatif, donc \(\boxed{f(3)\times g(3)<0}\).`) }
   ]);
 
   /* ===================================================================== */
@@ -511,7 +564,12 @@
       correction: p(R`Les SUV représentent 30 % des ventes : \(0{,}3\times400=\boxed{120}\).`) },
     { type: 'expr', enonce: p('L’histogramme donne la répartition des notes d’une classe (les classes sont [0 ; 5[, [5 ; 10[, [10 ; 15[ et [15 ; 20]). Combien d’élèves ont une note supérieure ou égale à 10 ?'),
       figure: FIG + 'auto-histogramme.svg', figureAlt: 'Histogramme des notes : 3, 8, 12, 5', suffixe: 'élèves', attendu: '17', forme: 'decimal',
-      correction: p(R`On additionne les effectifs des classes \([10\,;15[\) et \([15\,;20]\) : \(12+5=\boxed{17}\).`) }
+      correction: p(R`On additionne les effectifs des classes \([10\,;15[\) et \([15\,;20]\) : \(12+5=\boxed{17}\).`) },
+    // --- sujets blancs (M. Colin, 21 nov. 2026 : QCM convertis en réponses courtes, valeurs changées)
+
+    { type: 'expr', enonce: p(R`Dans la série ci-dessous, \(x\) est un nombre entier. Déterminer \(x\) pour que la médiane de la série soit égale à 7.`) + tab([['Valeur', '2', '5', '9', '12'], ['Effectif', '6', R`\(x\)`, '3', '11']]),
+      prefixe: R`\(x=\)`, gauche: 'x', attendu: '8', forme: 'nombre',
+      correction: p(R`Dans la série rangée, il y a d’abord les six valeurs 2, puis les \(x\) valeurs 5, puis les trois valeurs 9, puis les onze valeurs 12.`, R`7 n’est pas une valeur de la série : la médiane est donc la moyenne des deux valeurs du milieu, qui se suivent dans la série rangée. Ce sont deux valeurs égales (la médiane serait alors 2, 5, 9 ou 12), ou bien 2 et 5, 5 et 9, 9 et 12 (ou 2 et 9 si \(x=0\)) ; seul le couple 5 et 9 a pour moyenne 7, car \(\dfrac{5+9}{2}=7\).`, R`Donc \(x\geqslant1\), l’effectif total \(N=6+x+3+11=20+x\) est pair, et la dernière valeur 5 occupe exactement le rang \(\dfrac N2\) :`) + res(['6+x', R`\dfrac{20+x}{2}`], ['2(6+x)', '20+x', R`\times2`], ['12+2x', '20+x'], ['12+x', '20', '-x'], ['x', R`\boxed{8}`, '-12']) + p(R`Vérification : \(N=28\) ; la 14e valeur est 5, la 15e est 9, et \(\dfrac{5+9}{2}=7\).`) }
   ]);
 
   /* ===================================================================== */
@@ -565,7 +623,26 @@
       pieges: [{ si: '0{,}28', msg: '0,28 est P(A ∩ B̄) : on demande la probabilité de B̄ SACHANT A, lue sur la branche.' }],
       correction: p(R`C’est la probabilité portée par la branche \(A\to\overline B\) : \(P_A(\overline B)=1-0{,}3=\boxed{0{,}7}\).`) }),
     arbre({ type: 'expr', enonce: p(R`D’après l’arbre pondéré, calculer \(P\big(\overline A\cap\overline B\big)\).`), prefixe: R`\(P(\overline A\cap\overline B)=\)`, attendu: '0{,}24', forme: 'nombre',
-      correction: p(R`On suit le chemin \(\overline A\to\overline B\) : \(0{,}6\times0{,}4=\boxed{0{,}24}\).`) })
+      correction: p(R`On suit le chemin \(\overline A\to\overline B\) : \(0{,}6\times0{,}4=\boxed{0{,}24}\).`) }),
+    // --- sujets blancs (M. Colin, 21 nov. 2026 : QCM convertis en réponses courtes, valeurs changées)
+
+    { type: 'expr', enonce: p(R`Deux événements \(A\) et \(B\) sont tels que \(A\subset B\) (\(A\) est inclus dans \(B\)), avec \(P(A)=0{,}15\) et \(P(B)=0{,}6\). Calculer \(P(A\cap B)\).`), prefixe: R`\(P(A\cap B)=\)`, attendu: '0{,}15', forme: 'nombre',
+      pieges: [{ si: '0{,}09', msg: 'Rien ne dit que A et B sont indépendants : on ne multiplie pas. Que vaut A ∩ B quand A est inclus dans B ?' }, { si: '0{,}75', msg: 'P(A ∩ B) n’est pas une somme. Que vaut A ∩ B quand A est inclus dans B ?' }],
+      correction: p(R`Comme \(A\subset B\), toute issue de \(A\) est aussi une issue de \(B\) : \(A\cap B=A\).`, R`Donc \(P(A\cap B)=P(A)=\boxed{0{,}15}\).`) },
+    { type: 'expr', enonce: p(R`Deux événements \(A\) et \(B\) sont tels que \(A\subset B\), avec \(P(A)=0{,}2\) et \(P(B)=0{,}5\). Calculer \(P_A(B)\).`), prefixe: R`\(P_A(B)=\)`, attendu: '1', forme: 'nombre',
+      pieges: [{ si: '0{,}5', msg: 'C’est P(B) : on demande la probabilité de B SACHANT que A est réalisé.' }, { si: '0{,}4', msg: 'On divise P(A ∩ B) par P(A) (et non par P(B)).' }],
+      correction: p(R`Comme \(A\subset B\), \(A\cap B=A\) :`) + al(R`P_A(B)&=\dfrac{P(A\cap B)}{P(A)}`, R`&=\dfrac{P(A)}{P(A)}`, R`&=\dfrac{0{,}2}{0{,}2}`, R`&=\boxed{1}`) + p(R`Sachant que \(A\) est réalisé, \(B\) l’est forcément.`) },
+    { type: 'expr', enonce: p('On tire trois fois de suite, avec remise, une boule dans une urne. La probabilité d’obtenir au moins une boule rouge vaut 0,657.', 'Quelle est la probabilité de n’obtenir aucune boule rouge ?'), attendu: '0{,}343', forme: 'nombre',
+      pieges: [{ si: '0{,}657', msg: 'C’est la probabilité de « au moins une boule rouge » : on cherche celle de son contraire.' }],
+      correction: p('« Aucune boule rouge » est l’événement contraire de « au moins une boule rouge » :', R`\(P=1-0{,}657=\boxed{0{,}343}\).`) },
+    { type: 'expr', enonce: p('On lance un dé truqué à six faces. Le tableau donne la probabilité d’obtenir chaque face. Quelle est la probabilité d’obtenir un nombre inférieur ou égal à 3 ?') + tab([['Face', '1', '2', '3', '4', '5', '6'], ['Probabilité', '0,05', '0,15', '0,2', '0,1', '0,3', '0,2']]),
+      attendu: '0{,}4', forme: 'nombre',
+      pieges: [{ si: '0{,}2', msg: '« Inférieur ou égal à 3 » : les faces 1, 2 et 3 en font partie.' }, { si: '0{,}0015', msg: 'On additionne les probabilités des issues (on ne les multiplie pas).' }, { si: '0{,}6', msg: 'Ce sont les faces 4, 5 et 6 : on veut les faces 1, 2 et 3.' }],
+      correction: p('L’événement est formé des issues 1, 2 et 3 : on additionne leurs probabilités.', R`\(P=0{,}05+0{,}15+0{,}2=\boxed{0{,}4}\).`) },
+    { type: 'expr', enonce: p(R`D’après l’arbre pondéré, calculer \(P_B(A)\) (probabilité de \(A\) sachant \(B\)).`), figure: FIG + 'auto-arbre-inverse.svg', figureAlt: 'Arbre pondéré : P(A) = 0,6 ; P_A(B) = 0,5 ; P_Ā(B) = 0,25',
+      prefixe: R`\(P_B(A)=\)`, attendu: '0{,}75', forme: 'nombre',
+      pieges: [{ si: '0{,}5', msg: 'C’est P_A(B), lue sur l’arbre : on demande la probabilité de A SACHANT B.' }, { si: '0{,}3', msg: 'C’est P(A ∩ B) : il reste à diviser par P(B).' }, { si: '0{,}4', msg: 'C’est P(B) : on divise P(A ∩ B) par P(B).' }],
+      correction: al(R`P_B(A)&=\dfrac{P(A\cap B)}{P(B)}`, R`&=\dfrac{P(A\cap B)}{P(A\cap B)+P(\mathord{\overline{A}}\cap B)}&&\text{probabilités totales : }A\text{ et }\mathord{\overline{A}}\text{ forment une partition}`, R`&=\dfrac{P(A)\times P_A(B)}{P(A)\times P_A(B)+P(\mathord{\overline{A}})\times P_{\overline{A}}(B)}&&\text{probabilités des chemins}`, R`&=\dfrac{0{,}6\times0{,}5}{0{,}6\times0{,}5+0{,}4\times0{,}25}`, R`&=\dfrac{0{,}3}{0{,}3+0{,}1}`, R`&=\dfrac{0{,}3}{0{,}4}`, R`&=\dfrac{0{,}3\times\textcolor{#D62828}{10}}{0{,}4\times\textcolor{#D62828}{10}}`, R`&=\dfrac34`, R`&=\boxed{0{,}75}`) }
   ]);
 
   /* ===================================================================== */

@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="assets/theme-cyber.css?v=20261118t">
 <link rel="stylesheet" href="assets/theme-pample.css?v=20261114a">
 <link rel="stylesheet" href="assets/theme-braquage.css?v=20261118a">
+<link rel="stylesheet" href="assets/annales/annales.css?v=20261122a">
 <script src="assets/theme.js?v=20261120a"></script>
 </head>
 <body>
@@ -67,7 +68,22 @@
         </div>
       </div>
       <div class="panneau" role="tabpanel" id="p-terminale" aria-labelledby="t-terminale" data-id="terminale" hidden>
-        <p class="vide">Des exercices pour s'entraîner arriveront bientôt ici.</p>
+        <div class="ch-tuiles" data-tuiles>
+          <button type="button" class="ch-tuile" data-ouvre="c-term-annales" data-annales-vue="date">
+            <span class="ch-tuile-n">Annales du bac · depuis 2021</span>
+            <span class="ch-tuile-titre">Par date</span>
+            <span class="ch-tuile-pied"><span class="ch-tuile-compte">Les sujets, du plus récent au plus ancien</span><span class="ch-tuile-fleche">›</span></span>
+          </button>
+          <button type="button" class="ch-tuile" data-ouvre="c-term-annales" data-annales-vue="theme">
+            <span class="ch-tuile-n">Annales du bac · depuis 2021</span>
+            <span class="ch-tuile-titre">Par chapitre</span>
+            <span class="ch-tuile-pied"><span class="ch-tuile-compte">Les exercices, rangés par chapitre</span><span class="ch-tuile-fleche">›</span></span>
+          </button>
+        </div>
+        <div class="libre-contenu" id="c-term-annales" hidden>
+          <button type="button" class="ch-retour" data-retour><span>‹</span> Terminale</button>
+          <div data-annales></div>
+        </div>
       </div>
     </div>
   </section>
@@ -78,6 +94,8 @@
   </div>
 </footer>
 <script src="assets/libre.js?v=20261112b"></script>
+<script src="assets/annales/annales-data.js?v=20261122a"></script>
+<script src="assets/annales/annales.js?v=20261122a"></script>
 <script src="assets/quiz-automatismes.js?v=20261121b"></script>
 <script src="assets/quiz-automatismes-gen.js?v=20261121b"></script>
 <script src="assets/quiz.js?v=20261121b"></script>

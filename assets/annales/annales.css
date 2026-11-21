@@ -1,0 +1,35 @@
+/* Annales du bac (accès libre) */
+.an-maquette { margin: 18px 0 0; padding: 10px 14px; border-radius: 12px; background: #fff4d6; color: #7a5600; font-size: var(--t-petit); }
+.an-vues { margin-top: 22px; }
+.an-annee { margin: 34px 0 14px; font-size: 1.45rem; letter-spacing: -.02em; }
+.an-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+.an-sujet { padding: 20px 18px 14px; border-radius: 22px; background: var(--fond-2); }
+.an-sujet-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.an-sujet-nom { margin: 0; font-size: 1.2rem; letter-spacing: -.02em; }
+.an-sujet-date { margin: 2px 0 0; color: var(--gris); font-size: var(--t-petit); }
+.an-complet { flex: none; padding: 8px 14px; border-radius: 999px; background: var(--bleu); color: #fff; font-weight: 600; font-size: var(--t-petit); text-decoration: none; }
+.an-complet.an-bientot { background: var(--filet); color: var(--gris); font-weight: 500; }
+.an-exo { display: grid; gap: 4px; margin-top: 8px; padding: 12px 14px; border-radius: 14px; background: var(--papier); color: var(--encre); text-decoration: none;
+  transition: transform .35s var(--courbe), box-shadow .35s var(--courbe); }
+a.an-exo:hover { transform: translateY(-2px); box-shadow: var(--ombre); }
+.an-exo-tete { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-size: var(--t-petit); color: var(--gris); }
+.an-exo-n { font-weight: 700; color: var(--encre); }
+.an-exo-titre { font-weight: 600; }
+.an-exo-etat { justify-self: end; font-size: var(--t-petit); font-weight: 600; color: var(--bleu); }
+.an-exo.an-bientot { opacity: .62; }
+.an-exo.an-bientot .an-exo-etat { color: var(--gris); font-weight: 500; }
+.an-pastilles { display: flex; flex-wrap: wrap; gap: 6px; }
+.an-pastille { border: 0; padding: 3px 9px; border-radius: 999px; background: var(--bleu-fond); color: var(--bleu); font: 500 .78rem var(--f-texte); cursor: pointer; }
+.an-pastille:hover { background: var(--bleu); color: #fff; }
+.an-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 10px; margin-top: 22px; }
+.an-theme { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1.5px solid transparent; border-radius: 14px;
+  background: var(--fond-2); color: var(--encre); font: 500 .95rem var(--f-texte); text-align: left; cursor: pointer; }
+.an-theme:hover { background: var(--papier); box-shadow: var(--ombre); }
+.an-theme.actif { border-color: var(--bleu); background: var(--bleu-fond); }
+.an-theme:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.an-theme-n { flex: none; min-width: 28px; padding: 2px 8px; border-radius: 999px; background: var(--papier); color: var(--bleu); font-weight: 700; text-align: center; font-size: .82rem; }
+.an-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 4px 16px; }
+.an-liste .an-exo { background: var(--fond-2); }
+.an-aide { margin: 22px 0; color: var(--gris); }
+.an-pastille.ici { background: var(--bleu); color: #fff; }
+.an-pastilles::before { content: 'Chapitres :'; font-size: .78rem; color: var(--gris); align-self: center; }

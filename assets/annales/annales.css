@@ -33,3 +33,4 @@ a.an-exo:hover { transform: translateY(-2px); box-shadow: var(--ombre); }
 .an-aide { margin: 22px 0; color: var(--gris); }
 .an-pastille.ici { background: var(--bleu); color: #fff; }
 .an-pastilles::before { content: 'Chapitres :'; font-size: .78rem; color: var(--gris); align-self: center; }
+.an-option { display: flex; align-items: center; gap: 6px; margin: 14px 0 0; color: var(--gris); font-size: var(--t-petit); cursor: pointer; }

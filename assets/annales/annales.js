@@ -7,7 +7,11 @@
   var THEME = {}; D.themes.forEach(function (t) { THEME[t.id] = t; });
   var MOIS = { janvier:1, 'février':2, mars:3, avril:4, mai:5, juin:6, juillet:7, 'août':8, septembre:9, octobre:10, novembre:11, 'décembre':12 };
   function cle(s) { var p = s.date.split(' '); return s.annee * 10000 + (MOIS[p[1]] || 0) * 100 + (+p[0] || 0) + s.jour / 10; }
-  var sujets = D.sujets.slice().sort(function (a, b) { return cle(b) - cle(a); });
+  var tous = D.sujets.slice().sort(function (a, b) { return cle(b) - cle(a); });
+  var voirTout = false;      /* par défaut : seulement les sujets qui ont au moins une correction */
+  function fait(s) { return s.exercices.some(function (x) { return x.page; }); }
+  var sujets = tous;
+  function filtre() { sujets = voirTout ? tous : tous.filter(fait); }
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function nomSujet(s) { return s.lieu + ' · Jour ' + s.jour; }
   function lien(page, sujet, n) { return page === 'exemple' ? '#' : page; }
@@ -27,7 +31,7 @@
     var a = el(dispo ? 'a' : 'div', 'an-exo' + (dispo ? '' : ' an-bientot'));
     if (dispo) a.href = lien(x.page, s, x.n);
     var tete = el('span', 'an-exo-tete');
-    tete.appendChild(el('span', 'an-exo-n', 'Exercice ' + x.n));
+    tete.appendChild(el('span', 'an-exo-n', 'Exercice ' + (x.label || x.n)));
     tete.appendChild(el('span', 'an-exo-pts', x.pts + ' pts'));
     if (mode === 'theme') tete.appendChild(el('span', 'an-exo-src', nomSujet(s) + ' · ' + s.date));
     a.appendChild(tete);
@@ -40,6 +44,7 @@
   var corps = el('div', 'an-corps');
   function parDate() {
     corps.innerHTML = '';
+    if (!sujets.length) corps.appendChild(el('p', 'an-aide', 'Les premières corrections arrivent bientôt.'));
     var annee = null, grille;
     sujets.forEach(function (s) {
       if (s.annee !== annee) {
@@ -62,7 +67,7 @@
   function parTheme(id) {
     corps.innerHTML = '';
     var compte = {};
-    sujets.forEach(function (s) { s.exercices.forEach(function (x) { x.themes.forEach(function (t) { compte[t] = (compte[t] || 0) + 1; }); }); });
+    sujets.forEach(function (s) { s.exercices.forEach(function (x) { if (!voirTout && !x.page) return; x.themes.forEach(function (t) { compte[t] = (compte[t] || 0) + 1; }); }); });
     var choix = el('div', 'an-themes');
     D.themes.forEach(function (t) {
       var b = el('button', 'an-theme' + (t.id === id ? ' actif' : '')); b.type = 'button';
@@ -77,7 +82,7 @@
     if (!id) { corps.appendChild(el('p', 'an-aide', 'Choisis un chapitre : tous les exercices de bac qui l’utilisent s’affichent, des plus récents aux plus anciens. Sous chaque exercice, tous les chapitres dont il a besoin : vérifie que tu les as tous vus avant de t’y lancer.')); return; }
     corps.appendChild(el('h3', 'an-annee', THEME[id].titre));
     var g = el('div', 'an-liste');
-    sujets.forEach(function (s) { s.exercices.forEach(function (x) { if (x.themes.indexOf(id) >= 0) g.appendChild(ligneExo(s, x, 'theme', id)); }); });
+    sujets.forEach(function (s) { s.exercices.forEach(function (x) { if ((voirTout || x.page) && x.themes.indexOf(id) >= 0) g.appendChild(ligneExo(s, x, 'theme', id)); }); });
     corps.appendChild(g);
   }
 
@@ -88,13 +93,19 @@
   function vue(v, t) {
     courant.v = v; if (t !== undefined) courant.t = t;
     bDate.setAttribute('aria-pressed', v === 'date'); bTheme.setAttribute('aria-pressed', v === 'theme');
+    filtre();
     if (v === 'date') parDate(); else parTheme(courant.t);
     if (t) hote.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   bDate.addEventListener('click', function () { vue('date'); });
   bTheme.addEventListener('click', function () { vue('theme'); });
   if (D.maquette) hote.appendChild(el('p', 'an-maquette', 'Maquette : sujets et chapitres fictifs, pour juger la présentation.'));
-  hote.appendChild(seg); hote.appendChild(corps); vue('date');
+  var aVenir = tous.length - tous.filter(fait).length;
+  var opt = el('label', 'an-option');
+  var cb = el('input'); cb.type = 'checkbox';
+  cb.addEventListener('change', function () { voirTout = cb.checked; vue(courant.v); });
+  opt.appendChild(cb); opt.appendChild(document.createTextNode(' Afficher aussi les sujets pas encore corrigés (' + aVenir + ')'));
+  hote.appendChild(seg); if (aVenir) hote.appendChild(opt); hote.appendChild(corps); vue('date');
   /* les deux tuiles de l'onglet Terminale ouvrent le même catalogue, chacune dans sa présentation */
   document.addEventListener('click', function (e) {
     var t = e.target.closest && e.target.closest('[data-annales-vue]');

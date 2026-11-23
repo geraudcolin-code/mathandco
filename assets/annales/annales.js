@@ -36,7 +36,7 @@
     if (mode === 'theme') tete.appendChild(el('span', 'an-exo-src', nomSujet(s) + ' · ' + s.date));
     a.appendChild(tete);
     a.appendChild(el('span', 'an-exo-titre', x.titre));
-    a.appendChild(pastilles(x.themes, themeCourant));
+    if (mode !== 'date') a.appendChild(pastilles(x.themes, themeCourant));   /* par date : seulement le nom de l'exercice */
     a.appendChild(el('span', 'an-exo-etat', dispo ? 'Correction animée ›' : 'Bientôt'));
     return a;
   }

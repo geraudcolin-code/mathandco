@@ -1,5 +1,5 @@
 {
- "maj": "2026-11-23T07:22:14.152Z",
+ "maj": "2026-11-23T08:32:07.488Z",
  "ouvertes": [
   "1ere-ch01-ds1-sujeta-exercice-1",
   "1ere-ch01-ds1-sujeta-exercice-2",
@@ -75,7 +75,9 @@
   "1ere-ch02-poly-a-trous",
   "1ere-ch03-exercice-1",
   "1ere-ch03-exercice-10",
+  "1ere-ch03-exercice-11",
   "1ere-ch03-exercice-12",
+  "1ere-ch03-exercice-13",
   "1ere-ch03-exercice-14",
   "1ere-ch03-exercice-16",
   "1ere-ch03-exercice-17",
@@ -84,6 +86,7 @@
   "1ere-ch03-exercice-4",
   "1ere-ch03-exercice-5",
   "1ere-ch03-exercice-6",
+  "1ere-ch03-exercice-7",
   "1ere-ch03-exercice-8",
   "1ere-ch03-exercice-9",
   "1ere-ch03-histoire-probabilites-conditionnelles-independance",

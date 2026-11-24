@@ -182,6 +182,7 @@
   }
   function libelle(it) {
     if (it.type === 'exercice') return 'Exercice ' + it.numero;
+    if (it.type === 'evaluation' && it.bacblanc) return 'Bac blanc ' + it.bacblanc.replace('-', '–') + ', ' + (it.numero ? 'exercice ' + it.numero : 'automatismes');
     if (it.type === 'evaluation') return (it.interro ? 'Interrogation flash ' + it.interro + ', ' : it.sujet ? 'Sujet ' + it.sujet + ', ' : 'Évaluation, ') + 'exercice ' + it.numero;
     if (it.type === 'dm') return 'Devoir maison, exercice ' + it.numero;
     if (it.type === 'poly') return 'Poly à trous';
@@ -227,7 +228,7 @@
       var tuiles = el('nav', 'tuiles-ch'); tuiles.setAttribute('aria-label', 'Chapitres – ' + c.nom);
       nums.forEach(function (n) {
         var b = el('button', 'tuile-ch'); b.type = 'button'; b.dataset.num = n;
-        b.appendChild(el('span', 'n', 'Chapitre ' + n));
+        b.appendChild(el('span', 'n', (c.libCh || {})[n] || 'Chapitre ' + n));
         b.appendChild(el('span', 't', (c.titresCh || {})[n] || ''));
         b.appendChild(el('span', 'c', ''));
         b.addEventListener('click', function () {
@@ -239,7 +240,7 @@
       bloc.appendChild(tuiles);
       c.chapitres.forEach(function (ch) {
         var s = el('div', 'chapitre'), t = el('div', 'chapitre-tete'); s.dataset.num = ch.numero;
-        t.appendChild(el('span', 'n', 'Chapitre ' + ch.numero));
+        t.appendChild(el('span', 'n', (c.libCh || {})[ch.numero] || 'Chapitre ' + ch.numero));
         t.appendChild(el('h3', null, ch.titre));
         if (ch.dossier) s.classList.add('dossier', 'd-' + ch.dossier);
         var acts = el('div', 'chap-actions'), lignes = el('div', 'lignes');
@@ -362,7 +363,7 @@
     DONNEES.classes.forEach(function (c) { c.chapitres.forEach(function (ch) { (ch.dossiers || []).forEach(function (o) {
       o.items.forEach(function (it) { var d = (CLE.ds || {})[ident(it)]; if (d) { it.titre = d.titre; it.consigne = d.consigne; } });
     }); }); });
-    DONNEES.classes.forEach(function (c) { c.titresCh = {}; c.chapitres.forEach(function (ch) { c.titresCh[ch.numero] = ch.titre; }); });
+    DONNEES.classes.forEach(function (c) { c.titresCh = {}; c.libCh = {}; c.chapitres.forEach(function (ch) { c.titresCh[ch.numero] = ch.titre; if (ch.libelle) c.libCh[ch.numero] = ch.libelle; }); });
     DONNEES.classes.forEach(function (c) {      // le dossier « Devoirs surveillés » suit son chapitre, en bloc orange
       var l = [];
       c.chapitres.forEach(function (ch) {

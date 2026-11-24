@@ -35,6 +35,8 @@ Ce que fait le script
   fichiers sans .html]}). Une correction absente de la liste est grisée dans l'espace élèves et sa page refuse de
   s'ouvrir ; une correction AJOUTÉE arrive donc FERMÉE. M. Colin ouvre / ferme depuis admin.html (Espace professeur :
   enregistrement par l'API GitHub avec sa clé personnelle) ; Claude peut aussi le faire avec « ouvrir » / « fermer ».
+- BAC BLANC (24 nov. 2026) : [1ère]BacBlanc_2025-2026_Correction_Automatismes, …_Exercice1… -> « chapitre » 0
+  (« Épreuve anticipée · Bac blanc »), bloc « Bac blanc » rangé par année, adresse 1ere-bac-blanc-2025-2026-exercice-1.html.
 - NOMS (1er nov. 2026) : [CLASSE]CHxx_Quiz_Sujet (14 nov. 2026) = quiz réservé aux élèves (bloc « Quiz », sarcelle ;
   adresse 2nde-ch03-quiz-sujet.html ; la page chiffrée donne son intitulé dans sa charge, clé « titre ») ;
   [CLASSE]CHxx_Correction_ExerciceN = exercice ; [CLASSE]CHxx_DM_Correction_ExerciceN (ou DM1_,
@@ -227,8 +229,23 @@ def sans_accents(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
 
 
+# BAC BLANC (24 nov. 2026, M. Colin : correction animée du bac blanc de Première, réservée aux élèves) :
+# [1ère]BacBlanc_2025-2026_Correction_Automatismes / _Exercice1 / _Exercice2 -> « chapitre » 0 de la classe, affiché
+# « Épreuve anticipée · Bac blanc » (premier bloc), bloc « Bac blanc » rangé par année comme les devoirs surveillés
+# (type « evaluation » : fermé et sans titres pour les élèves tant qu'il n'est pas ouvert)
+LIBELLE_CH0 = 'Épreuve anticipée'
+TITRE_CH0 = 'Bac blanc'
+
+
 def analyser_nom(titre):
     """[1ère]CH03_Correction_Exercice5 -> dict(classe, chapitre, type, numero, nom_fichier)."""
+    bb = re.match(r'\[([^\]]+)\]\s*BacBlanc_(\d{4}-\d{4})_Correction_(Automatismes|Exercice(\d+))$', titre.strip())
+    if bb and bb.group(1) in CLASSES:
+        cid = CLASSES[bb.group(1)][0]
+        n = int(bb.group(4)) if bb.group(4) else 0
+        slug = f'{SLUG_CLASSE[cid]}-bac-blanc-{bb.group(2)}-' + (f'exercice-{n}' if n else 'automatismes')
+        return dict(classe=cid, chapitre=0, type='evaluation', numero=n, fichier=slug + '.html', nom=titre.strip(),
+                    bacblanc=bb.group(2))
     m = re.match(r'\[([^\]]+)\]\s*CH(\d+)_(.+)$', titre.strip())
     if not m or m.group(1) not in CLASSES:
         raise SystemExit(f'Nom non reconnu : « {titre} » (attendu : [CLASSE]CHxx_…)')
@@ -410,6 +427,9 @@ def catalogue(mdp, mdp_prof=None):
                 ms = re.search(r'-ch\d+-interro-sujet([a-z])-exercice-\d+\.html$', e['fichier'])   # interrogation écrite à plusieurs sujets (9 nov. 2026) : une section par sujet
                 if ms:
                     extra = {'sujet': ms.group(1).upper()}
+                mb = re.search(r'-bac-blanc-(\d{4}-\d{4})-', e['fichier'])     # bac blanc (24 nov. 2026) : une section par année
+                if mb:
+                    extra = {'bacblanc': mb.group(1)}
                 mi = re.search(r'-ch\d+-interrogation-flash-([a-z])-exercice-\d+\.html$', e['fichier'])   # interrogation flash : section propre dans le bloc des devoirs surveillés
                 if mi:
                     extra = {'interro': mi.group(1).upper()}
@@ -421,7 +441,7 @@ def catalogue(mdp, mdp_prof=None):
             lot = [e for e in items if e['chapitre'] == num]
             rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5, 'histoire': 6, 'quiz': 7}
             lot.sort(key=lambda e: (rang[e['type']], e['numero'], e['fichier']))
-            titre_ch = CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
+            titre_ch = (TITRE_CH0 if num == 0 else None) or CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
             # chaque chapitre range ses pages en blocs repliables de couleur : cours (vert : poly à trous puis
             # animations du chapitre, p. ex. combinaisons de vecteurs, nombre dérivé et vitesse), correction des exercices
             # (bleu marine), devoirs maison (prune), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier ;
@@ -436,10 +456,13 @@ def catalogue(mdp, mdp_prof=None):
                      bloc('quiz', 'Quiz', ('quiz',)),
                      bloc('dm', 'Devoirs maison', ('dm',),
                           lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero'])),
-                     bloc('ds', 'Devoirs surveillés', ('evaluation',),
-                          lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero'])),
+                     bloc('ds', 'Bac blanc' if num == 0 else 'Devoirs surveillés', ('evaluation',),
+                          (lambda e: (e.get('bacblanc', ''), e['numero'])) if num == 0 else       # automatismes, puis exercices
+                          (lambda e: (e['fichier'].rsplit('-exercice-', 1)[0], e['numero']))),
                      bloc('flash', 'Questions flash', ('flash',))]
             chap = {'numero': num, 'titre': titre_ch, 'items': []}
+            if num == 0:
+                chap['libelle'] = LIBELLE_CH0
             chap['dossiers'] = [x for x in blocs if x]
             chaps.append(chap)
         classes.append({'id': cid, 'nom': nom_classe, 'chapitres': chaps})
@@ -467,7 +490,7 @@ def catalogue(mdp, mdp_prof=None):
     ncorr = lambda its: sum(1 for it in its if it.get('type') != 'quiz')
     for c in classes:
         n = sum(ncorr(ch['items']) + sum(ncorr(d['items']) for d in ch.get('dossiers', [])) for ch in c['chapitres'])
-        lignes = ''.join(f'<li><span class="ch-num">Chapitre {ch["numero"]}</span> {H.escape(ch["titre"])}</li>' for ch in c['chapitres'])
+        lignes = ''.join(f'<li><span class="ch-num">{H.escape(ch.get("libelle") or "Chapitre " + str(ch["numero"]))}</span> {H.escape(ch["titre"])}</li>' for ch in c['chapitres'])
         cartes.append(
             f'<a class="classe" href="eleves.html#{c["id"]}">\n'
             f'  <h3>{H.escape(c["nom"])}</h3>\n'

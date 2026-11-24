@@ -89,7 +89,11 @@
     var f = el('div', 'fiche'), a = el('a', 'fiche-lien'); a.href = it.href; f.appendChild(a);
     var ferme = !ouverte(it);
     var num = el('div', 'num');
-    if (it.type === 'exercice' || it.type === 'evaluation' || it.type === 'dm') {
+    if (it.type === 'evaluation' && it.bacblanc && !it.numero) {      // bac blanc : la partie « Automatismes » (24 nov. 2026)
+      num.appendChild(el('small', null, 'QCM'));
+      num.appendChild(document.createTextNode('Automatismes'));
+      num.classList.add('num-mot');
+    } else if (it.type === 'exercice' || it.type === 'evaluation' || it.type === 'dm') {
       num.appendChild(el('small', null, it.type === 'evaluation' && !dansDossier ? 'Évaluation, ex.' : 'Exercice'));
       num.appendChild(document.createTextNode(it.numero));
     } else {
@@ -110,7 +114,7 @@
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
       actions.appendChild(el('span', 'action verrou', it.type === 'quiz' ? 'Bientôt disponible' : 'Après la correction en classe'));
       f.appendChild(actions);
-      f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
+      f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? (it.bacblanc ? 'bac blanc epreuve anticipee automatismes ' : 'dossier ds devoir surveille ') : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
     }
     if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
@@ -123,7 +127,7 @@
       actions.appendChild(b);
     }
     f.appendChild(actions);
-    f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? 'dossier ds devoir surveille ' : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
+    f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? (it.bacblanc ? 'bac blanc epreuve anticipee automatismes ' : 'dossier ds devoir surveille ') : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
     return f;
   }
 
@@ -133,7 +137,7 @@
   var ouvert = null;          // clé « classe/numéro » du chapitre ouvert, ou null
   var pousse = false;         // le chapitre ouvert a ajouté une entrée à l'historique (le bouton « ‹ » fait alors Retour)
   function cle(c, ch) { return c.id + '/' + ch.numero; }
-  function nomCh(ch) { return 'Chapitre ' + ch.numero; }
+  function nomCh(ch) { return ch.libelle || 'Chapitre ' + ch.numero; }      // « Épreuve anticipée » : bac blanc (chapitre 0)
   function tousItems(ch, sansDS) { return (ch.dossiers || []).reduce(function (a, d) { return sansDS && d.id === 'ds' ? a : a.concat(d.items); }, ch.items.slice()); }
   function lireAdresse() {
     var h = decodeURIComponent((location.hash || '').slice(1)), p = h.split('/');
@@ -221,13 +225,13 @@
       // deux sections pleine largeur, « Sujet A » et « Sujet B » (une par couple devoir / sujet)
       var groupes = [], index = {}, nbDS = {};
       items.forEach(function (it) {
-        var k = (it.ds || 0) + '/' + (it.sujet || '') + '/' + (it.interro || '');
-        if (!index[k]) { index[k] = { ds: it.ds, sujet: it.sujet, interro: it.interro, items: [] }; groupes.push(index[k]); nbDS[it.ds || 0] = true; }
+        var k = (it.ds || 0) + '/' + (it.sujet || '') + '/' + (it.interro || '') + '/' + (it.bacblanc || '');
+        if (!index[k]) { index[k] = { ds: it.ds, sujet: it.sujet, interro: it.interro, bacblanc: it.bacblanc, items: [] }; groupes.push(index[k]); nbDS[it.ds || 0] = true; }
         index[k].items.push(it);
       });
       groupes.forEach(function (gr) {
         var sec = el('section', 'sujet');
-        sec.appendChild(el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.interro ? 'Interrogation flash ' + gr.interro : gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé')));
+        sec.appendChild(el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.bacblanc ? 'Bac blanc ' + gr.bacblanc.replace('-', '–') : gr.interro ? 'Interrogation flash ' + gr.interro : gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé')));
         var g = el('div', 'grille');
         gr.items.forEach(function (it) { g.appendChild(fiche(it, ch, c, true)); });
         sec.appendChild(g); corps.appendChild(sec);

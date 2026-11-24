@@ -478,7 +478,9 @@ def catalogue(mdp, mdp_prof=None):
             lot = [e for e in items if e['chapitre'] == num]
             rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5, 'histoire': 6, 'quiz': 7}
             lot.sort(key=lambda e: (rang[e['type']], e['numero'], e['fichier']))
-            titre_ch = (TITRE_CH0 if num == 0 else None) or CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
+            # bac blanc : l'année dans le nom de la tuile (M. Colin, 25 nov. 2026 : « Bac blanc 2025-2026 »)
+            annees = sorted({e['bacblanc'] for e in lot if e.get('bacblanc')}, reverse=True) if num == 0 else []
+            titre_ch = (TITRE_CH0 + (' ' + ' · '.join(annees) if annees else '') if num == 0 else None) or CHAPITRES.get((cid, num)) or next((chapitre_depuis_sous(e['sous']) for e in lot if chapitre_depuis_sous(e['sous'])), '')
             # chaque chapitre range ses pages en blocs repliables de couleur : cours (vert : poly à trous puis
             # animations du chapitre, p. ex. combinaisons de vecteurs, nombre dérivé et vitesse), correction des exercices
             # (bleu marine), devoirs maison (prune), devoirs surveillés (orange mat), puis questions flash (jaune moutarde) en dernier ;

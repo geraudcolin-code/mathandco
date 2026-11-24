@@ -275,6 +275,15 @@ svg.fleches path { fill: none; stroke-width: 2; stroke-linecap: round; }
 .fiche .action.pdf:hover { border-color: var(--rouge); color: var(--rouge); }
 .fiche .action.pdf:disabled { cursor: progress; opacity: .7; }
 .fiche .action.pdf svg { width: 15px; height: 15px; }
+/* énoncé PDF et sujet complet (24 nov. 2026) : toujours disponibles, même sur une fiche fermée */
+.fiche .action.pdf-enonce:hover { border-color: var(--bleu); color: var(--bleu); }
+.fiche.ferme .action.pdf-enonce { cursor: pointer; opacity: 1; color: var(--encre); background: var(--papier); }
+.sujet-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 10px; }
+.sujet-tete h4 { margin: 0; }
+.sujet-tete .action.pdf { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 14px; border-radius: 999px;
+  font: 600 .82rem/1 var(--f-texte); border: 1.5px solid var(--filet); background: var(--papier); color: var(--encre); cursor: pointer; }
+.sujet-tete .action.pdf:hover { border-color: var(--bleu); color: var(--bleu); }
+.sujet-tete .action.pdf svg { width: 15px; height: 15px; }
 .fiche.speciale .action.anim { background: var(--papier); }
 .fiche.speciale { background: var(--bleu-fond); }
 .fiche.speciale .num { font-size: 1.35rem; letter-spacing: -.02em; color: var(--bleu); }

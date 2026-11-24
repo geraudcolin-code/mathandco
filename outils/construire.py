@@ -25,6 +25,10 @@ Ce que fait le script
 - « ajouter » : lit le <title> de la page ([1ère]CH03_Correction_Exercice5…), en déduit l'adresse
   corrections/1ere-ch03-exercice-5.html, ajoute à la fin de la page le petit script assets/deverrou.js
   (ouverture automatique quand l'élève a déjà saisi le mot de passe dans l'espace élèves), puis reconstruit.
+  ÉNONCÉ PDF (24 nov. 2026) : outils/enonces.py tire l'énoncé de chaque correction (exercice, DM, évaluation) ->
+  corrections/<page>.enonce.pdf.bin, et le sujet complet d'un DS / interrogation / DM / bac blanc -> <groupe>.sujet.pdf.bin
+  (original posé dans colineaire-atelier/docs/sujets/<groupe>.pdf s'il existe) ; toujours chiffrés avec le mot de passe des ÉLÈVES
+  (disponibles même quand la correction est fermée) ; « ajouter » les produit pour les pages ajoutées.
   CORRIGÉ PDF (18 octobre) : un fichier .pdf nommé comme la correction ([1ère]CH03_Correction_Exercice5.pdf, donné
   sur la ligne de commande, ou posé à côté de la page .html) est CHIFFRÉ avec le mot de passe (le dépôt est public :
   un PDF en clair serait lisible par tous) dans corrections/1ere-ch03-exercice-5.pdf.bin ; l'espace élèves et la
@@ -339,6 +343,29 @@ def chapitre_depuis_sous(sous):
     return t[:1].upper() + t[1:]
 
 
+def groupe_de(fichier):
+    """énoncés PDF (24 nov. 2026) : corrections/<groupe>-exercice-N.html d'un sujet à plusieurs exercices (devoir
+    surveillé, interrogation, devoir maison, bac blanc) -> <groupe> (son « sujet complet » : <groupe>.sujet.pdf.bin)"""
+    base = fichier[:-5] if fichier.endswith('.html') else fichier
+    if re.search(r'-(ds\d*|interro|interrogation-flash|dm|bac-blanc)', base):
+        return re.sub(r'-(exercice-\d+|automatismes)$', '', base)
+    return None
+
+
+def fiches_enonce(e):
+    """champs du catalogue pour l'énoncé PDF de la correction et le sujet complet (toujours chiffrés avec le mot de passe
+    des élèves : l'énoncé est disponible même quand la correction est fermée, choix de M. Colin du 24 nov. 2026)"""
+    out, base = {}, e['fichier'][:-5]
+    if os.path.exists(os.path.join(DOSSIER, base + '.enonce.pdf.bin')):
+        out['enonce'] = 'corrections/' + base + '.enonce.pdf.bin'
+        out['enoncenom'] = e['nom'].replace('_Correction_', '_Enonce_') + '.pdf'
+    g = groupe_de(e['fichier'])
+    if g and os.path.exists(os.path.join(DOSSIER, g + '.sujet.pdf.bin')):
+        out['sujetpdf'] = 'corrections/' + g + '.sujet.pdf.bin'
+        out['sujetnom'] = re.sub(r'_(Exercice\d+|Automatismes)$', '', e['nom']).replace('_Correction_', '_').replace('_Correction', '') + '_Sujet.pdf'
+    return out
+
+
 def chiffrer_pdf(chemin, nom, mdp):
     """corrigé PDF chiffré -> corrections/<adresse>.pdf.bin (voir le format en tête du fichier)"""
     info = analyser_nom(nom)
@@ -360,6 +387,7 @@ def ajouter(chemins, mdp, mdp_prof):
     ouv = set(lire_acces())
     vers = lambda nom: mdp if analyser_nom(nom)['fichier'][:-5] in ouv else mdp_prof
     pdfs = [c for c in chemins if c.lower().endswith('.pdf')]
+    ajoutees = []
     for ch in pdfs:
         nom = os.path.splitext(os.path.basename(ch))[0]
         chiffrer_pdf(ch, nom, vers(nom))
@@ -384,6 +412,13 @@ def ajouter(chemins, mdp, mdp_prof):
         voisin = os.path.splitext(ch)[0] + '.pdf'               # corrigé PDF posé à côté de la page, de même nom
         if os.path.exists(voisin) and voisin not in pdfs and os.path.splitext(os.path.basename(voisin))[0] == titre:
             chiffrer_pdf(voisin, titre, vers(titre))
+        ajoutees.append(info['fichier'][:-5])
+    if ajoutees:                                                # énoncé PDF (et sujet complet) des pages ajoutées
+        try:
+            import enonces
+            enonces.traiter(ajoutees, mdp, mdp_prof)
+        except ImportError as err:
+            print('énoncés PDF non produits (module manquant :', err, ') : lancer outils/enonces.py')
 
 
 def chiffrer(obj, mdp):
@@ -436,7 +471,8 @@ def catalogue(mdp, mdp_prof=None):
             return dict({'type': e['type'], 'numero': e['numero'], **({} if ds else {'titre': e['titre'], 'consigne': e['consigne']}),
                          'href': 'corrections/' + e['fichier'], 'nom': e['nom'], **(extra if ds else {})},
                         **({'pdf': 'corrections/' + e['fichier'][:-5] + '.pdf.bin', 'pdfnom': e['nom'] + '.pdf'}
-                           if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}))
+                           if os.path.exists(os.path.join(DOSSIER, e['fichier'][:-5] + '.pdf.bin')) else {}),
+                        **fiches_enonce(e))
         for num in sorted({e['chapitre'] for e in items}):
             lot = [e for e in items if e['chapitre'] == num]
             rang = {'poly': 0, 'exercice': 1, 'dm': 2, 'evaluation': 3, 'flash': 4, 'autre': 5, 'histoire': 6, 'quiz': 7}

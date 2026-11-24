@@ -43,16 +43,21 @@
       { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
     return crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(26, 38) }, cle, b.slice(38));
   }
-  async function telecharger(it, bouton) {
+  // quoi : 'corrige' (corrigé PDF, chiffré comme la correction), 'enonce' ou 'sujet' (énoncé de l'exercice, sujet complet :
+  // toujours chiffrés avec le mot de passe des élèves, disponibles même quand la correction est fermée — 24 nov. 2026)
+  async function telecharger(it, bouton, quoi) {
+    quoi = quoi || 'corrige';
     var lib = bouton.querySelector('.lib'), avant = lib.textContent;
     if (bouton.disabled) return;
     bouton.disabled = true; lib.textContent = 'Préparation…';
     try {
-      // correction fermée vue par le professeur : son PDF est chiffré avec le mot de passe du professeur
+      // correction fermée vue par le professeur : son corrigé PDF est chiffré avec le mot de passe du professeur
       var prof = null; try { prof = localStorage.getItem('colineaire.prof') || sessionStorage.getItem('colineaire.prof'); } catch (e) {}
-      var m = (PROF && !ouverte(it) && prof) ? prof : (MDP || lire());
-      var url = URL.createObjectURL(new Blob([await pdfClair(it.pdf, m)], { type: 'application/pdf' }));
-      var a = document.createElement('a'); a.href = url; a.download = it.pdfnom || 'corrige.pdf';
+      var m = (quoi === 'corrige' && PROF && !ouverte(it) && prof) ? prof : (MDP || lire());
+      var chemin = quoi === 'enonce' ? it.enonce : quoi === 'sujet' ? it.sujetpdf : it.pdf;
+      var nom = quoi === 'enonce' ? it.enoncenom : quoi === 'sujet' ? it.sujetnom : it.pdfnom;
+      var url = URL.createObjectURL(new Blob([await pdfClair(chemin, m)], { type: 'application/pdf' }));
+      var a = document.createElement('a'); a.href = url; a.download = nom || (quoi === 'corrige' ? 'corrige.pdf' : 'enonce.pdf');
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
       lib.textContent = avant;
@@ -61,6 +66,17 @@
     }
     bouton.disabled = false;
   }
+
+  var ICONE_PDF = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0-3-3m3 3 3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function boutonPdf(it, quoi, libelle, aria) {
+    var b = el('button', 'action pdf' + (quoi === 'corrige' ? '' : ' pdf-' + quoi)); b.type = 'button';
+    b.setAttribute('aria-label', aria);
+    b.innerHTML = ICONE_PDF + '<span class="lib"></span>'; b.querySelector('.lib').textContent = libelle;
+    b.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); telecharger(it, b, quoi); });
+    b.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+    return b;
+  }
+  function libEx(it) { return it.numero ? ' de l\'exercice ' + it.numero : ''; }
 
   // ---------- accès : une correction n'est ouverte aux élèves qu'après sa correction en classe ----------
   // acces.json (publié par la page « Espace professeur ») liste les corrections ouvertes ; les autres sont grisées.
@@ -113,21 +129,17 @@
       a.addEventListener('click', refus);
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
       actions.appendChild(el('span', 'action verrou', it.type === 'quiz' ? 'Bientôt disponible' : 'Après la correction en classe'));
+      if (it.enonce) { f.classList.add('avec-enonce'); actions.appendChild(boutonPdf(it, 'enonce', 'Énoncé PDF', 'Télécharger l\'énoncé' + libEx(it))); }
       f.appendChild(actions);
       f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? (it.bacblanc ? 'bac blanc epreuve anticipee automatismes ' : 'dossier ds devoir surveille ') : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
     }
     if (ferme) f.appendChild(el('span', 'badge-ferme', 'Fermée aux élèves'));
     actions.appendChild(el('span', 'action anim', it.type === 'quiz' ? 'Lancer le quiz' : 'Animation'));
-    if (it.pdf) {
-      var b = el('button', 'action pdf'); b.type = 'button';
-      b.setAttribute('aria-label', 'Télécharger le corrigé PDF' + (it.numero ? ' de l\'exercice ' + it.numero : ''));
-      b.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0-3-3m3 3 3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lib">Corrigé PDF</span>';
-      b.addEventListener('click', function (ev) { ev.preventDefault(); ev.stopPropagation(); telecharger(it, b); });
-      actions.appendChild(b);
-    }
+    if (it.enonce) actions.appendChild(boutonPdf(it, 'enonce', 'Énoncé PDF', 'Télécharger l\'énoncé' + libEx(it)));
+    if (it.pdf) actions.appendChild(boutonPdf(it, 'corrige', 'Corrigé PDF', 'Télécharger le corrigé PDF' + libEx(it)));
     f.appendChild(actions);
-    f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? (it.bacblanc ? 'bac blanc epreuve anticipee automatismes ' : 'dossier ds devoir surveille ') : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : ''].join(' '));
+    f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? (it.bacblanc ? 'bac blanc epreuve anticipee automatismes ' : 'dossier ds devoir surveille ') : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne, it.pdf ? 'pdf corrige' : '', it.enonce ? 'enonce sujet' : ''].join(' '));
     return f;
   }
 
@@ -205,7 +217,8 @@
     var bloc = el('div', 'dossier-bloc d-' + d.id), dispo = d.items.filter(ouverte).length, n = d.items.length;
     var tete = el('button', 'dossier-tete'); tete.type = 'button';
     tete.appendChild(el('span', 'dossier-titre', d.titre));
-    if (ds && !ADMIN && dispo === 0) {
+    var avecEnonces = items.some(function (it) { return it.enonce || it.sujetpdf; });
+    if (ds && !ADMIN && dispo === 0 && !avecEnonces) {
       bloc.classList.add('verrouille');
       tete.setAttribute('aria-disabled', 'true');
       tete.setAttribute('aria-label', d.titre + ' : disponible après la correction en classe');
@@ -217,7 +230,7 @@
     }
     tete.setAttribute('aria-expanded', 'false');
     tete.appendChild(el('span', 'dossier-compte', ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + n
-      : ds ? dispo + ' correction' + (dispo > 1 ? 's' : '') + ' disponible' + (dispo > 1 ? 's' : '')
+      : ds ? (dispo === 0 ? 'Énoncés · corrections après la correction en classe' : dispo + ' correction' + (dispo > 1 ? 's' : '') + ' disponible' + (dispo > 1 ? 's' : ''))
       : dispo === 0 ? 'Bientôt disponible' : dispo === n ? n + ' fichier' + (n > 1 ? 's' : '') : dispo + ' sur ' + n));
     tete.appendChild(el('span', 'dossier-fleche', '›'));
     var corps = el('div', 'dossier-corps'); corps.hidden = true;
@@ -231,12 +244,24 @@
       });
       groupes.forEach(function (gr) {
         var sec = el('section', 'sujet');
-        sec.appendChild(el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.bacblanc ? 'Bac blanc ' + gr.bacblanc.replace('-', '–') : gr.interro ? 'Interrogation flash ' + gr.interro : gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé')));
+        var avecSujet = gr.items.filter(function (it) { return it.sujetpdf; })[0];
+        var h4 = el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.bacblanc ? 'Bac blanc ' + gr.bacblanc.replace('-', '–') : gr.interro ? 'Interrogation flash ' + gr.interro : gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé'));
+        if (avecSujet) {
+          var ligne = el('div', 'sujet-tete'); ligne.appendChild(h4);
+          ligne.appendChild(boutonPdf(avecSujet, 'sujet', 'Sujet complet PDF', 'Télécharger le sujet complet : ' + h4.textContent));
+          sec.appendChild(ligne);
+        } else sec.appendChild(h4);
         var g = el('div', 'grille');
         gr.items.forEach(function (it) { g.appendChild(fiche(it, ch, c, true)); });
         sec.appendChild(g); corps.appendChild(sec);
       });
     } else {
+      var avecSujet2 = items.filter(function (it) { return it.sujetpdf; })[0];
+      if (avecSujet2) {
+        var l2 = el('div', 'sujet-tete');
+        l2.appendChild(boutonPdf(avecSujet2, 'sujet', 'Sujet complet PDF', 'Télécharger le sujet complet : ' + d.titre));
+        corps.appendChild(l2);
+      }
       var g2 = el('div', 'grille');
       items.forEach(function (it) { g2.appendChild(fiche(it, ch, c, true)); });
       corps.appendChild(g2);

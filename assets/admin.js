@@ -127,7 +127,7 @@
       md.notes.forEach(function (s) { notes[s] = true; });
       note.forEach(function (s) { notes[s] = true; }); entraine.forEach(function (s) { delete notes[s]; });
       ouvre.forEach(function (s) { ens[s] = true; }); ferme.forEach(function (s) { delete ens[s]; });
-      var CS = await cible(MDP_ELEVES), CP = await cible(MDP_PROF), entrees = [];
+      var CS = await cible(MDP_ELEVES), CP = await cible(MDP_PROF), entrees = [], sujetsVus = {};
       var lot = ouvre.map(function (s) { return [s, CS]; }).concat(ferme.map(function (s) { return [s, CP]; }));
       for (var k = 0; k < lot.length; k++) {
         var s = lot[k][0], C = lot[k][1], it = href[s];
@@ -137,6 +137,18 @@
         if (it && it.pdf) {
           var np = await rechiffrerPdf(await brut(it.pdf, c0), C);
           if (np) entrees.push([it.pdf, np]);
+        }
+        // évaluation (DS, interrogation, bac blanc) : son énoncé suit la correction ; le sujet complet est lisible par
+        // les élèves dès qu'un exercice du sujet est ouvert (M. Colin, 24 nov. 2026)
+        if (it && it.type === 'evaluation' && it.enonce) {
+          var ne = await rechiffrerPdf(await brut(it.enonce, c0), C);
+          if (ne) entrees.push([it.enonce, ne]);
+        }
+        if (it && it.type === 'evaluation' && it.sujetpdf && !sujetsVus[it.sujetpdf]) {
+          sujetsVus[it.sujetpdf] = true;
+          var gOuvert = items().some(function (x) { return x.sujetpdf === it.sujetpdf && ens[ident(x)]; });
+          var ns = await rechiffrerPdf(await brut(it.sujetpdf, c0), gOuvert ? CS : CP);
+          if (ns) entrees.push([it.sujetpdf, ns]);
         }
       }
       for (var q = 0; q < note.length; q++) {            // quiz noté inconnu du fichier : son identifiant et son intitulé

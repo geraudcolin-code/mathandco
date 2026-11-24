@@ -53,7 +53,9 @@
     try {
       // correction fermée vue par le professeur : son corrigé PDF est chiffré avec le mot de passe du professeur
       var prof = null; try { prof = localStorage.getItem('colineaire.prof') || sessionStorage.getItem('colineaire.prof'); } catch (e) {}
-      var m = (quoi === 'corrige' && PROF && !ouverte(it) && prof) ? prof : (MDP || lire());
+      // évaluation fermée vue par le professeur : énoncé et sujet sont eux aussi chiffrés avec son mot de passe
+      var suit = quoi === 'corrige' || it.type === 'evaluation';
+      var m = (suit && PROF && !ouverte(it) && prof) ? prof : (MDP || lire());
       var chemin = quoi === 'enonce' ? it.enonce : quoi === 'sujet' ? it.sujetpdf : it.pdf;
       var nom = quoi === 'enonce' ? it.enoncenom : quoi === 'sujet' ? it.sujetnom : it.pdfnom;
       var url = URL.createObjectURL(new Blob([await pdfClair(chemin, m)], { type: 'application/pdf' }));
@@ -129,7 +131,7 @@
       a.addEventListener('click', refus);
       a.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') refus(ev); });
       actions.appendChild(el('span', 'action verrou', it.type === 'quiz' ? 'Bientôt disponible' : 'Après la correction en classe'));
-      if (it.enonce) { f.classList.add('avec-enonce'); actions.appendChild(boutonPdf(it, 'enonce', 'Énoncé PDF', 'Télécharger l\'énoncé' + libEx(it))); }
+      if (it.enonce && it.type !== 'evaluation') { f.classList.add('avec-enonce'); actions.appendChild(boutonPdf(it, 'enonce', 'Énoncé PDF', 'Télécharger l\'énoncé' + libEx(it))); }
       f.appendChild(actions);
       f.dataset.cherche = norm([classe.nom, (dansDossier && it.type === 'evaluation' ? (it.bacblanc ? 'bac blanc epreuve anticipee automatismes ' : 'dossier ds devoir surveille ') : dansDossier && it.type === 'dm' ? 'dossier dm devoir maison ' : '') + 'chapitre ' + chap.numero, chap.titre, it.type, 'exercice ' + it.numero, it.titre, it.consigne].join(' '));
       return f;
@@ -217,7 +219,7 @@
     var bloc = el('div', 'dossier-bloc d-' + d.id), dispo = d.items.filter(ouverte).length, n = d.items.length;
     var tete = el('button', 'dossier-tete'); tete.type = 'button';
     tete.appendChild(el('span', 'dossier-titre', d.titre));
-    var avecEnonces = items.some(function (it) { return it.enonce || it.sujetpdf; });
+    var avecEnonces = items.some(function (it) { return it.type !== 'evaluation' && (it.enonce || it.sujetpdf); });
     if (ds && !ADMIN && dispo === 0 && !avecEnonces) {
       bloc.classList.add('verrouille');
       tete.setAttribute('aria-disabled', 'true');
@@ -230,7 +232,7 @@
     }
     tete.setAttribute('aria-expanded', 'false');
     tete.appendChild(el('span', 'dossier-compte', ADMIN ? dispo + ' ouvert' + (dispo > 1 ? 's' : '') + ' sur ' + n
-      : ds ? (dispo === 0 ? 'Énoncés · corrections après la correction en classe' : dispo + ' correction' + (dispo > 1 ? 's' : '') + ' disponible' + (dispo > 1 ? 's' : ''))
+      : ds ? dispo + ' correction' + (dispo > 1 ? 's' : '') + ' disponible' + (dispo > 1 ? 's' : '')
       : dispo === 0 ? 'Bientôt disponible' : dispo === n ? n + ' fichier' + (n > 1 ? 's' : '') : dispo + ' sur ' + n));
     tete.appendChild(el('span', 'dossier-fleche', '›'));
     var corps = el('div', 'dossier-corps'); corps.hidden = true;
@@ -244,7 +246,9 @@
       });
       groupes.forEach(function (gr) {
         var sec = el('section', 'sujet');
-        var avecSujet = gr.items.filter(function (it) { return it.sujetpdf; })[0];
+        // sujet complet d'une évaluation : seulement quand un exercice du sujet est ouvert (ou pour le professeur)
+        var avecSujet = gr.items.filter(function (it) { return it.sujetpdf && ouverte(it); })[0] ||
+          (ADMIN ? gr.items.filter(function (it) { return it.sujetpdf; })[0] : null);
         var h4 = el('h4', null, (Object.keys(nbDS).length > 1 && gr.ds ? 'DS n° ' + gr.ds + ' · ' : '') + (gr.bacblanc ? 'Bac blanc ' + gr.bacblanc.replace('-', '–') : gr.interro ? 'Interrogation flash ' + gr.interro : gr.sujet ? 'Sujet ' + gr.sujet : 'Devoir surveillé'));
         if (avecSujet) {
           var ligne = el('div', 'sujet-tete'); ligne.appendChild(h4);

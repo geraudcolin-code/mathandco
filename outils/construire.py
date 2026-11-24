@@ -27,8 +27,9 @@ Ce que fait le script
   (ouverture automatique quand l'élève a déjà saisi le mot de passe dans l'espace élèves), puis reconstruit.
   ÉNONCÉ PDF (24 nov. 2026) : outils/enonces.py tire l'énoncé de chaque correction (exercice, DM, évaluation) ->
   corrections/<page>.enonce.pdf.bin, et le sujet complet d'un DS / interrogation / DM / bac blanc -> <groupe>.sujet.pdf.bin
-  (original posé dans colineaire-atelier/docs/sujets/<groupe>.pdf s'il existe) ; toujours chiffrés avec le mot de passe des ÉLÈVES
-  (disponibles même quand la correction est fermée) ; « ajouter » les produit pour les pages ajoutées.
+  (original posé dans colineaire-atelier/docs/sujets/<groupe>.pdf s'il existe) ; chiffrés avec le mot de passe des ÉLÈVES
+  (disponibles même quand la correction est fermée), SAUF les évaluations (DS, interrogations, bac blanc) : fermées
+  comme leur correction, rechiffrées à l'ouverture (ouvrir / fermer, Espace professeur) ; « ajouter » les produit pour les pages ajoutées.
   CORRIGÉ PDF (18 octobre) : un fichier .pdf nommé comme la correction ([1ère]CH03_Correction_Exercice5.pdf, donné
   sur la ligne de commande, ou posé à côté de la page .html) est CHIFFRÉ avec le mot de passe (le dépôt est public :
   un PDF en clair serait lisible par tous) dans corrections/1ere-ch03-exercice-5.pdf.bin ; l'espace élèves et la
@@ -638,6 +639,11 @@ def basculer(motifs, ouvrir_, mdp, mdp_prof):
                 rechiffrer_pdf(os.path.join(DOSSIER, n + '.pdf.bin'), [mdp, mdp_prof], vers)
             print(('ouverte : ' if ouvrir_ else 'fermée : ') + n)
     ecrire_acces(ens)
+    try:                                   # énoncés et sujets des évaluations : suivent la correction (24 nov. 2026)
+        import enonces
+        enonces.synchroniser(mdp, mdp_prof)
+    except ImportError:
+        pass
 
 
 if __name__ == '__main__':

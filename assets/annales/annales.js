@@ -14,7 +14,8 @@
   function filtre() { sujets = voirTout ? tous : tous.filter(fait); }
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function nomSujet(s) { return s.lieu + ' · Jour ' + s.jour; }
-  function lien(page, sujet, n) { return page === 'exemple' ? '#' : page; }
+  /* l'exercice s'ouvre dans la page « Sujet complet », sur son onglet : boutons Énoncé PDF, Sujet PDF, Corrigé PDF */
+  function lien(page, sujet, n) { return page === 'exemple' ? '#' : (sujet.complet ? sujet.complet + '#ex' + n : page); }
 
   function pastilles(ids, sauf) {
     var w = el('span', 'an-pastilles');

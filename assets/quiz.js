@@ -1668,6 +1668,9 @@
       lire: function () {
         var e = { valeurs: [], traits: [], signes: (ls ? sgn : inter).slice(), fleches: vari ? inter.slice() : [], images: [] };
         e.vide = !touche && !racines.length && champs().every(function (mf) { return !mf || !String(mf.value || '').trim(); }) && inter.every(function (x) { return !x; });
+        var tx = function (mf) { return mf ? String(mf.value || '') : ''; };   // écritures tapées, pour le rapport du quiz noté (25 nov. 2026)
+        e.tex = { gauche: tx(gauche), droite: tx(droite), valeurs: racines.map(function (r) { return tx(r.mf); }),
+          images: vari ? [finiG ? tx(imgG) : ''].concat(racines.map(function (r) { return tx(r.img); }), [finiD ? tx(imgD) : '']) : [] };
         try { e.gauche = lire(gauche); e.droite = lire(droite); racines.forEach(function (r) { e.valeurs.push(lire(r.mf)); e.traits.push(r.trait); }); }
         catch (err) { e.erreur = err.message === 'vide' ? (q.bornes ? 'Remplis toutes les cases de la ligne des x.' : 'Remplis toutes les cases de la ligne des x (aux extrémités : −∞ et +∞).') : 'Une valeur de la ligne des x est illisible.'; }
         if (vari) {
@@ -3012,7 +3015,8 @@
       var kt = ajouter();                           // les traits (0, double barre) d'abord, puis un signe par clic
       cellule('tval tvide' + cls, null);
       for (var i2 = 0; i2 <= n; i2++) {
-        cellule('tint' + cls, '\\(' + (L.signes[i2] === '−' ? '-' : '+') + '\\)', ajouter(), 'qv-signe');
+        var sg = L.signes[i2];                      // une case laissée vide (rapport d'un quiz noté) : « ? »
+        cellule('tint' + cls, '\\(' + (sg === '−' || sg === '-' ? '-' : sg === '+' ? '+' : '?') + '\\)', ajouter(), 'qv-signe');
         if (i2 < n) {
           var tc = cellule('tval ttrait' + cls, null), tr = el('div', 'trait-choix qv-e', '<span>0</span>');
           tr.dataset.t = L.traits[i2]; tr.dataset.touche = '1'; tr.dataset.e = kt; tc.appendChild(tr);
@@ -3056,6 +3060,17 @@
       cellule('tval tvide tcv', null);
     }
     cadre.appendChild(t); return cadre;
+  }
+  /* Rapport d'un quiz noté (25 nov. 2026) : un tableau de signes / de variations (réponse de l'élève ou attendue, format
+     svRapport : tout en LaTeX) tracé comme dans la correction, tout visible. q : la question (type, ligneSigne, libellés). */
+  function dessinerSV(q, r) {
+    var vari = q.type === 'variations', lg = { traits: r.traits || [], signes: r.signes || [], label: q.ligneLabel || (q.ligne || q.ligneSigne || {}).label };
+    var p = { type: q.type, bornes: [r.gauche || '?', r.droite || '?'], valeurs: (r.valeurs || []).map(function (v) { return v || '?'; }),
+      fleches: r.fleches || [], images: r.images || [], label: q.label };
+    if (vari) { if ((r.signes || []).length || q.ligneSigne) p.ligneSigne = lg; } else p.ligne = lg;
+    var f = tableauCorrection(p, function () { return 0; });
+    f.classList.add('nt-sv'); f.querySelectorAll('.qv-e').forEach(function (e) { e.classList.add('vu'); }); rendre(f);
+    return f;
   }
   /* Quiz de chapitre (14 nov. 2026) : <!--cours:clé--> entre deux blocs = une étape qui montre la capture du cours
      (window.QUIZ_COURS[clé]) ; <!--v:k--> (ou <!--v:2,3-->) = la valeur de la case k s'écrit dans l'arbre / le tableau
@@ -3490,9 +3505,21 @@
      de la banque, variante générée comprise ; tableau, arbre, propositions dans l'ordre affiché, parties d'un exercice ;
      ni correction, ni image), sa réponse (LaTeX tapé, case par case, proposition cochée…), la bonne réponse, le détail
      case par case / question par question et le message de l'erreur repérée. notes.html le relit (clé privée). */
-  var CHAMPS_RAPPORT = ['type', 'enonce', 'enonceApres', 'prefixe', 'suffixe', 'gauche', 'droite', 'tableau', 'arbre', 'modele', 'propositions', 'figureAlt'];
-  function sansImage(x) {                       // une image (data URI) n'est jamais envoyée : « [figure] » à sa place
-    if (typeof x === 'string') return x.replace(/<img\b[^>]*>/gi, '[figure]').split(/(<pre\b[\s\S]*?<\/pre>)/i)   // espaces insécables gardés ;
+  var CHAMPS_RAPPORT = ['type', 'label', 'enonce', 'enonceApres', 'prefixe', 'suffixe', 'gauche', 'droite', 'tableau', 'arbre', 'modele', 'propositions', 'figureAlt'];
+  /* Figures du rapport (M. Colin, 25 nov. 2026 : « voir les éléments de la question comme les tableaux ou les courbes ») :
+     une image n'est toujours pas envoyée, mais son EMPREINTE l'est (« [figure:clé] », q.figure = clé) ; notes.js retrouve
+     l'image dans assets/notes-figures/<quiz>.bin (chiffré pour le professeur, écrit par docs/quiz/notes/figures_notes.py,
+     même empreinte : longueur en base 36, « - », FNV-1a 32 bits sur les unités UTF-16). */
+  function empreinteFig(src) {
+    src = String(src); var h = 0x811c9dc5;
+    for (var k = 0; k < src.length; k++) { h ^= src.charCodeAt(k); h = Math.imul(h, 0x01000193) >>> 0; }
+    return src.length.toString(36) + '-' + h.toString(36);
+  }
+  var RE_IMG_SRC = /<img\b[^>]*?\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')[^>]*>/i;
+  function marqueImage(t) { if (/\bqz-ecran-etroit\b/.test(t)) return '';   // version téléphone d'une figure : la version large suffit
+    var m = RE_IMG_SRC.exec(t), src = m ? (m[1] != null ? m[1] : m[2]) : ''; return /^data:image\//.test(src) ? '[figure:' + empreinteFig(src) + ']' : '[figure]'; }
+  function sansImage(x) {                       // une image (data URI) n'est jamais envoyée : « [figure:empreinte] » à sa place
+    if (typeof x === 'string') return x.replace(/<img\b[^>]*>/gi, marqueImage).split(/(<pre\b[\s\S]*?<\/pre>)/i)   // espaces insécables gardés ;
       .map(function (t, i) { return i % 2 ? t : t.replace(/[ \t\r\n]+/g, ' '); }).join('');                     // programme (<pre>) tel quel
     if (Array.isArray(x)) return x.map(sansImage);
     if (x && typeof x === 'object') { var o = {}; for (var k in x) o[k] = sansImage(x[k]); return o; }
@@ -3501,14 +3528,24 @@
   function questionRapport(q, s) {
     var o = {};
     CHAMPS_RAPPORT.forEach(function (k) { if (q[k] != null && q[k] !== '') o[k] = sansImage(q[k]); });
-    if (q.figure) o.figure = true;
+    if (q.ligne || q.ligneSigne) o.ligneLabel = sansImage((q.ligne || q.ligneSigne).label || '');   // libellé de la ligne des signes
+    if (q.figure) o.figure = /^data:image\//.test(String(q.figure)) ? empreinteFig(q.figure) : true;
     if (s && s.ordre) o.ordre = s.ordre.slice();            // QCM : ordre des propositions vu par l'élève (lettres A, B…)
     if (s && s.ordreD) o.ordreD = s.ordreD.slice();         // associer : ordre des pastilles
     if (q.parties) o.parties = q.parties.map(function (pa, i) { return questionRapport(pa, s && s.parties && s.parties[i] && s.parties[i].s); });
     return o;
   }
+  function svRapport(x) {                       // tableau de signes / de variations (élève ou attendu) : tout en LaTeX
+    var t = x.tex || {}, n = function (v, l) { return l != null && String(l).trim() ? String(l).slice(0, 60) : v == null || (typeof v === 'number' && isNaN(v)) ? '' : texTableau(v); };
+    return { sv: 1, vide: !!x.vide, gauche: n(x.gauche, t.gauche), droite: n(x.droite, t.droite),
+      valeurs: (x.valeurs || []).slice(0, 30).map(function (v, i) { return n(v, (t.valeurs || [])[i]); }),
+      traits: (x.traits || []).slice(0, 30).map(String), signes: (x.signes || []).slice(0, 31).map(function (v) { return v ? String(v) : ''; }),
+      fleches: (x.fleches || []).slice(0, 31).map(function (v) { return v ? String(v) : ''; }),
+      images: (x.images || []).slice(0, 32).map(function (v, i) { return v === null && !(t.images || [])[i] ? null : n(v, (t.images || [])[i]); }) };
+  }
   function reponseRapport(x) {                  // réponse compacte : textes de 300 caractères au plus (paquet borné)
     if (x == null) return null;
+    if (typeof x === 'object' && !Array.isArray(x) && Array.isArray(x.valeurs)) return x.sv === 1 ? x : svRapport(x);
     if (typeof x === 'string') return x.length > 300 ? x.slice(0, 300) + '…' : x;
     if (typeof x === 'number' || typeof x === 'boolean') return x;
     if (Array.isArray(x)) return x.slice(0, 60).map(reponseRapport);
@@ -3528,6 +3565,12 @@
     }
   }
   function attenduRapport(q, rep) {               // bonne réponse du rapport : avec des variantes (blocs), la plus proche de la réponse
+    if (q.type === 'signes' || q.type === 'variations') {   // écritures de la banque (\frac{5}{3}, 2\mathrm{e}), pas leurs valeurs
+      var b = q.bornes || [-Infinity, Infinity], lg = q.ligne || q.ligneSigne;
+      return { sv: 1, gauche: texTableau(b[0]), droite: texTableau(b[1]), valeurs: q.valeurs.map(texTableau), traits: lg ? lg.traits.slice() : [],
+        signes: lg ? lg.signes.slice() : [], fleches: (q.fleches || []).slice(), images: (q.images || []).map(function (v) { return v == null ? null : texTableau(v); }) };
+    }
+    if (q.type === 'exercice') return q.parties.map(function (pa, i) { return attenduRapport(pa, rep && rep[i]); });
     return q.type === 'associer' && q.variantes && rep ? attenduAssocier(q, rep) : reponseAttendue(q);
   }
   function rapportQuestion(d, q, e, s) {
@@ -4016,7 +4059,7 @@
     monter: function (r, def, opts) { return (r._quiz = new Quiz(r, def, opts)); }, etapes: construireEtapes, tirageEquilibre: tirageEquilibre, pointsCases: pointsCases, pointQuestion: pointQuestion,
     pointsGrille: pointsGrille, detailGrille: detailGrille, pointsReponse: pointsReponse, attenduRapport: attenduRapport,
     // rapport détaillé des quiz notés (notes.html, 17 nov. 2026) : mêmes tableaux, arbres et formules que le quiz
-    dessinerTableau: dessinerTableau, dessinerArbre: dessinerArbre, rendre: rendre, questionRapport: questionRapport, variables: variables, chiffrerNote: chiffrerNote
+    dessinerTableau: dessinerTableau, dessinerArbre: dessinerArbre, dessinerSV: dessinerSV, empreinteFig: empreinteFig, reponseRapport: reponseRapport, rendre: rendre, questionRapport: questionRapport, variables: variables, chiffrerNote: chiffrerNote
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
 })();

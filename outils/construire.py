@@ -87,6 +87,7 @@ CHAPITRES = {
     ('seconde', 1): 'Nombres et calcul',
     ('seconde', 2): 'Vecteurs',
     ('seconde', 3): 'Calcul littéral, équations et inéquations',
+    ('seconde', 4): 'Repère et coordonnées',
     ('premiere', 1): 'Second degré',
     ('premiere', 2): 'Suites numériques',
     ('premiere', 3): 'Probabilités conditionnelles et indépendance',

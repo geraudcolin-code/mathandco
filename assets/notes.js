@@ -21,7 +21,7 @@
               { id: '2nde-ch03-devfact', titre: 'Seconde · Chapitre 3 · Développer et factoriser' },
               { id: 'term-ch02-quiz', titre: 'Terminale spécialité · Chapitre 2 · Suites : rappels, récurrence et limites' },
               { id: 'term-ch05-quiz', titre: 'Terminale spécialité · Chapitre 5 · Compléments sur la dérivation' }];
-  var S = crypto.subtle, cle = null, donnees = [], onglet = 'resultats', ouvert = null;
+  var S = crypto.subtle, cle = null, donnees = [], onglet = 'resultats', ouvert = null, FIGS = {};
   var $ = function (id) { return document.getElementById(id); };
   function octets(b) { var t = atob(b), u = new Uint8Array(t.length); for (var k = 0; k < t.length; k++) u[k] = t.charCodeAt(k); return u; }
   function ouvrirCle(mdp) {
@@ -69,8 +69,43 @@
       .then(function (c) { return texteClair(new Uint8Array(c)); })
       .then(function (o) { o = valide(o); if (!o) ignores++; return o; }, function () { ignores++; return null; });   // paquet illisible ou démesuré : ignoré, compté
   }
+  /* Figures des énoncés (M. Colin, 25 nov. 2026) : le paquet porte l'empreinte de chaque image (« [figure:clé] », q.figure =
+     clé) ; les images sont dans assets/notes-figures/<quiz>.bin, chiffré pour le professeur (même format que les paquets,
+     écrit par docs/quiz/notes/figures_notes.py à la construction du quiz). Absent ou illisible : « [figure] » comme avant. */
+  var RE_FIG = /^data:image\/(?:svg\+xml|png|webp|jpeg)[;,]/;
+  function chargerFigures(id) {
+    FIGS = {};
+    return fetch('assets/notes-figures/' + encodeURIComponent(id) + '.bin').then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (p) {
+        return S.importKey('jwk', { kty: 'EC', crv: 'P-256', x: p.epk.x, y: p.epk.y, ext: true }, { name: 'ECDH', namedCurve: 'P-256' }, false, [])
+          .then(function (pub) { return S.deriveKey({ name: 'ECDH', public: pub }, cle, { name: 'AES-GCM', length: 256 }, false, ['decrypt']); })
+          .then(function (k) { return S.decrypt({ name: 'AES-GCM', iv: octets(p.iv) }, k, octets(p.ct)); })
+          .then(function (c) {
+            var u = new Uint8Array(c), lecteur = new Response(new Blob([u.subarray(1)]).stream().pipeThrough(new DecompressionStream('deflate-raw')));
+            return lecteur.text();
+          });
+      }).then(function (t) { var o = JSON.parse(t), f = {}; Object.keys(o).forEach(function (k) { if (typeof o[k] === 'string' && RE_FIG.test(o[k])) f[k] = o[k]; });
+        if (id === $('quiz').value) FIGS = f; }, function () {});
+  }
+  function imageFig(k, cls) {                     // la source vient du fichier chiffré du site, posée par .src (jamais en HTML)
+    var f = el('figure', cls || 'quiz-figure nt-fig-enonce'), im = document.createElement('img');
+    im.src = FIGS[k]; im.alt = 'Figure de l’énoncé'; im.decoding = 'async'; f.appendChild(im); return f;
+  }
+  function poserFigures(racine) {                // « [figure:clé] » dans un texte → l'image
+    var re = /\[figure:([0-9a-z]+-[0-9a-z]+)\]/, tw = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT), l = [], n;
+    while ((n = tw.nextNode())) if (re.test(n.nodeValue)) l.push(n);
+    l.forEach(function (t) {
+      var parts = t.nodeValue.split(/\[figure:([0-9a-z]+-[0-9a-z]+)\]/), frag = document.createDocumentFragment();
+      parts.forEach(function (x, i) {
+        if (i % 2 === 0) { if (x) frag.appendChild(document.createTextNode(x)); }
+        else frag.appendChild(FIGS[x] ? imageFig(x, 'nt-fig-inline') : document.createTextNode('[figure]'));
+      });
+      t.parentNode.replaceChild(frag, t);
+    });
+  }
   function charger() {
     var id = $('quiz').value;
+    chargerFigures(id);
     donnees = []; ignores = 0; fermerRapport(); afficher();     // rien de l'ancien quiz pendant le chargement (CSV compris)
     $('resume').textContent = 'Chargement…';
     return fetch('/api/quiz-notes?quiz=' + encodeURIComponent(id), { cache: 'no-store' }).then(function (r) {
@@ -167,7 +202,7 @@
    'lbrack rbrack lbrace rbrace langle rangle lvert rvert vert Vert mid parallel perp angle circ degree prime ast star ' +
    'binom dbinom tbinom ln log exp sin cos tan lim limits sum prod int min max percent colon cancel not ' +
    'alpha beta gamma delta epsilon varepsilon zeta eta theta vartheta iota kappa lambda mu nu xi pi varpi rho varrho sigma ' +
-   'varsigma tau upsilon phi varphi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega ell begin end').split(' ').forEach(function (c) { TEX_OK[c] = 1; });
+   'mathscr varsigma tau upsilon phi varphi chi psi omega Gamma Delta Theta Lambda Xi Pi Sigma Upsilon Phi Psi Omega ell begin end').split(' ').forEach(function (c) { TEX_OK[c] = 1; });
   var ENV_OK = { aligned: 1, cases: 1, matrix: 1, pmatrix: 1, bmatrix: 1, array: 1 };
   var SIGNES_OK = ',;:! {}()[]%_&#|\\';
   function texSur(t) {
@@ -360,6 +395,7 @@
       liste.appendChild(li);
     });
     z.appendChild(liste);
+    poserFigures(z);
     rendreM(z);
     window.scrollTo({ top: $('tableau').offsetTop - 70, behavior: 'smooth' });
     setTimeout(function () { try { $('rapport-retour').focus({ preventScroll: true }); } catch (e) {} }, 50);
@@ -385,7 +421,8 @@
   }
   function enonce(q) {
     var e = el('div', 'nt-enonce quiz-enonce', q.enonce || '');
-    if (q.figure) e.appendChild(tx('p', 'nt-figure', '[Figure de l’énoncé' + (q.figureAlt ? ' : ' + el('i', '', q.figureAlt).textContent : '') + ']'));
+    if (q.figure && typeof q.figure === 'string' && FIGS[q.figure]) e.appendChild(imageFig(q.figure));
+    else if (q.figure) e.appendChild(tx('p', 'nt-figure', '[Figure de l’énoncé' + (q.figureAlt ? ' : ' + el('i', '', q.figureAlt).textContent : '') + ']'));
     var c = C();
     if (c && q.arbre && q.type !== 'arbre') e.appendChild(c.dessinerArbre(q.arbre, 'lecture').el);
     if (c && q.tableau && q.type !== 'tableau') e.appendChild(c.dessinerTableau(q.tableau, 'lecture').el);
@@ -488,7 +525,19 @@
         b.appendChild(ol);
         break;
       }
-      case 'signes': case 'variations': case 'repere': case 'coords':
+      case 'signes': case 'variations':
+        if ((a && a.sv === 1) || (r && r.sv === 1)) {   // paquets depuis le 25 nov. 2026 : les tableaux redessinés
+          var C0 = C();
+          L = ligne('Réponse de l’élève'); b.appendChild(L);
+          if (!r || r.sv !== 1 || r.vide) L.appendChild(tx('span', 'nt-rien', d.repondue ? 'tableau laissé vide' : 'pas de réponse'));
+          else if (C0 && C0.dessinerSV) { var fr = C0.dessinerSV(q, r); fr.classList.add(juste ? 'nt-sv-j' : 'nt-sv-f'); b.appendChild(fr); }
+          if (!juste && a && a.sv === 1) { b.appendChild(ligne('Bonne réponse')); if (C0 && C0.dessinerSV) { var fa = C0.dessinerSV(q, a); fa.classList.add('nt-sv-bon'); b.appendChild(fa); } }
+          else if (juste) b.appendChild(ligne('Bonne réponse : le tableau de l’élève est juste.'));
+          break;
+        }
+        L = ligne('Réponse de l’élève'); L.appendChild(tx('span', 'nt-val ' + cls, r == null ? 'pas de réponse transmise' : 'tableau envoyé avant le 25 nov. 2026 (non lisible ici)')); b.appendChild(L);
+        break;
+      case 'repere': case 'coords':
         L = ligne('Réponse de l’élève'); L.appendChild(tx('span', 'nt-val ' + cls, r == null ? 'pas de réponse transmise' : JSON.stringify(r))); b.appendChild(L);
         L = ligne('Bonne réponse'); L.appendChild(tx('span', 'nt-val nt-bon', JSON.stringify(a))); b.appendChild(L);
         break;

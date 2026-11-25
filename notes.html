@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/theme-pample.css?v=20261114a">
 <link rel="stylesheet" href="assets/theme-braquage.css?v=20261118a">
 <script src="assets/theme.js?v=20261120a"></script>
-<script src="assets/quiz.js?v=20261121b"></script>
+<script src="assets/quiz.js?v=20261125a"></script>
 <script defer src="assets/mathlive/mathlive.min.js"></script>
 <style>
 .nt-outils { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 16px; }
@@ -61,6 +61,11 @@
 #stats-liste .nt-stat-faux .nt-val svg { max-width: 90px; }
 .nt-enonce p { margin: .35em 0; }
 .nt-figure { color: var(--gris); font-style: italic; }
+.nt-fig-enonce { margin: 8px 0; } .nt-fig-enonce img { display: block; max-width: min(100%, 560px); max-height: 380px; height: auto; }
+.nt-fig-inline { display: block; margin: 6px 0; } .nt-fig-inline img { display: block; max-width: min(100%, 420px); max-height: 300px; height: auto; }
+.nt-sv { margin: 4px 0 10px; max-width: min(100%, 680px); overflow-x: auto; }
+.nt-sv-f .quiz-tab { outline: 2px solid var(--rouge, #c62828); outline-offset: 2px; border-radius: 6px; }
+.nt-sv-j .quiz-tab, .nt-sv-bon .quiz-tab { outline: 2px solid var(--vert, #2e7d32); outline-offset: 2px; border-radius: 6px; }
 .nt-reps { display: grid; gap: 8px; min-width: 0; }
 .nt-ligne-rep { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; min-width: 0; }
 .nt-etiq { font-weight: 600; color: var(--gris); font-size: .92rem; }
@@ -190,6 +195,6 @@
     </section>
   </div>
 </main>
-<script src="assets/notes.js?v=20261119a"></script>
+<script src="assets/notes.js?v=20261125a"></script>
 </body>
 </html>

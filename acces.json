@@ -1,5 +1,5 @@
 {
- "maj": "2026-11-24T23:17:43.106Z",
+ "maj": "2026-11-27T07:16:15.167Z",
  "ouvertes": [
   "1ere-bac-blanc-2025-2026-automatismes",
   "1ere-bac-blanc-2025-2026-exercice-1",
@@ -107,6 +107,7 @@
   "1ere-ch09-ombre-3d",
   "1ere-ch09-poly-a-trous",
   "1ere-ch09-resume-anime",
+  "1ere-ch10-exercice-1",
   "1ere-ch10-exercice-10",
   "1ere-ch10-exercice-11",
   "1ere-ch10-exercice-12",
@@ -129,6 +130,8 @@
   "1ere-ch10-exercice-7",
   "1ere-ch10-exercice-8",
   "1ere-ch10-exercice-9",
+  "1ere-ch10-poly-a-trous",
+  "1ere-ch10-quiz-variables-aleatoires",
   "1ere-ms-ch01-exercice-1",
   "1ere-ms-ch01-exercice-10",
   "1ere-ms-ch01-exercice-11",

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bac 2025 · Polynésie · Jour 2 · Annales du bac · Colinéaire</title>
+<link rel="icon" href="../../assets/icone.svg" type="image/svg+xml">
+<style>
+:root{--bleu:#0a5fd1;--fond:#fbfbfd;--fond2:#f0f2f6;--encre:#1d1d1f;--gris:#6b6e76}
+*{box-sizing:border-box}body{margin:0;background:var(--fond);color:var(--encre);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px;background:rgba(251,251,253,.92);backdrop-filter:blur(12px);border-bottom:1px solid #e3e5ea}
+header a.retour{color:var(--bleu);text-decoration:none;font-weight:600}
+header h1{margin:0;font-size:1.05rem;letter-spacing:-.01em}header .date{color:var(--gris);font-size:.9rem}
+nav{display:flex;gap:4px;padding:3px;border-radius:12px;background:var(--fond2);margin-left:auto;overflow-x:auto}
+nav button{border:0;background:none;padding:7px 13px;border-radius:9px;font:500 .92rem system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+nav button[aria-selected=true]{background:#fff;box-shadow:0 1px 4px rgba(20,30,60,.14);font-weight:600}
+a.pdf{padding:7px 12px;border-radius:999px;border:1.5px solid #d8dbe2;color:var(--encre);text-decoration:none;font-size:.9rem;font-weight:500}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh}header{flex:none}
+.pdfs{display:flex;flex-wrap:wrap;gap:6px}
+iframe{display:block;flex:1;min-height:0;width:100%;border:0;background:#fff}
+.source{flex:none;margin:0;padding:6px 16px;color:var(--gris);font-size:.8rem}
+</style></head><body>
+<header><a class="retour" href="../../libre.html#terminale">‹ Annales</a><h1>Bac 2025 · Polynésie · Jour 2</h1><span class="date">18 juin 2025</span>
+<nav role="tablist"><button role="tab" data-n="1" aria-selected="true">Exercice 1</button><button role="tab" data-n="2" aria-selected="false">Exercice 2</button><button role="tab" data-n="3" aria-selected="false">Exercice 3</button><button role="tab" data-n="4" aria-selected="false">Exercice 4</button></nav><span class="pdfs"><a class="pdf" id="enonce" href="enonce-1.pdf" download="[BAC]2025_POL_J2_Enonce_Exercice1.pdf" title="Énoncé de l’exercice 1 seul (PDF)">Énoncé PDF</a><a class="pdf" href="sujet.pdf" download="[BAC]2025_POL_J2_Sujet.pdf" title="Les quatre exercices (PDF)">Sujet PDF</a><a class="pdf" id="pdf" href="exercice-1.pdf" download="[BAC]2025_POL_J2_Correction_Exercice1.pdf">Corrigé PDF</a></span></header>
+<iframe id="cadre" src="exercice-1.html" title="Correction animée"></iframe>
+<p class="source">Énoncé : sujet officiel du baccalauréat, d'après la source LaTeX des annales de l'APMEP.</p>
+<script>
+var b=document.querySelectorAll('nav button'),f=document.getElementById('cadre'),p=document.getElementById('pdf'),e=document.getElementById('enonce');
+function va(n){b.forEach(function(x){x.setAttribute('aria-selected',x.dataset.n==n)});f.src='exercice-'+n+'.html';p.href='exercice-'+n+'.pdf';p.download='[BAC]2025_POL_J2_Correction_Exercice'+n+'.pdf';if(e){e.href='enonce-'+n+'.pdf';e.download='[BAC]2025_POL_J2_Enonce_Exercice'+n+'.pdf';e.title='Énoncé de l’exercice '+n+' seul (PDF)'}try{history.replaceState(null,'','#ex'+n)}catch(e){}}
+b.forEach(function(x){x.addEventListener('click',function(){va(x.dataset.n)})});
+var h=(location.hash.match(/ex(\d)/)||[])[1];if(h)va(h);
+</script></body></html>
